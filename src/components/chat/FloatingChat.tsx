@@ -1,8 +1,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Minimize2, Maximize2, X, MessageCircle } from 'lucide-react';
+import { Send, Paperclip, Minimize2, Maximize2, X, MessageCircle, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
+import { useConversation } from '@11labs/react';
 
 interface ChatMessage {
   id: string;
@@ -30,11 +31,44 @@ const FloatingChat = () => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [apiKey, setApiKey] = useState('');
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [volume, setVolume] = useState(0.7);
   
   const chatRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const resizeRef = useRef<HTMLDivElement>(null);
+
+  // Initialize ElevenLabs conversation
+  const conversation = useConversation({
+    onConnect: () => {
+      console.log('Audio conversation connected');
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        content: 'Voice communication activated. You can now speak directly to LEX AI.',
+        sender: 'system',
+        timestamp: new Date()
+      }]);
+    },
+    onDisconnect: () => {
+      console.log('Audio conversation disconnected');
+    },
+    onMessage: (message) => {
+      if (message.type === 'agent_response') {
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          content: message.message,
+          sender: 'system',
+          timestamp: new Date()
+        }]);
+      }
+    },
+    onError: (error) => {
+      console.error('Audio conversation error:', error);
+    }
+  });
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -44,6 +78,12 @@ const FloatingChat = () => {
   // Handle dragging
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isMinimized) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('.resize-handle')) {
+      setIsResizing(true);
+      return;
+    }
+    
     setIsDragging(true);
     const rect = chatRef.current?.getBoundingClientRect();
     if (rect) {
@@ -60,6 +100,10 @@ const FloatingChat = () => {
         x: Math.max(0, Math.min(e.clientX - dragOffset.x, window.innerWidth - size.width)),
         y: Math.max(0, Math.min(e.clientY - dragOffset.y, window.innerHeight - size.height))
       });
+    } else if (isResizing) {
+      const newWidth = Math.max(300, Math.min(e.clientX - position.x, window.innerWidth - position.x));
+      const newHeight = Math.max(200, Math.min(e.clientY - position.y, window.innerHeight - position.y));
+      setSize({ width: newWidth, height: newHeight });
     }
   };
 
@@ -75,7 +119,7 @@ const FloatingChat = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, dragOffset, size.width, size.height]);
+  }, [isDragging, isResizing, dragOffset, position]);
 
   const handleSendMessage = () => {
     if (!inputValue.trim() && selectedFiles.length === 0) return;
@@ -123,6 +167,37 @@ const FloatingChat = () => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const startVoiceChat = async () => {
+    if (!apiKey) {
+      setShowApiKeyInput(true);
+      return;
+    }
+
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      await conversation.startSession({ 
+        agentId: 'your-agent-id', // You'll need to replace this with actual agent ID
+      });
+    } catch (error) {
+      console.error('Failed to start voice chat:', error);
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        content: 'Failed to start voice chat. Please check your microphone permissions and API configuration.',
+        sender: 'system',
+        timestamp: new Date()
+      }]);
+    }
+  };
+
+  const stopVoiceChat = async () => {
+    await conversation.endSession();
+  };
+
+  const handleVolumeChange = (newVolume: number) => {
+    setVolume(newVolume);
+    conversation.setVolume({ volume: newVolume });
+  };
+
   if (!isOpen) {
     return (
       <Button
@@ -168,6 +243,28 @@ const FloatingChat = () => {
         </div>
         
         <div className="flex items-center space-x-1">
+          {/* Audio Controls */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={conversation.status === 'connected' ? stopVoiceChat : startVoiceChat}
+            className={`w-8 h-8 p-0 ${conversation.status === 'connected' ? 'hover:bg-destructive/20' : 'hover:bg-primary/20'}`}
+          >
+            {conversation.status === 'connected' ? 
+              <MicOff className="w-4 h-4" /> : 
+              <Mic className="w-4 h-4" />
+            }
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleVolumeChange(volume > 0 ? 0 : 0.7)}
+            className="w-8 h-8 p-0 hover:bg-primary/20"
+          >
+            {volume > 0 ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+          </Button>
+          
           <Button
             variant="ghost"
             size="sm"
@@ -190,6 +287,28 @@ const FloatingChat = () => {
       {/* Chat Content */}
       {!isMinimized && (
         <>
+          {/* API Key Input */}
+          {showApiKeyInput && (
+            <div className="p-4 bg-card/50 border-b border-primary/20">
+              <p className="text-sm text-muted-foreground mb-2">Enter your ElevenLabs API key for voice chat:</p>
+              <div className="flex space-x-2">
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="Enter API key..."
+                  className="flex-1 px-3 py-2 bg-background/50 border border-primary/20 rounded text-sm"
+                />
+                <Button
+                  onClick={() => setShowApiKeyInput(false)}
+                  className="bg-primary/20 hover:bg-primary/30 border border-primary/30"
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
+          )}
+
           <div className="flex-1 p-4 space-y-4 overflow-y-auto bg-background/50 backdrop-blur-md" style={{ height: size.height - 140 }}>
             {messages.map((message) => (
               <div
@@ -281,6 +400,18 @@ const FloatingChat = () => {
                 <Send className="w-4 h-4" />
               </Button>
             </div>
+          </div>
+
+          {/* Resize Handle */}
+          <div
+            ref={resizeRef}
+            className="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-se-resize bg-primary/20 hover:bg-primary/40 rounded-tl-lg"
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              setIsResizing(true);
+            }}
+          >
+            <div className="absolute bottom-1 right-1 w-2 h-2 border-r-2 border-b-2 border-primary/60"></div>
           </div>
         </>
       )}
