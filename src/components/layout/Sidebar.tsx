@@ -3,16 +3,16 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 
 const navigationItems = [
-  { name: 'Command Center', path: '/', icon: '🏠' },
-  { name: 'Neural Agents', path: '/agents', icon: '🤖' },
-  { name: 'Knowledge Graph', path: '/knowledge', icon: '🧠' },
-  { name: 'Task Pipeline', path: '/tasks', icon: '⚡' },
-  { name: 'System Monitor', path: '/monitor', icon: '📊' },
-  { name: 'Model Arsenal', path: '/models', icon: '🔫' },
-  { name: 'Communications', path: '/comms', icon: '📡' },
-  { name: 'Security Hub', path: '/security', icon: '🛡️' },
-  { name: 'Analytics', path: '/analytics', icon: '📈' },
-  { name: 'Configuration', path: '/config', icon: '⚙️' }
+  { name: 'Command Center', path: '/', image: '/lovable-uploads/f34b40bc-f65b-4b1c-a136-90a9c414dbba.png' },
+  { name: 'Neural Agents', path: '/agents', image: '/lovable-uploads/29134d57-1699-4fbb-8ef6-187f4c30655e.png' },
+  { name: 'Knowledge Graph', path: '/knowledge', image: '/lovable-uploads/af8c7339-edc2-45c1-a12a-3b489ce8310e.png' },
+  { name: 'Task Pipeline', path: '/tasks', image: '/lovable-uploads/406c0f98-a1f5-49e1-aa85-6682103bbaa4.png' },
+  { name: 'System Monitor', path: '/monitor', image: '/lovable-uploads/f34b40bc-f65b-4b1c-a136-90a9c414dbba.png' },
+  { name: 'Model Arsenal', path: '/models', image: '/lovable-uploads/424c81e2-4884-45aa-aab9-3e53ccbcc153.png' },
+  { name: 'Communications', path: '/comms', image: '/lovable-uploads/10e48b1e-8455-4335-b2ab-33b7e1ad1f20.png' },
+  { name: 'Security Hub', path: '/security', image: '/lovable-uploads/77669bfc-4788-4f74-88fe-619924ecac22.png' },
+  { name: 'Analytics', path: '/analytics', image: '/lovable-uploads/f34b40bc-f65b-4b1c-a136-90a9c414dbba.png' },
+  { name: 'Configuration', path: '/config', image: '/lovable-uploads/424c81e2-4884-45aa-aab9-3e53ccbcc153.png' }
 ];
 
 const Sidebar = () => {
@@ -33,7 +33,13 @@ const Sidebar = () => {
                 }`
               }
             >
-              <span className="text-lg">{item.icon}</span>
+              <div className="w-8 h-8 rounded-lg overflow-hidden border border-primary/30 bg-black/50">
+                <img 
+                  src={item.image} 
+                  alt={item.name}
+                  className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity"
+                />
+              </div>
               <span className="font-medium">{item.name}</span>
             </NavLink>
           ))}
