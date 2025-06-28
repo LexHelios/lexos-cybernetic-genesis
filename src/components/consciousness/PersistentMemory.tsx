@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Database, Brain, Network, Search, Filter } from 'lucide-react';
+import { Database, Brain, Network, Search, Filter, Zap } from 'lucide-react';
 
 interface MemoryEntry {
   id: string;
@@ -120,7 +120,7 @@ const PersistentMemory = () => {
             <span className="text-sm font-medium">High Importance</span>
           </div>
           <div className="text-2xl font-orbitron font-bold text-matrix-green">347</div>
-          <div className="text-xs text-muted-foreground">Threshold: >0.85</div>
+          <div className="text-xs text-muted-foreground">{`Threshold: >0.85`}</div>
         </div>
         
         <div className="holographic-panel p-4 rounded-lg">
