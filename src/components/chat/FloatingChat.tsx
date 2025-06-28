@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip, Minimize2, Maximize2, X, MessageCircle, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -56,7 +55,7 @@ const FloatingChat = () => {
       console.log('Audio conversation disconnected');
     },
     onMessage: (message) => {
-      if (message.type === 'agent_response') {
+      if (message.source === 'ai') {
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
           content: message.message,
