@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import Sidebar from '../components/layout/Sidebar';
+import FloatingChat from '../components/chat/FloatingChat';
 import Dashboard from './Dashboard';
 import AgentManagement from './AgentManagement';
 import SystemMonitor from './SystemMonitor';
@@ -28,6 +29,9 @@ const Index = () => {
           </Routes>
         </main>
       </div>
+      
+      {/* Floating Chat Interface */}
+      <FloatingChat />
     </div>
   );
 };
