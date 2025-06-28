@@ -3,199 +3,173 @@ import React from 'react';
 import MetricCard from './MetricCard';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-const performanceData = [
-  { time: '00:00', cpu: 45, memory: 67, gpu: 89 },
-  { time: '04:00', cpu: 52, memory: 71, gpu: 92 },
-  { time: '08:00', cpu: 67, memory: 78, gpu: 85 },
-  { time: '12:00', cpu: 58, memory: 82, gpu: 94 },
-  { time: '16:00', cpu: 71, memory: 75, gpu: 87 },
-  { time: '20:00', cpu: 48, memory: 69, gpu: 91 },
-];
-
-const modelUsageData = [
-  { name: 'Mixtral-8x22B', value: 35, color: '#00ff88' },
-  { name: 'LLaMA-3-70B', value: 28, color: '#ff0080' },
-  { name: 'DeepSeek-R1', value: 22, color: '#0088ff' },
-  { name: 'Qwen2.5-72B', value: 15, color: '#8000ff' },
-];
-
 const SystemOverview = () => {
   return (
     <div className="space-y-6">
-      {/* Main Metrics Grid */}
+      {/* Real Hardware Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
-          title="H100 GPU Usage"
-          value="87%"
-          subtitle="34°C Core Temp"
-          trend="up"
+          title="H100-SXM5-80GB"
+          value="80GB"
+          subtitle="VRAM Available"
+          trend="stable"
           color="matrix"
           icon="⚡"
-          animate
         />
         <MetricCard
-          title="Active Agents"
-          value="12"
-          subtitle="8 Learning, 4 Executing"
+          title="System Storage"
+          value="2.3TB"
+          subtitle="NVME SSD"
           trend="stable"
           color="cyber"
-          icon="🤖"
-        />
-        <MetricCard
-          title="Neural Throughput"
-          value="2.4M"
-          subtitle="Tokens/sec"
-          trend="up"
-          color="electric"
-          icon="🧠"
-        />
-        <MetricCard
-          title="Knowledge Base"
-          value="847GB"
-          subtitle="Vector embeddings"
-          trend="up"
-          color="neural"
           icon="💾"
         />
+        <MetricCard
+          title="CPU Cores"
+          value="32"
+          subtitle="vCPUs Active"
+          trend="stable"
+          color="electric"
+          icon="🔥"
+        />
+        <MetricCard
+          title="System Memory"
+          value="64GB"
+          subtitle="DDR5 RAM"
+          trend="stable"
+          color="neural"
+          icon="🧠"
+        />
       </div>
 
-      {/* Charts Section */}
+      {/* Hardware Specifications */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Performance Monitor */}
         <div className="holographic-panel p-6 rounded-lg">
           <h3 className="text-lg font-orbitron font-bold text-primary mb-4">
-            Performance Monitor
+            H100 GPU Specifications
           </h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={performanceData}>
-                <XAxis 
-                  dataKey="time" 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                />
-                <YAxis 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="gpu" 
-                  stroke="hsl(var(--matrix-green))" 
-                  strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--matrix-green))', strokeWidth: 2 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="cpu" 
-                  stroke="hsl(var(--cyber-pink))" 
-                  strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--cyber-pink))', strokeWidth: 2 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="memory" 
-                  stroke="hsl(var(--electric-blue))" 
-                  strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--electric-blue))', strokeWidth: 2 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex items-center justify-center space-x-6 mt-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-matrix-green rounded-full"></div>
-              <span className="text-sm">GPU</span>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
+              <span className="font-medium">GPU Model</span>
+              <span className="text-matrix-green font-mono">H100-SXM5-80GB</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-cyber-pink rounded-full"></div>
-              <span className="text-sm">CPU</span>
+            <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
+              <span className="font-medium">VRAM</span>
+              <span className="text-matrix-green font-mono">80 GB HBM3</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-electric-blue rounded-full"></div>
-              <span className="text-sm">Memory</span>
+            <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
+              <span className="font-medium">CUDA Cores</span>
+              <span className="text-matrix-green font-mono">16,896</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
+              <span className="font-medium">Tensor Cores</span>
+              <span className="text-matrix-green font-mono">528 (4th Gen)</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
+              <span className="font-medium">Memory Bandwidth</span>
+              <span className="text-matrix-green font-mono">3.35 TB/s</span>
             </div>
           </div>
         </div>
 
-        {/* Model Usage Distribution */}
         <div className="holographic-panel p-6 rounded-lg">
           <h3 className="text-lg font-orbitron font-bold text-primary mb-4">
-            Model Usage Distribution
+            System Configuration
           </h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={modelUsageData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {modelUsageData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="space-y-2 mt-4">
-            {modelUsageData.map((model, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: model.color }}
-                  ></div>
-                  <span className="text-sm">{model.name}</span>
-                </div>
-                <span className="text-sm font-medium">{model.value}%</span>
-              </div>
-            ))}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
+              <span className="font-medium">CPU</span>
+              <span className="text-electric-blue font-mono">32 vCPUs</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
+              <span className="font-medium">System RAM</span>
+              <span className="text-electric-blue font-mono">64 GB</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
+              <span className="font-medium">Storage</span>
+              <span className="text-electric-blue font-mono">2.3 TB NVME</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
+              <span className="font-medium">Architecture</span>
+              <span className="text-electric-blue font-mono">Hopper</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
+              <span className="font-medium">Compute Capability</span>
+              <span className="text-electric-blue font-mono">9.0</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Agent Activity Stream */}
+      {/* Storage Breakdown */}
       <div className="holographic-panel p-6 rounded-lg">
         <h3 className="text-lg font-orbitron font-bold text-primary mb-4">
-          Neural Agent Activity Stream
+          Storage Allocation (2.3TB NVME)
         </h3>
-        <div className="space-y-3 max-h-64 overflow-y-auto">
-          {[
-            { agent: 'LEX-Alpha', action: 'Learning new code patterns from GitHub repositories', time: '2 seconds ago', status: 'active' },
-            { agent: 'LEX-Beta', action: 'Optimizing neural network architecture', time: '15 seconds ago', status: 'completed' },
-            { agent: 'LEX-Gamma', action: 'Processing scientific papers from ArXiv', time: '1 minute ago', status: 'active' },
-            { agent: 'LEX-Delta', action: 'Synthesizing knowledge graphs', time: '2 minutes ago', status: 'completed' },
-            { agent: 'LEX-Epsilon', action: 'Self-modifying decision algorithms', time: '3 minutes ago', status: 'active' },
-            { agent: 'LEX-Zeta', action: 'Creating specialized sub-agents', time: '5 minutes ago', status: 'completed' },
-          ].map((activity, index) => (
-            <div key={index} className="flex items-center space-x-3 p-3 rounded-lg bg-muted/10 border border-muted/20">
-              <div className={`w-2 h-2 rounded-full ${
-                activity.status === 'active' ? 'bg-matrix-green neural-pulse' : 'bg-muted-foreground'
-              }`}></div>
-              <div className="flex-1">
-                <div className="flex items-center space-x-2">
-                  <span className="font-medium text-primary">{activity.agent}</span>
-                  <span className="text-xs text-muted-foreground">•</span>
-                  <span className="text-xs text-muted-foreground">{activity.time}</span>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">{activity.action}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium text-muted-foreground uppercase">System</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm">OS & System</span>
+                <span className="text-sm font-mono">~50GB</span>
               </div>
-              <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                activity.status === 'active' 
-                  ? 'bg-matrix-green/20 text-matrix-green' 
-                  : 'bg-muted/20 text-muted-foreground'
-              }`}>
-                {activity.status}
+              <div className="w-full bg-muted/20 rounded-full h-2">
+                <div className="bg-primary h-2 rounded-full" style={{ width: '2.2%' }}></div>
               </div>
             </div>
-          ))}
+          </div>
+          
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium text-muted-foreground uppercase">Models</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm">LLM Storage</span>
+                <span className="text-sm font-mono">~1.8TB</span>
+              </div>
+              <div className="w-full bg-muted/20 rounded-full h-2">
+                <div className="bg-matrix-green h-2 rounded-full" style={{ width: '78%' }}></div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium text-muted-foreground uppercase">Available</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm">Free Space</span>
+                <span className="text-sm font-mono">~450GB</span>
+              </div>
+              <div className="w-full bg-muted/20 rounded-full h-2">
+                <div className="bg-cyber-pink h-2 rounded-full" style={{ width: '19.8%' }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Hardware Status */}
+      <div className="holographic-panel p-6 rounded-lg">
+        <h3 className="text-lg font-orbitron font-bold text-primary mb-4">
+          Hardware Status
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="text-center p-4 bg-muted/10 rounded-lg">
+            <div className="text-2xl font-orbitron font-bold text-matrix-green">ONLINE</div>
+            <div className="text-sm text-muted-foreground">H100 GPU</div>
+          </div>
+          <div className="text-center p-4 bg-muted/10 rounded-lg">
+            <div className="text-2xl font-orbitron font-bold text-matrix-green">READY</div>
+            <div className="text-sm text-muted-foreground">CUDA Runtime</div>
+          </div>
+          <div className="text-center p-4 bg-muted/10 rounded-lg">
+            <div className="text-2xl font-orbitron font-bold text-matrix-green">ACTIVE</div>
+            <div className="text-sm text-muted-foreground">NVME Storage</div>
+          </div>
+          <div className="text-center p-4 bg-muted/10 rounded-lg">
+            <div className="text-2xl font-orbitron font-bold text-matrix-green">OPTIMAL</div>
+            <div className="text-sm text-muted-foreground">System RAM</div>
+          </div>
         </div>
       </div>
     </div>
