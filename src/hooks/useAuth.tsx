@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { apiClient } from '../services/api';
 import { User } from '../types/api';
@@ -19,29 +18,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log('AuthProvider useEffect - starting initialization');
+    console.log('🔥 AuthProvider useEffect - NEXUS INITIALIZATION STARTING');
     
-    const initializeAuth = () => {
+    const initializeAuth = async () => {
       try {
+        console.log('🔍 Checking for existing user session...');
         const currentUser = apiClient.getCurrentUser();
-        console.log('getCurrentUser result:', currentUser);
+        console.log('📊 getCurrentUser result:', currentUser);
         
         if (currentUser) {
-          console.log('Setting user from stored data:', currentUser);
+          console.log('✅ User found in storage:', currentUser.username);
           setUser(currentUser);
         } else {
-          console.log('No stored user found');
+          console.log('❌ No stored user found - showing login form');
         }
       } catch (error) {
-        console.error('Error getting current user:', error);
+        console.error('💀 Error getting current user:', error);
       } finally {
-        console.log('Setting isLoading to false');
+        console.log('🎯 Setting isLoading to false - NEXUS READY');
         setIsLoading(false);
       }
     };
 
-    // Execute immediately without timeout
-    initializeAuth();
+    // Small timeout to ensure proper initialization
+    setTimeout(() => {
+      initializeAuth();
+    }, 100);
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
@@ -91,8 +93,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     logout,
   };
 
-  console.log('AuthProvider rendering with:', {
-    user: !!user,
+  console.log('🚀 AuthProvider rendering with:', {
+    user: user?.username || 'none',
     isAuthenticated: !!user,
     isLoading,
   });
