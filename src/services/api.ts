@@ -121,19 +121,19 @@ class ApiClient {
     const [systemInfo, gpuStatus] = await Promise.all([
       fetch(`${BASE_URL}/api/v1/system/info?include_sensitive=true`, {
         headers: this.getHeaders(),
-      }).then(r => this.handleResponse(r)),
+      }).then(r => this.handleResponse<any>(r)),
       fetch(`${BASE_URL}/api/v1/gpu/status`, {
         headers: this.getHeaders(),
-      }).then(r => this.handleResponse(r))
+      }).then(r => this.handleResponse<any>(r))
     ]);
 
     // Transform your backend data to match the expected SystemStatus interface
     return {
       system: {
-        status: systemInfo.system?.status || 'online',
-        uptime: systemInfo.system?.uptime || 0,
-        version: systemInfo.application?.version || '1.0.0',
-        environment: systemInfo.application?.environment || 'production'
+        status: systemInfo?.system?.status || 'online',
+        uptime: systemInfo?.system?.uptime || 0,
+        version: systemInfo?.application?.version || '1.0.0',
+        environment: systemInfo?.application?.environment || 'production'
       },
       orchestrator: {
         status: 'active',
@@ -148,28 +148,28 @@ class ApiClient {
       },
       hardware: {
         gpu: {
-          model: gpuStatus.devices?.[0]?.name || 'NVIDIA H100',
-          memory_total: gpuStatus.devices?.[0]?.memory?.total || '80GB',
-          memory_used: gpuStatus.devices?.[0]?.memory?.used || '24GB',
-          utilization: gpuStatus.devices?.[0]?.utilization?.gpu || 65,
-          temperature: gpuStatus.devices?.[0]?.temperature?.gpu || 72
+          model: gpuStatus?.devices?.[0]?.name || 'NVIDIA H100',
+          memory_total: gpuStatus?.devices?.[0]?.memory?.total || '80GB',
+          memory_used: gpuStatus?.devices?.[0]?.memory?.used || '24GB',
+          utilization: gpuStatus?.devices?.[0]?.utilization?.gpu || 65,
+          temperature: gpuStatus?.devices?.[0]?.temperature?.gpu || 72
         },
         cpu: {
-          cores: systemInfo.resources?.cpu?.cores || 32,
-          usage: systemInfo.resources?.cpu?.usage_percent || 45,
-          load_average: systemInfo.resources?.cpu?.load_average || [1.2, 1.5, 1.8]
+          cores: systemInfo?.resources?.cpu?.cores || 32,
+          usage: systemInfo?.resources?.cpu?.usage_percent || 45,
+          load_average: systemInfo?.resources?.cpu?.load_average || [1.2, 1.5, 1.8]
         },
         memory: {
-          total: systemInfo.resources?.memory?.total || '256GB',
-          used: systemInfo.resources?.memory?.used || '128GB',
-          available: systemInfo.resources?.memory?.available || '128GB',
-          usage_percent: systemInfo.resources?.memory?.usage_percent || 50
+          total: systemInfo?.resources?.memory?.total || '256GB',
+          used: systemInfo?.resources?.memory?.used || '128GB',
+          available: systemInfo?.resources?.memory?.available || '128GB',
+          usage_percent: systemInfo?.resources?.memory?.usage_percent || 50
         },
         disk: {
-          total: systemInfo.resources?.storage?.total || '2TB',
-          used: systemInfo.resources?.storage?.used || '800GB',
-          available: systemInfo.resources?.storage?.available || '1.2TB',
-          usage_percent: systemInfo.resources?.storage?.usage_percent || 40
+          total: systemInfo?.resources?.storage?.total || '2TB',
+          used: systemInfo?.resources?.storage?.used || '800GB',
+          available: systemInfo?.resources?.storage?.available || '1.2TB',
+          usage_percent: systemInfo?.resources?.storage?.usage_percent || 40
         }
       },
       security: {
@@ -274,11 +274,11 @@ class ApiClient {
       body: JSON.stringify(body),
     });
 
-    const data = await this.handleResponse(response);
+    const data = await this.handleResponse<any>(response);
 
     return {
       success: true,
-      task_id: data.query_id || data.execution_id || `task-${Date.now()}`,
+      task_id: data?.query_id || data?.execution_id || `task-${Date.now()}`,
       agent_id: agentId,
       status: 'completed',
       estimated_completion: Date.now() / 1000 + 5,

@@ -27,7 +27,7 @@ export const useSystemMonitor = () => {
     fetchSystemStatus();
 
     // Set up WebSocket for real-time updates
-    websocketService.connect('/ws/monitoring');
+    websocketService.connect();
     
     const unsubscribe = websocketService.subscribe('system_status', (data) => {
       setSystemStatus(prevStatus => ({
