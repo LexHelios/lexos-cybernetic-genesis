@@ -19,34 +19,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log('AuthProvider useEffect running');
+    console.log('AuthProvider useEffect - starting initialization');
     
-    // Simple timeout to simulate check and ensure loading completes
-    const initializeAuth = async () => {
+    const initializeAuth = () => {
       try {
         const currentUser = apiClient.getCurrentUser();
-        console.log('Current user from API:', currentUser);
+        console.log('getCurrentUser result:', currentUser);
+        
         if (currentUser) {
+          console.log('Setting user from stored data:', currentUser);
           setUser(currentUser);
+        } else {
+          console.log('No stored user found');
         }
       } catch (error) {
         console.error('Error getting current user:', error);
       } finally {
-        // Ensure loading is set to false after a brief delay
-        setTimeout(() => {
-          setIsLoading(false);
-          console.log('AuthProvider initialization complete');
-        }, 100);
+        console.log('Setting isLoading to false');
+        setIsLoading(false);
       }
     };
 
+    // Execute immediately without timeout
     initializeAuth();
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
+      console.log('Attempting login for:', username);
+      
       const response = await apiClient.login(username, password);
+      console.log('Login response:', response);
       
       if (response.success) {
         setUser(response.user);
@@ -58,6 +62,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       return false;
     } catch (error) {
+      console.error('Login error:', error);
       toast({
         variant: "destructive",
         title: "Authentication Failed",
@@ -86,7 +91,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     logout,
   };
 
-  console.log('AuthProvider rendering with context:', contextValue);
+  console.log('AuthProvider rendering with:', {
+    user: !!user,
+    isAuthenticated: !!user,
+    isLoading,
+  });
 
   return (
     <AuthContext.Provider value={contextValue}>
