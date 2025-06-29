@@ -20,7 +20,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
   color = 'primary',
   icon,
   animate = false,
-  backgroundImage
+  backgroundImage = '/lovable-uploads/117c006d-6418-44ac-8918-cf8e34bb18c8.png'
 }) => {
   const colorClasses = {
     primary: 'border-primary/30 bg-primary/5',
@@ -48,26 +48,19 @@ const MetricCard: React.FC<MetricCardProps> = ({
 
   return (
     <div className={`holographic-panel p-6 rounded-lg border ${colorClasses[color]} ${animate ? 'neural-pulse' : ''} relative overflow-hidden`}>
-      {backgroundImage && (
-        <div 
-          className="absolute inset-0 opacity-5"
-          style={{
-            backgroundImage: `url('${backgroundImage}')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            filter: 'blur(1px)'
-          }}
-        />
-      )}
+      <div 
+        className="absolute inset-0 opacity-5"
+        style={{
+          backgroundImage: `url('${backgroundImage}')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'blur(1px)'
+        }}
+      />
       
       <div className="relative flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center space-x-2 mb-2">
-            {icon && (
-              <div className="w-6 h-6 rounded overflow-hidden border border-primary/30">
-                <img src={icon} alt="" className="w-full h-full object-cover opacity-80" />
-              </div>
-            )}
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
               {title}
             </h3>

@@ -1,31 +1,34 @@
 
 import React from 'react';
 import SystemOverview from '../components/dashboard/SystemOverview';
+import { Bot } from 'lucide-react';
 
 const Dashboard = () => {
   return (
     <div className="p-6 relative min-h-screen">
-      {/* Dynamic Background */}
+      {/* Dynamic Background with LEX GPT Image */}
       <div 
-        className="fixed inset-0 opacity-5"
+        className="fixed inset-0 opacity-10 bg-gradient-to-br from-primary/10 to-accent/10"
         style={{
-          backgroundImage: `url('/lovable-uploads/af8c7339-edc2-45c1-a12a-3b489ce8310e.png')`,
+          backgroundImage: `url('/lovable-uploads/d40eaa37-72ac-45c5-bdd9-38ad66993627.png')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
-          filter: 'blur(3px)'
+          backgroundRepeat: 'no-repeat'
         }}
       />
       
       <div className="relative z-10">
         <div className="mb-8">
           <div className="flex items-center space-x-4 mb-4">
-            <div className="w-12 h-12 rounded-lg overflow-hidden border border-primary/50 bg-black/80">
-              <img 
-                src="/lovable-uploads/29134d57-1699-4fbb-8ef6-187f4c30655e.png" 
-                alt="Neural Command"
-                className="w-full h-full object-cover opacity-90"
-              />
+            <div 
+              className="w-12 h-12 rounded-lg flex items-center justify-center border border-primary/50 bg-primary/10 overflow-hidden"
+              style={{
+                backgroundImage: `url('/lovable-uploads/8eca4b1d-83f4-4478-81f6-b3654330923c.png')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              }}
+            >
+              <Bot className="w-6 h-6 text-primary opacity-80" />
             </div>
             <div>
               <h1 className="text-3xl font-orbitron font-bold text-primary">
