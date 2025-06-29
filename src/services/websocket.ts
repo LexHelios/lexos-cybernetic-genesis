@@ -1,4 +1,3 @@
-
 class WebSocketService {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
@@ -15,9 +14,7 @@ class WebSocketService {
 
     this.isConnecting = true;
     
-    const BASE_URL = process.env.NODE_ENV === 'production' 
-      ? 'wss://lexos.sharma.family' 
-      : 'ws://localhost:8000';
+    const BASE_URL = 'ws://147.185.40.39:20067';
     
     const wsUrl = `${BASE_URL}/ws/${this.clientId}`;
     

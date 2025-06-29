@@ -1,9 +1,8 @@
-
 import { AuthResponse, User, Agent, Task, SystemStatus, TaskSubmission, TaskResponse } from '../types/api';
 
 const BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://lexos.sharma.family' 
-  : 'http://localhost:8000';
+  ? 'http://147.185.40.39:20067' 
+  : 'http://147.185.40.39:20067';
 
 class ApiClient {
   private token: string | null = null;
