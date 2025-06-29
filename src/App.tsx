@@ -4,9 +4,32 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
+import { AuthProvider, useAuth } from "./hooks/useAuth";
+import LoginForm from "./components/auth/LoginForm";
 import Index from "./pages/Index";
 
 const queryClient = new QueryClient();
+
+const AuthWrapper = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Initializing NEXUS...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginForm />;
+  }
+
+  return <Index />;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -14,7 +37,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Index />
+        <AuthProvider>
+          <AuthWrapper />
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

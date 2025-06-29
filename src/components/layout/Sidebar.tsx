@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useSystemMonitor } from '../../hooks/useSystemMonitor';
+import { useAuth } from '../../hooks/useAuth';
 
 const navigationItems = [
   { name: 'Command Center', path: '/', image: '/lovable-uploads/f34b40bc-f65b-4b1c-a136-90a9c414dbba.png' },
@@ -16,10 +18,18 @@ const navigationItems = [
 ];
 
 const Sidebar = () => {
+  const { systemStatus } = useSystemMonitor();
+  const { user, logout } = useAuth();
+
   return (
-    <aside className="w-64 border-r border-primary/20 bg-card/30 backdrop-blur-md">
-      <div className="p-4">
-        <h2 className="text-sm font-orbitron font-bold text-primary mb-4">SYSTEM NAVIGATION</h2>
+    <aside className="w-64 border-r border-primary/20 bg-card/30 backdrop-blur-md flex flex-col">
+      <div className="p-4 flex-1">
+        <div className="mb-4">
+          <h2 className="text-sm font-orbitron font-bold text-primary mb-2">NEXUS NAVIGATION</h2>
+          <div className="text-xs text-muted-foreground">
+            User: {user?.full_name} ({user?.role})
+          </div>
+        </div>
         <nav className="space-y-2">
           {navigationItems.map((item) => (
             <NavLink
@@ -46,24 +56,43 @@ const Sidebar = () => {
         </nav>
       </div>
       
-      <div className="absolute bottom-4 left-4 right-4">
+      <div className="p-4 space-y-4">
         <div className="holographic-panel p-4 rounded-lg">
           <div className="text-xs text-muted-foreground mb-2">SYSTEM STATUS</div>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm">GPU Utilization</span>
-              <span className="text-sm text-matrix-green">87%</span>
+              <span className="text-sm text-matrix-green">
+                {systemStatus?.hardware.gpu.utilization.toFixed(1) || '--'}%
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm">Active Agents</span>
-              <span className="text-sm text-cyber-pink">12</span>
+              <span className="text-sm text-cyber-pink">
+                {systemStatus?.orchestrator.active_agents || '--'}
+              </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm">Tasks Running</span>
-              <span className="text-sm text-electric-blue">8</span>
+              <span className="text-sm">Active Tasks</span>
+              <span className="text-sm text-electric-blue">
+                {systemStatus?.orchestrator.active_tasks || '--'}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm">Temperature</span>
+              <span className="text-sm text-warning-orange">
+                {systemStatus?.hardware.gpu.temperature || '--'}°C
+              </span>
             </div>
           </div>
         </div>
+        
+        <button
+          onClick={logout}
+          className="w-full px-3 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-sm font-medium text-red-400 transition-colors"
+        >
+          Logout
+        </button>
       </div>
     </aside>
   );
