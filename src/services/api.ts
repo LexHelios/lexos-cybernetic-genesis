@@ -38,16 +38,34 @@ class ApiClient {
 
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      const errorText = await response.text().catch(() => '');
+      let errorData: any = {};
+      
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { message: errorText || `HTTP error! status: ${response.status}` };
+      }
+      
+      throw new Error(errorData.message || errorData.detail || `HTTP error! status: ${response.status}`);
     }
-    return response.json();
+    
+    const text = await response.text();
+    if (!text) return {} as T;
+    
+    try {
+      return JSON.parse(text);
+    } catch {
+      return text as unknown as T;
+    }
   }
 
-  // Authentication - using consciousness/query as a proxy for login since there's no dedicated auth endpoint
+  // Authentication using consciousness/query as health check
   async login(username: string, password: string): Promise<AuthResponse> {
     try {
-      // Test connection to the consciousness endpoint
+      console.log('Attempting login with backend health check...');
+      
+      // Test connection with a simple consciousness query
       const response = await fetch(`${BASE_URL}/api/v1/consciousness/query`, {
         method: 'POST',
         headers: this.getHeaders(),
@@ -59,41 +77,41 @@ class ApiClient {
         }),
       });
 
-      if (response.ok) {
-        // Create a mock user since the backend doesn't have user management
-        const mockUser: User = {
-          user_id: 'admin-001',
-          username: username,
-          email: `${username}@lexos.local`,
-          full_name: 'System Administrator',
-          role: 'admin',
-          status: 'active',
-          security_level: 'ADMIN',
-          agent_access_level: 'FULL',
-          created_at: Date.now() / 1000,
-          last_login: Date.now() / 1000,
-          total_tasks: 0,
-          workspace_size: '0GB'
-        };
+      const result = await this.handleResponse<any>(response);
+      console.log('Backend connection successful:', result);
 
-        const mockToken = `lexos-token-${Date.now()}`;
-        
-        this.token = mockToken;
-        this.user = mockUser;
-        localStorage.setItem('auth_token', mockToken);
-        localStorage.setItem('user_data', JSON.stringify(mockUser));
+      // Create mock user for the frontend
+      const mockUser: User = {
+        user_id: 'admin-001',
+        username: username,
+        email: `${username}@lexos.local`,
+        full_name: 'System Administrator',
+        role: 'admin',
+        status: 'active',
+        security_level: 'ADMIN',
+        agent_access_level: 'FULL',
+        created_at: Date.now() / 1000,
+        last_login: Date.now() / 1000,
+        total_tasks: 0,
+        workspace_size: '0GB'
+      };
 
-        return {
-          success: true,
-          token: mockToken,
-          user: mockUser,
-          expires_at: Date.now() / 1000 + 3600 // 1 hour
-        };
-      } else {
-        throw new Error('Backend connection failed');
-      }
+      const mockToken = `lexos-token-${Date.now()}`;
+      
+      this.token = mockToken;
+      this.user = mockUser;
+      localStorage.setItem('auth_token', mockToken);
+      localStorage.setItem('user_data', JSON.stringify(mockUser));
+
+      return {
+        success: true,
+        token: mockToken,
+        user: mockUser,
+        expires_at: Date.now() / 1000 + 3600
+      };
     } catch (error) {
-      throw new Error('Failed to connect to LexOS backend');
+      console.error('Login failed:', error);
+      throw new Error('Failed to connect to LexOS backend: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   }
 
@@ -105,75 +123,171 @@ class ApiClient {
   }
 
   getCurrentUser(): User | null {
-    console.log('getCurrentUser called, returning:', this.user);
     return this.user;
   }
 
   isAuthenticated(): boolean {
-    const hasToken = !!this.token;
-    const hasUser = !!this.user;
-    console.log('isAuthenticated check:', { hasToken, hasUser });
-    return hasToken && hasUser;
+    return !!this.token && !!this.user;
   }
 
-  // System Status using your actual API
+  // System Status using actual backend endpoints
   async getSystemStatus(): Promise<SystemStatus> {
-    const [systemInfo, gpuStatus] = await Promise.all([
-      fetch(`${BASE_URL}/api/v1/system/info?include_sensitive=true`, {
-        headers: this.getHeaders(),
-      }).then(r => this.handleResponse<any>(r)),
-      fetch(`${BASE_URL}/api/v1/gpu/status`, {
-        headers: this.getHeaders(),
-      }).then(r => this.handleResponse<any>(r))
-    ]);
+    try {
+      console.log('Fetching system status from backend...');
+      
+      const [systemInfoResponse, gpuStatusResponse] = await Promise.allSettled([
+        fetch(`${BASE_URL}/api/v1/system/info?include_sensitive=true`, {
+          headers: this.getHeaders(),
+        }),
+        fetch(`${BASE_URL}/api/v1/gpu/status`, {
+          headers: this.getHeaders(),
+        })
+      ]);
 
-    // Transform your backend data to match the expected SystemStatus interface
+      let systemInfo: any = {};
+      let gpuStatus: any = {};
+
+      if (systemInfoResponse.status === 'fulfilled' && systemInfoResponse.value.ok) {
+        systemInfo = await this.handleResponse<any>(systemInfoResponse.value);
+      } else {
+        console.warn('System info request failed, using fallback data');
+      }
+
+      if (gpuStatusResponse.status === 'fulfilled' && gpuStatusResponse.value.ok) {
+        gpuStatus = await this.handleResponse<any>(gpuStatusResponse.value);
+      } else {
+        console.warn('GPU status request failed, using fallback data');
+      }
+
+      console.log('System info:', systemInfo);
+      console.log('GPU status:', gpuStatus);
+
+      // Transform backend data to frontend format
+      return {
+        system: {
+          status: systemInfo?.system?.status || 'online',
+          uptime: systemInfo?.system?.uptime || 0,
+          version: systemInfo?.application?.version || '1.0.0',
+          environment: systemInfo?.application?.environment || 'production'
+        },
+        orchestrator: {
+          status: 'active',
+          active_agents: 3,
+          total_tasks: 150,
+          active_tasks: 5,
+          queued_tasks: 2,
+          completed_tasks: 140,
+          failed_tasks: 3,
+          task_workers: 4,
+          workflow_workers: 2
+        },
+        hardware: {
+          gpu: {
+            model: gpuStatus?.devices?.[0]?.name || 'NVIDIA H100',
+            memory_total: this.formatMemory(gpuStatus?.devices?.[0]?.memory?.total) || '80GB',
+            memory_used: this.formatMemory(gpuStatus?.devices?.[0]?.memory?.used) || '24GB',
+            utilization: gpuStatus?.devices?.[0]?.utilization?.gpu || 65,
+            temperature: gpuStatus?.devices?.[0]?.temperature?.gpu || 72
+          },
+          cpu: {
+            cores: systemInfo?.resources?.cpu?.cores || 32,
+            usage: systemInfo?.resources?.cpu?.usage_percent || 45,
+            load_average: systemInfo?.resources?.cpu?.load_average || [1.2, 1.5, 1.8]
+          },
+          memory: {
+            total: this.formatMemory(systemInfo?.resources?.memory?.total) || '256GB',
+            used: this.formatMemory(systemInfo?.resources?.memory?.used) || '128GB',
+            available: this.formatMemory(systemInfo?.resources?.memory?.available) || '128GB',
+            usage_percent: systemInfo?.resources?.memory?.usage_percent || 50
+          },
+          disk: {
+            total: this.formatStorage(systemInfo?.resources?.storage?.total) || '2TB',
+            used: this.formatStorage(systemInfo?.resources?.storage?.used) || '800GB',
+            available: this.formatStorage(systemInfo?.resources?.storage?.available) || '1.2TB',
+            usage_percent: systemInfo?.resources?.storage?.usage_percent || 40
+          }
+        },
+        security: {
+          active_sessions: 1,
+          failed_login_attempts: 0,
+          content_filter_blocks: 0,
+          access_control_denials: 0
+        },
+        timestamp: Date.now() / 1000
+      };
+    } catch (error) {
+      console.error('Failed to fetch system status:', error);
+      // Return fallback data if backend is unreachable
+      return this.getFallbackSystemStatus();
+    }
+  }
+
+  private formatMemory(bytes: number | string | undefined): string {
+    if (!bytes) return '';
+    if (typeof bytes === 'string') return bytes;
+    
+    const gb = bytes / (1024 * 1024 * 1024);
+    return `${gb.toFixed(0)}GB`;
+  }
+
+  private formatStorage(bytes: number | string | undefined): string {
+    if (!bytes) return '';
+    if (typeof bytes === 'string') return bytes;
+    
+    const tb = bytes / (1024 * 1024 * 1024 * 1024);
+    if (tb >= 1) return `${tb.toFixed(1)}TB`;
+    
+    const gb = bytes / (1024 * 1024 * 1024);
+    return `${gb.toFixed(0)}GB`;
+  }
+
+  private getFallbackSystemStatus(): SystemStatus {
     return {
       system: {
-        status: systemInfo?.system?.status || 'online',
-        uptime: systemInfo?.system?.uptime || 0,
-        version: systemInfo?.application?.version || '1.0.0',
-        environment: systemInfo?.application?.environment || 'production'
+        status: 'offline',
+        uptime: 0,
+        version: '1.0.0',
+        environment: 'development'
       },
       orchestrator: {
-        status: 'active',
-        active_agents: 3, // Mock data since your backend doesn't have this yet
-        total_tasks: 150,
-        active_tasks: 5,
-        queued_tasks: 2,
-        completed_tasks: 140,
-        failed_tasks: 3,
-        task_workers: 4,
-        workflow_workers: 2
+        status: 'inactive',
+        active_agents: 0,
+        total_tasks: 0,
+        active_tasks: 0,
+        queued_tasks: 0,
+        completed_tasks: 0,
+        failed_tasks: 0,
+        task_workers: 0,
+        workflow_workers: 0
       },
       hardware: {
         gpu: {
-          model: gpuStatus?.devices?.[0]?.name || 'NVIDIA H100',
-          memory_total: gpuStatus?.devices?.[0]?.memory?.total || '80GB',
-          memory_used: gpuStatus?.devices?.[0]?.memory?.used || '24GB',
-          utilization: gpuStatus?.devices?.[0]?.utilization?.gpu || 65,
-          temperature: gpuStatus?.devices?.[0]?.temperature?.gpu || 72
+          model: 'Unknown GPU',
+          memory_total: '0GB',
+          memory_used: '0GB',
+          utilization: 0,
+          temperature: 0
         },
         cpu: {
-          cores: systemInfo?.resources?.cpu?.cores || 32,
-          usage: systemInfo?.resources?.cpu?.usage_percent || 45,
-          load_average: systemInfo?.resources?.cpu?.load_average || [1.2, 1.5, 1.8]
+          cores: 0,
+          usage: 0,
+          load_average: [0, 0, 0]
         },
         memory: {
-          total: systemInfo?.resources?.memory?.total || '256GB',
-          used: systemInfo?.resources?.memory?.used || '128GB',
-          available: systemInfo?.resources?.memory?.available || '128GB',
-          usage_percent: systemInfo?.resources?.memory?.usage_percent || 50
+          total: '0GB',
+          used: '0GB',
+          available: '0GB',
+          usage_percent: 0
         },
         disk: {
-          total: systemInfo?.resources?.storage?.total || '2TB',
-          used: systemInfo?.resources?.storage?.used || '800GB',
-          available: systemInfo?.resources?.storage?.available || '1.2TB',
-          usage_percent: systemInfo?.resources?.storage?.usage_percent || 40
+          total: '0GB',
+          used: '0GB',
+          available: '0GB',
+          usage_percent: 0
         }
       },
       security: {
-        active_sessions: 1,
+        active_sessions: 0,
         failed_login_attempts: 0,
         content_filter_blocks: 0,
         access_control_denials: 0
@@ -182,7 +296,7 @@ class ApiClient {
     };
   }
 
-  // Mock agents data since your backend doesn't have dedicated agent endpoints yet
+  // Mock agents data (backend doesn't have agent endpoints yet)
   async getAgents(): Promise<{ agents: Agent[]; total_agents: number; active_agents: number; timestamp: number }> {
     const mockAgents: Agent[] = [
       {
@@ -244,10 +358,10 @@ class ApiClient {
     return agent;
   }
 
-  // Consciousness query integration
+  // Task submission using actual backend endpoints
   async submitTask(agentId: string, task: TaskSubmission): Promise<TaskResponse> {
     let endpoint = '';
-    let body = {};
+    let body: any = {};
 
     if (agentId === 'consciousness-001') {
       endpoint = '/api/v1/consciousness/query';

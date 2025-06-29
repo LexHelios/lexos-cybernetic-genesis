@@ -1,37 +1,40 @@
 
-import { WebSocketMessage } from '../types/api';
-
 class WebSocketService {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
-  private reconnectDelay = 1000;
-  private listeners: Map<string, Set<(data: any) => void>> = new Map();
-  private clientId: string = `client-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  private reconnectInterval = 5000;
+  private subscribers: Map<string, ((data: any) => void)[]> = new Map();
+  private isConnecting = false;
+  private clientId = `client-${Date.now()}`;
 
-  private getWebSocketUrl(): string {
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'wss://lexos.sharma.family' 
-      : 'ws://localhost:8000';
-    return `${baseUrl}/ws/${this.clientId}`;
-  }
-
-  connect(): void {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+  connect(endpoint?: string): void {
+    if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
       return;
     }
 
+    this.isConnecting = true;
+    
+    const BASE_URL = process.env.NODE_ENV === 'production' 
+      ? 'wss://lexos.sharma.family' 
+      : 'ws://localhost:8000';
+    
+    const wsUrl = `${BASE_URL}/ws/${this.clientId}`;
+    
+    console.log('Connecting to WebSocket:', wsUrl);
+
     try {
-      this.ws = new WebSocket(this.getWebSocketUrl());
-      
+      this.ws = new WebSocket(wsUrl);
+
       this.ws.onopen = () => {
-        console.log('WebSocket connected to LexOS backend');
+        console.log('WebSocket connected successfully');
         this.reconnectAttempts = 0;
+        this.isConnecting = false;
         
-        // Send initial connection message
+        // Send initial status request
         this.send({
-          type: 'connection',
-          data: { client_id: this.clientId, timestamp: Date.now() }
+          type: 'status_request',
+          data: { client_id: this.clientId }
         });
       };
 
@@ -39,74 +42,93 @@ class WebSocketService {
         try {
           const message = JSON.parse(event.data);
           console.log('WebSocket message received:', message);
-          this.notifyListeners(message.type || 'unknown', message.data || message);
+          
+          const { type, data } = message;
+          if (this.subscribers.has(type)) {
+            this.subscribers.get(type)?.forEach(callback => {
+              try {
+                callback(data);
+              } catch (error) {
+                console.error('Error in WebSocket subscriber callback:', error);
+              }
+            });
+          }
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);
         }
       };
 
-      this.ws.onclose = () => {
-        console.log('WebSocket disconnected from LexOS backend');
-        this.attemptReconnect();
+      this.ws.onclose = (event) => {
+        console.log('WebSocket connection closed:', event.code, event.reason);
+        this.isConnecting = false;
+        this.ws = null;
+        
+        // Attempt to reconnect if it wasn't a clean close
+        if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+          this.reconnectAttempts++;
+          console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+          setTimeout(() => this.connect(), this.reconnectInterval);
+        }
       };
 
       this.ws.onerror = (error) => {
         console.error('WebSocket error:', error);
+        this.isConnecting = false;
       };
-    } catch (error) {
-      console.error('Failed to connect WebSocket:', error);
-      this.attemptReconnect();
-    }
-  }
 
-  private attemptReconnect(): void {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      setTimeout(() => {
-        console.log(`Attempting to reconnect WebSocket (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-        this.connect();
-      }, this.reconnectDelay * this.reconnectAttempts);
+    } catch (error) {
+      console.error('Failed to create WebSocket connection:', error);
+      this.isConnecting = false;
     }
   }
 
   disconnect(): void {
     if (this.ws) {
-      this.ws.close();
+      this.ws.close(1000, 'Client disconnecting');
       this.ws = null;
     }
+    this.subscribers.clear();
+    this.reconnectAttempts = 0;
   }
 
-  send(message: any): void {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(message));
-    } else {
-      console.warn('WebSocket not connected, message not sent:', message);
+  subscribe(eventType: string, callback: (data: any) => void): () => void {
+    if (!this.subscribers.has(eventType)) {
+      this.subscribers.set(eventType, []);
     }
-  }
-
-  subscribe(messageType: string, callback: (data: any) => void): () => void {
-    if (!this.listeners.has(messageType)) {
-      this.listeners.set(messageType, new Set());
-    }
-    this.listeners.get(messageType)!.add(callback);
+    
+    this.subscribers.get(eventType)?.push(callback);
+    console.log(`Subscribed to WebSocket event: ${eventType}`);
 
     // Return unsubscribe function
     return () => {
-      const callbacks = this.listeners.get(messageType);
+      const callbacks = this.subscribers.get(eventType);
       if (callbacks) {
-        callbacks.delete(callback);
-        if (callbacks.size === 0) {
-          this.listeners.delete(messageType);
+        const index = callbacks.indexOf(callback);
+        if (index > -1) {
+          callbacks.splice(index, 1);
+        }
+        if (callbacks.length === 0) {
+          this.subscribers.delete(eventType);
         }
       }
     };
   }
 
-  private notifyListeners(messageType: string, data: any): void {
-    const callbacks = this.listeners.get(messageType);
-    if (callbacks) {
-      callbacks.forEach(callback => callback(data));
+  send(message: any): void {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      try {
+        this.ws.send(JSON.stringify(message));
+        console.log('WebSocket message sent:', message);
+      } catch (error) {
+        console.error('Error sending WebSocket message:', error);
+      }
+    } else {
+      console.warn('WebSocket not connected, message not sent:', message);
     }
+  }
+
+  isConnected(): boolean {
+    return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
   }
 }
 
