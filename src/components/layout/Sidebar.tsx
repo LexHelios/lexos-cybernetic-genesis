@@ -70,8 +70,7 @@ const Sidebar = () => {
                 style={{
                   backgroundImage: `url('/lovable-uploads/117c006d-6418-44ac-8918-cf8e34bb18c8.png')`,
                   backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  opacity: 0.8
+                  backgroundPosition: 'center'
                 }}
               >
                 <item.icon className="w-4 h-4 opacity-90 hover:opacity-100 transition-opacity text-primary" />
@@ -85,13 +84,15 @@ const Sidebar = () => {
       <div className="p-4 space-y-4 relative z-10">
         <div 
           className="holographic-panel p-4 rounded-lg relative overflow-hidden"
-          style={{
-            backgroundImage: `url('/lovable-uploads/009716e7-a32f-4488-a637-55942e697dc6.png')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundOpacity: 0.1
-          }}
         >
+          <div 
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage: `url('/lovable-uploads/009716e7-a32f-4488-a637-55942e697dc6.png')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          />
           <div className="absolute inset-0 bg-black/70 rounded-lg" />
           <div className="relative">
             <div className="text-xs text-muted-foreground mb-2">SYSTEM STATUS</div>
