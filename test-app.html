@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LexOS Test</title>
+</head>
+<body>
+    <h1>Testing LexOS Frontend</h1>
+    <p>If you see this, the server is working.</p>
+    <p>Check the console for errors (F12)</p>
+    
+    <script>
+        console.log('Test page loaded');
+        
+        // Try to fetch the main app
+        fetch('/')
+            .then(response => response.text())
+            .then(html => {
+                console.log('Main page HTML length:', html.length);
+                console.log('First 500 chars:', html.substring(0, 500));
+            })
+            .catch(error => console.error('Error fetching main page:', error));
+            
+        // Check if the API is responding
+        fetch('/api/health')
+            .then(response => response.json())
+            .then(data => console.log('API health:', data))
+            .catch(error => console.error('API error:', error));
+    </script>
+</body>
+</html>

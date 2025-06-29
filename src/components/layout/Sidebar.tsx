@@ -73,7 +73,7 @@ const Sidebar = () => {
                   backgroundPosition: 'center'
                 }}
               >
-                <item.icon className="w-4 h-4 opacity-90 hover:opacity-100 transition-opacity text-primary" />
+                {/* Remove icon to show background image clearly */}
               </div>
               <span className="font-medium">{item.name}</span>
             </NavLink>

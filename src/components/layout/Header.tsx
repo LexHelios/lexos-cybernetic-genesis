@@ -51,7 +51,7 @@ const Header = () => {
                 backgroundPosition: 'center'
               }}
             >
-              <Bot className="w-5 h-5 text-primary opacity-80" />
+              {/* Remove icon to show background image clearly */}
             </div>
             <div>
               <h1 className="text-xl font-orbitron font-bold matrix-text">LexOS</h1>
