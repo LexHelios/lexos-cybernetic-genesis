@@ -14,9 +14,11 @@ class WebSocketService {
 
     this.isConnecting = true;
     
-    const BASE_URL = 'ws://localhost:3001';
-    
-    const wsUrl = BASE_URL;
+    // Use relative WebSocket URL to work with proxy
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    const wsEndpoint = endpoint || '/ws/monitoring';
+    const wsUrl = `${protocol}//${host}${wsEndpoint}`;
     
     console.log('Connecting to WebSocket:', wsUrl);
 

@@ -10,7 +10,7 @@ import { CalendarIcon, Download, RefreshCw, Settings } from 'lucide-react';
 import AnalyticsChart from './AnalyticsChart';
 import RealtimeMetrics from './RealtimeMetrics';
 import PerformanceHeatmap from './PerformanceHeatmap';
-import api from '../../services/api';
+import { apiClient } from '../../services/api';
 
 const AnalyticsDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);

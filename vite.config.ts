@@ -6,7 +6,7 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
+    host: "0.0.0.0",
     port: 3000,
     proxy: {
       '/api': {
@@ -24,13 +24,20 @@ export default defineConfig(({ mode }) => ({
       '/ws': {
         target: 'ws://localhost:9000',
         ws: true,
+        changeOrigin: true,
+      },
+      '/ws/monitoring': {
+        target: 'ws://localhost:9000',
+        ws: true,
+        changeOrigin: true,
       },
     },
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    // Temporarily disable componentTagger to avoid CSP issues
+    // mode === 'development' &&
+    // componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {

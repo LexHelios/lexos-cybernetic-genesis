@@ -69,7 +69,10 @@ export default function NotificationCenter() {
     fetchPreferences();
 
     // Set up WebSocket listener for real-time notifications
-    const ws = new WebSocket(`ws://localhost:3001`);
+    const wsUrl = window.location.hostname === 'localhost' 
+      ? 'ws://localhost:9000/ws' 
+      : `ws://${window.location.hostname}:9000/ws`;
+    const ws = new WebSocket(wsUrl);
     
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -235,10 +238,10 @@ export default function NotificationCenter() {
   };
 
   const filteredNotifications = filterType
-    ? notifications.filter(n => n.type === filterType)
-    : notifications;
+    ? (notifications || []).filter(n => n.type === filterType)
+    : (notifications || []);
 
-  const notificationTypes = [...new Set(notifications.map(n => n.type))];
+  const notificationTypes = [...new Set((notifications || []).map(n => n.type))];
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -301,7 +304,7 @@ export default function NotificationCenter() {
                       <Label htmlFor="email-notifications">Email notifications</Label>
                       <Switch
                         id="email-notifications"
-                        checked={preferences.emailEnabled}
+                        checked={preferences?.emailEnabled || false}
                         onCheckedChange={(checked) => 
                           updatePreferences({ emailEnabled: checked })
                         }
@@ -311,7 +314,7 @@ export default function NotificationCenter() {
                       <Label htmlFor="push-notifications">Push notifications</Label>
                       <Switch
                         id="push-notifications"
-                        checked={preferences.pushEnabled}
+                        checked={preferences?.pushEnabled || false}
                         onCheckedChange={(checked) => 
                           updatePreferences({ pushEnabled: checked })
                         }

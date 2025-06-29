@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, Trash2, Play, Stop, Info, Cpu, HardDrive } from 'lucide-react';
+import { Download, Trash2, Play, Square, Info, Cpu, HardDrive } from 'lucide-react';
 import { OllamaModel } from '../../services/ollama';
 import { ModelCatalogEntry } from '../../data/modelCatalog';
 import { formatBytes } from '../../utils/formatters';

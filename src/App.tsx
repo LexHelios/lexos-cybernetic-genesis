@@ -15,12 +15,13 @@ const AppContent = () => {
 
   console.log('AppContent render:', { isAuthenticated, isLoading });
 
+  // Debug: Add visible text
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#1a1a1a' }}>
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Initializing NEXUS...</p>
+          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p style={{ color: 'white', fontSize: '20px' }}>Initializing NEXUS...</p>
         </div>
       </div>
     );

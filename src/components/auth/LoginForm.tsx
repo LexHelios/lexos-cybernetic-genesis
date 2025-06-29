@@ -17,13 +17,14 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background/80 backdrop-blur-sm">
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0a' }}>
       <div 
         className="fixed inset-0 opacity-10"
         style={{
           backgroundImage: `url('/lovable-uploads/af8c7339-edc2-45c1-a12a-3b489ce8310e.png')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
+          display: 'none' // Temporarily hide background image
         }}
       />
       

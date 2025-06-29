@@ -1,8 +1,6 @@
 import { AuthResponse, User, Agent, Task, SystemStatus, TaskSubmission, TaskResponse } from '../types/api';
 
-const BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '' // Use relative URLs in production
-  : 'http://localhost:3001'; // Backend server in development
+const BASE_URL = ''; // Always use relative URLs to work with Vite proxy
 
 class ApiClient {
   private token: string | null = null;
