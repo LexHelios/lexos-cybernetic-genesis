@@ -20,18 +20,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     console.log('AuthProvider useEffect running');
-    // Check for existing authentication on app load
-    try {
-      const currentUser = apiClient.getCurrentUser();
-      console.log('Current user from API:', currentUser);
-      if (currentUser) {
-        setUser(currentUser);
+    
+    // Simple timeout to simulate check and ensure loading completes
+    const initializeAuth = async () => {
+      try {
+        const currentUser = apiClient.getCurrentUser();
+        console.log('Current user from API:', currentUser);
+        if (currentUser) {
+          setUser(currentUser);
+        }
+      } catch (error) {
+        console.error('Error getting current user:', error);
+      } finally {
+        // Ensure loading is set to false after a brief delay
+        setTimeout(() => {
+          setIsLoading(false);
+          console.log('AuthProvider initialization complete');
+        }, 100);
       }
-    } catch (error) {
-      console.error('Error getting current user:', error);
-    }
-    setIsLoading(false);
-    console.log('AuthProvider initialization complete');
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {

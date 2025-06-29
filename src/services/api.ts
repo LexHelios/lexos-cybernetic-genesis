@@ -1,4 +1,3 @@
-
 import { AuthResponse, User, Agent, Task, SystemStatus, TaskSubmission, TaskResponse } from '../types/api';
 
 const BASE_URL = process.env.NODE_ENV === 'production' 
@@ -14,8 +13,14 @@ class ApiClient {
     this.token = localStorage.getItem('auth_token');
     const userData = localStorage.getItem('user_data');
     if (userData) {
-      this.user = JSON.parse(userData);
+      try {
+        this.user = JSON.parse(userData);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        localStorage.removeItem('user_data');
+      }
     }
+    console.log('ApiClient initialized with token:', !!this.token, 'user:', !!this.user);
   }
 
   private getHeaders(): Record<string, string> {
@@ -66,11 +71,15 @@ class ApiClient {
   }
 
   getCurrentUser(): User | null {
+    console.log('getCurrentUser called, returning:', this.user);
     return this.user;
   }
 
   isAuthenticated(): boolean {
-    return !!this.token;
+    const hasToken = !!this.token;
+    const hasUser = !!this.user;
+    console.log('isAuthenticated check:', { hasToken, hasUser });
+    return hasToken && hasUser;
   }
 
   // Agents
