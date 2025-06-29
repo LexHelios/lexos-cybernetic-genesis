@@ -10,8 +10,10 @@ import Index from "./pages/Index";
 
 const queryClient = new QueryClient();
 
-const AuthWrapper = () => {
+const AppContent = () => {
   const { isAuthenticated, isLoading } = useAuth();
+
+  console.log('AppContent render:', { isAuthenticated, isLoading });
 
   if (isLoading) {
     return (
@@ -38,7 +40,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AuthWrapper />
+          <AppContent />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

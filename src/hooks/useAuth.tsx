@@ -19,12 +19,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('AuthProvider useEffect running');
     // Check for existing authentication on app load
-    const currentUser = apiClient.getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
+    try {
+      const currentUser = apiClient.getCurrentUser();
+      console.log('Current user from API:', currentUser);
+      if (currentUser) {
+        setUser(currentUser);
+      }
+    } catch (error) {
+      console.error('Error getting current user:', error);
     }
     setIsLoading(false);
+    console.log('AuthProvider initialization complete');
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
@@ -62,14 +69,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const contextValue = {
+    user,
+    isAuthenticated: !!user,
+    isLoading,
+    login,
+    logout,
+  };
+
+  console.log('AuthProvider rendering with context:', contextValue);
+
   return (
-    <AuthContext.Provider value={{
-      user,
-      isAuthenticated: !!user,
-      isLoading,
-      login,
-      logout,
-    }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
