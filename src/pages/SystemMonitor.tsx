@@ -1,228 +1,141 @@
 
 import React from 'react';
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { Monitor, Cpu, HardDrive, Wifi } from 'lucide-react';
 import MetricCard from '../components/dashboard/MetricCard';
 
 const SystemMonitor = () => {
-  const gpuData = [
-    { time: '00:00', utilization: 87, memory: 65, temperature: 34 },
-    { time: '04:00', utilization: 92, memory: 71, temperature: 36 },
-    { time: '08:00', utilization: 85, memory: 68, temperature: 35 },
-    { time: '12:00', utilization: 94, memory: 73, temperature: 37 },
-    { time: '16:00', utilization: 89, memory: 69, temperature: 35 },
-    { time: '20:00', utilization: 91, memory: 72, temperature: 36 },
-  ];
-
-  const modelPerformance = [
-    { model: 'Mixtral-8x22B', tokens: 2400, efficiency: 94 },
-    { model: 'LLaMA-3-70B', tokens: 2100, efficiency: 89 },
-    { model: 'DeepSeek-R1', tokens: 1850, efficiency: 92 },
-    { model: 'Qwen2.5-72B', tokens: 1650, efficiency: 87 },
-  ];
-
   return (
-    <div className="p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-orbitron font-bold text-primary mb-2">
-          System Performance Monitor
-        </h1>
-        <p className="text-muted-foreground">
-          Real-time H100 GPU metrics and infrastructure monitoring
-        </p>
-      </div>
-
-      {/* Hardware Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <MetricCard
-          title="GPU Utilization"
-          value="87%"
-          subtitle="34°C Temperature"
-          color="matrix"
-          icon="⚡"
-          animate
-        />
-        <MetricCard
-          title="VRAM Usage"
-          value="65GB"
-          subtitle="80GB Total"
-          color="cyber"
-          icon="💾"
-        />
-        <MetricCard
-          title="Compute Units"
-          value="16,896"
-          subtitle="CUDA Cores Active"
-          color="electric"
-          icon="🔥"
-        />
-        <MetricCard
-          title="Throughput"
-          value="2.4M"
-          subtitle="Tokens/second"
-          color="neural"
-          icon="🚀"
-        />
-      </div>
-
-      {/* GPU Performance Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div className="holographic-panel p-6 rounded-lg">
-          <h3 className="text-lg font-orbitron font-bold text-primary mb-4">
-            H100 GPU Metrics
-          </h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={gpuData}>
-                <XAxis 
-                  dataKey="time" 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                />
-                <YAxis 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="utilization"
-                  stroke="hsl(var(--matrix-green))"
-                  fill="hsl(var(--matrix-green) / 0.3)"
-                  strokeWidth={2}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="memory"
-                  stroke="hsl(var(--cyber-pink))"
-                  fill="hsl(var(--cyber-pink) / 0.3)"
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex items-center justify-center space-x-6 mt-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-matrix-green rounded-full"></div>
-              <span className="text-sm">Utilization</span>
+    <div className="p-6 relative min-h-screen">
+      {/* Background */}
+      <div 
+        className="fixed inset-0 opacity-10 bg-gradient-to-br from-warning-orange/10 to-electric-blue/10"
+        style={{
+          backgroundImage: `url('/lovable-uploads/009716e7-a32f-4488-a637-55942e697dc6.png')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      />
+      
+      <div className="relative z-10">
+        <div className="mb-8">
+          <div className="flex items-center space-x-4 mb-4">
+            <div 
+              className="w-12 h-12 rounded-lg flex items-center justify-center border border-warning-orange/50 bg-warning-orange/10 overflow-hidden"
+              style={{
+                backgroundImage: `url('/lovable-uploads/009716e7-a32f-4488-a637-55942e697dc6.png')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              }}
+            >
+              <Monitor className="w-6 h-6 text-warning-orange opacity-80" />
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-cyber-pink rounded-full"></div>
-              <span className="text-sm">Memory</span>
+            <div>
+              <h1 className="text-3xl font-orbitron font-bold text-warning-orange">
+                System Monitor
+              </h1>
+              <p className="text-muted-foreground">
+                Real-time infrastructure monitoring and performance analytics
+              </p>
             </div>
           </div>
         </div>
-
-        <div className="holographic-panel p-6 rounded-lg">
-          <h3 className="text-lg font-orbitron font-bold text-primary mb-4">
-            Model Performance
-          </h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={modelPerformance} layout="horizontal">
-                <XAxis type="number" axisLine={false} tickLine={false} />
-                <YAxis 
-                  type="category" 
-                  dataKey="model" 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                  width={100}
-                />
-                <Bar 
-                  dataKey="tokens" 
-                  fill="hsl(var(--electric-blue))"
-                  radius={[0, 4, 4, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <MetricCard
+            title="CPU Usage"
+            value="67.3%"
+            subtitle="H100 Clusters"
+            color="warning"
+            trend="stable"
+            animate={true}
+            backgroundImage="/lovable-uploads/009716e7-a32f-4488-a637-55942e697dc6.png"
+          />
+          <MetricCard
+            title="Memory"
+            value="2.1TB"
+            subtitle="Available RAM"
+            color="electric"
+            trend="down"
+            backgroundImage="/lovable-uploads/117c006d-6418-44ac-8918-cf8e34bb18c8.png"
+          />
+          <MetricCard
+            title="Storage"
+            value="847TB"
+            subtitle="Free space"
+            color="matrix"
+            trend="up"
+            backgroundImage="/lovable-uploads/d40eaa37-72ac-45c5-bdd9-38ad66993627.png"
+          />
+          <MetricCard
+            title="Network"
+            value="42.1Gb/s"
+            subtitle="Throughput"
+            color="cyber"
+            trend="up"
+            backgroundImage="/lovable-uploads/8eca4b1d-83f4-4478-81f6-b3654330923c.png"
+          />
         </div>
-      </div>
 
-      {/* System Status Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="holographic-panel p-6 rounded-lg">
-          <h3 className="text-lg font-orbitron font-bold text-primary mb-4">
-            Infrastructure Status
-          </h3>
-          <div className="space-y-4">
-            {[
-              { component: 'H100 GPU', status: 'Optimal', uptime: '99.9%', color: 'matrix-green' },
-              { component: 'Memory Pool', status: 'Healthy', uptime: '100%', color: 'matrix-green' },
-              { component: 'Storage Array', status: 'Active', uptime: '99.8%', color: 'matrix-green' },
-              { component: 'Network I/O', status: 'Stable', uptime: '99.7%', color: 'matrix-green' },
-              { component: 'Cooling System', status: 'Normal', uptime: '100%', color: 'matrix-green' },
-            ].map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-muted/10 rounded-lg">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="holographic-panel p-6 rounded-lg border border-warning-orange/30 bg-warning-orange/5">
+            <h2 className="text-xl font-orbitron font-bold text-warning-orange mb-4">Hardware Status</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-black/20 rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <div className={`w-2 h-2 bg-${item.color} rounded-full neural-pulse`}></div>
-                  <span className="font-medium">{item.component}</span>
+                  <Cpu className="w-5 h-5 text-warning-orange" />
+                  <span>GPU Clusters</span>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium">{item.status}</div>
-                  <div className="text-xs text-muted-foreground">{item.uptime}</div>
-                </div>
+                <span className="text-matrix-green">Optimal</span>
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="holographic-panel p-6 rounded-lg">
-          <h3 className="text-lg font-orbitron font-bold text-primary mb-4">
-            Resource Allocation
-          </h3>
-          <div className="space-y-4">
-            {[
-              { resource: 'GPU Compute', used: 87, total: 100, unit: '%' },
-              { resource: 'VRAM', used: 65, total: 80, unit: 'GB' },
-              { resource: 'System Memory', used: 128, total: 256, unit: 'GB' },
-              { resource: 'Storage', used: 2.3, total: 22.5, unit: 'TB' },
-            ].map((item, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">{item.resource}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {item.used}{item.unit} / {item.total}{item.unit}
-                  </span>
+              <div className="flex items-center justify-between p-3 bg-black/20 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <HardDrive className="w-5 h-5 text-electric-blue" />
+                  <span>Storage Arrays</span>
                 </div>
-                <div className="w-full bg-muted/20 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-primary to-matrix-green h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${(item.used / item.total) * 100}%` }}
-                  ></div>
-                </div>
+                <span className="text-matrix-green">Healthy</span>
               </div>
-            ))}
+              <div className="flex items-center justify-between p-3 bg-black/20 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <Wifi className="w-5 h-5 text-cyber-pink" />
+                  <span>Network Links</span>
+                </div>
+                <span className="text-matrix-green">Active</span>
+              </div>
+            </div>
           </div>
-        </div>
-
-        <div className="holographic-panel p-6 rounded-lg">
-          <h3 className="text-lg font-orbitron font-bold text-primary mb-4">
-            Network Activity
-          </h3>
-          <div className="space-y-4">
-            {[
-              { metric: 'Inbound Traffic', value: '2.4 GB/s', status: 'high' },
-              { metric: 'Outbound Traffic', value: '1.8 GB/s', status: 'normal' },
-              { metric: 'API Requests', value: '12,847/min', status: 'high' },
-              { metric: 'Agent Communications', value: '847/sec', status: 'normal' },
-              { metric: 'Data Sync', value: '99.9% Success', status: 'optimal' },
-            ].map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-muted/10 rounded-lg">
-                <span className="text-sm font-medium">{item.metric}</span>
-                <div className="text-right">
-                  <div className="text-sm font-medium">{item.value}</div>
-                  <div className={`text-xs ${
-                    item.status === 'optimal' ? 'text-matrix-green' :
-                    item.status === 'high' ? 'text-warning-orange' :
-                    'text-muted-foreground'
-                  }`}>
-                    {item.status}
+          
+          <div className="holographic-panel p-6 rounded-lg border border-electric-blue/30 bg-electric-blue/5">
+            <h2 className="text-xl font-orbitron font-bold text-electric-blue mb-4">Performance Metrics</h2>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span>Compute Load</span>
+                <div className="flex items-center space-x-2">
+                  <div className="w-20 h-2 bg-black/30 rounded-full overflow-hidden">
+                    <div className="w-2/3 h-full bg-warning-orange rounded-full"></div>
                   </div>
+                  <span className="text-sm">67%</span>
                 </div>
               </div>
-            ))}
+              <div className="flex justify-between items-center">
+                <span>Memory Usage</span>
+                <div className="flex items-center space-x-2">
+                  <div className="w-20 h-2 bg-black/30 rounded-full overflow-hidden">
+                    <div className="w-1/2 h-full bg-electric-blue rounded-full"></div>
+                  </div>
+                  <span className="text-sm">52%</span>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>I/O Operations</span>
+                <div className="flex items-center space-x-2">
+                  <div className="w-20 h-2 bg-black/30 rounded-full overflow-hidden">
+                    <div className="w-3/4 h-full bg-matrix-green rounded-full"></div>
+                  </div>
+                  <span className="text-sm">78%</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
