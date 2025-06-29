@@ -1,0 +1,38 @@
+name: Deploy LexOS
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Deploy to H100 Server
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: 147.185.40.39
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        port: ${{ secrets.SSH_PORT || 22 }}
+        script: |
+          # Update frontend code
+          cd /home/user/lexos-genesis
+          git pull origin main
+          npm install
+          
+          # Restart services
+          cd /home/user
+          ./start_lexos.sh
+          
+          # Health check
+          sleep 10
+          curl -f http://localhost:9000/health || exit 1
+          curl -f http://localhost:3000 || exit 1
+          
+          echo "✅ Deployment successful!"
