@@ -28,7 +28,7 @@ const Dashboard = () => {
                 backgroundPosition: 'center'
               }}
             >
-              <Bot className="w-6 h-6 text-primary opacity-80" />
+              {/* Remove icon to show background image clearly */}
             </div>
             <div>
               <h1 className="text-3xl font-orbitron font-bold text-primary">
