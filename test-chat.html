@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test LexOS Chat</title>
+</head>
+<body>
+    <h1>LexOS Chat Test</h1>
+    <p>Open browser console to see results</p>
+    
+    <script>
+        // Test direct API call
+        async function testChat() {
+            console.log('Testing chat endpoint...');
+            
+            try {
+                const response = await fetch('/api/models/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: 'r1-unrestricted:latest',
+                        messages: [
+                            { role: 'user', content: 'Hello, can you hear me?' }
+                        ],
+                        temperature: 0.8,
+                        max_tokens: 100
+                    }),
+                });
+                
+                const data = await response.json();
+                console.log('Chat response:', data);
+                
+                // Display result
+                document.body.innerHTML += `
+                    <div style="border: 1px solid #ccc; padding: 10px; margin: 10px;">
+                        <h3>Response from ${data.model}</h3>
+                        <p>${data.message?.content || 'No response'}</p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.body.innerHTML += `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Run test on load
+        testChat();
+    </script>
+</body>
+</html>

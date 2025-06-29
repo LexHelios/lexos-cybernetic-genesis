@@ -14,6 +14,7 @@ import Communications from './Communications';
 import SecurityHub from './SecurityHub';
 import Analytics from './Analytics';
 import Configuration from './Configuration';
+import UserSettings from './UserSettings';
 
 const Index = () => {
   return (
@@ -33,6 +34,7 @@ const Index = () => {
             <Route path="/security" element={<SecurityHub />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/config" element={<Configuration />} />
+            <Route path="/settings" element={<UserSettings />} />
           </Routes>
         </main>
       </div>

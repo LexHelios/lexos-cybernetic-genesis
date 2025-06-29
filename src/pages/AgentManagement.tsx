@@ -4,10 +4,12 @@ import MetricCard from '../components/dashboard/MetricCard';
 import ConsciousnessMonitor from '../components/consciousness/ConsciousnessMonitor';
 import PersistentMemory from '../components/consciousness/PersistentMemory';
 import SelfModification from '../components/consciousness/SelfModification';
-import { Brain, Database, Code, Cpu } from 'lucide-react';
+import TaskSubmissionDialog from '../components/agents/TaskSubmissionDialog';
+import { Brain, Database, Code, Cpu, Mic } from 'lucide-react';
 import { useAgents } from '../hooks/useAgents';
 import { apiClient } from '../services/api';
 import { toast } from '@/hooks/use-toast';
+import { VoiceInput } from '../components/voice/VoiceInput';
 
 const AgentManagement = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'consciousness' | 'memory' | 'modifications'>('overview');
@@ -20,25 +22,9 @@ const AgentManagement = () => {
     { id: 'modifications', label: 'Self-Modification', icon: Code }
   ];
 
-  const handleTaskSubmission = async (agentId: string) => {
-    try {
-      const response = await apiClient.submitTask(agentId, {
-        task_type: 'health_check',
-        parameters: {},
-        priority: 'normal'
-      });
-      
-      toast({
-        title: "Task Submitted",
-        description: `Task ${response.task_id} submitted to agent ${agentId}`,
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Task Submission Failed",
-        description: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
+  const handleTaskSubmitted = (taskId: string) => {
+    // Refresh agents data or handle task submission
+    console.log('Task submitted:', taskId);
   };
 
   if (isLoading) {
@@ -85,12 +71,34 @@ const AgentManagement = () => {
   return (
     <div className="p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-orbitron font-bold text-primary mb-2">
-          Neural Agent Command Center
-        </h1>
-        <p className="text-muted-foreground">
-          Monitor and control {agents.length} autonomous AI agents on H100 infrastructure
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-orbitron font-bold text-primary mb-2">
+              Neural Agent Command Center
+            </h1>
+            <p className="text-muted-foreground">
+              Monitor and control {agents.length} autonomous AI agents on H100 infrastructure
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <VoiceInput
+              size="md"
+              showVisualization={true}
+              autoCommand={true}
+              onCommand={(result) => {
+                if (result.success && result.result?.action === 'navigate') {
+                  window.location.href = result.result.route;
+                } else if (result.success) {
+                  toast({
+                    title: 'Command Executed',
+                    description: result.result?.message || 'Command processed successfully'
+                  });
+                }
+              }}
+            />
+            <TaskSubmissionDialog onTaskSubmitted={handleTaskSubmitted} />
+          </div>
+        </div>
       </div>
 
       {/* Navigation Tabs */}
@@ -197,12 +205,10 @@ const AgentManagement = () => {
                   </div>
 
                   <div className="flex space-x-2">
-                    <button 
-                      onClick={() => handleTaskSubmission(agent.agent_id)}
-                      className="flex-1 px-3 py-2 bg-primary/20 hover:bg-primary/30 border border-primary/30 rounded-lg text-sm font-medium transition-colors"
-                    >
-                      Test Agent
-                    </button>
+                    <TaskSubmissionDialog 
+                      agent={agent} 
+                      onTaskSubmitted={handleTaskSubmitted}
+                    />
                     <button className="flex-1 px-3 py-2 bg-secondary/20 hover:bg-secondary/30 border border-secondary/30 rounded-lg text-sm font-medium transition-colors">
                       View Tasks
                     </button>

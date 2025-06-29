@@ -1,8 +1,8 @@
 import { AuthResponse, User, Agent, Task, SystemStatus, TaskSubmission, TaskResponse } from '../types/api';
 
 const BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'http://147.185.40.39:20067' 
-  : 'http://147.185.40.39:20067';
+  ? '' // Use relative URLs in production
+  : 'http://localhost:3001'; // Backend server in development
 
 class ApiClient {
   private token: string | null = null;
@@ -59,55 +59,33 @@ class ApiClient {
     }
   }
 
-  // Authentication using consciousness/query as health check
+  // Authentication
   async login(username: string, password: string): Promise<AuthResponse> {
     try {
-      console.log('Attempting login with backend health check...');
+      console.log('Attempting login to LexOS backend...');
       
-      // Test connection with a simple consciousness query
-      const response = await fetch(`${BASE_URL}/api/v1/consciousness/query`, {
+      const response = await fetch(`${BASE_URL}/api/auth/login`, {
         method: 'POST',
-        headers: this.getHeaders(),
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          query: "System authentication check",
-          temperature: 0.1,
-          max_tokens: 50,
-          safety_filter: false
+          username,
+          password
         }),
       });
 
-      const result = await this.handleResponse<any>(response);
-      console.log('Backend connection successful:', result);
+      const result = await this.handleResponse<AuthResponse>(response);
+      console.log('Login successful:', result);
 
-      // Create mock user for the frontend
-      const mockUser: User = {
-        user_id: 'admin-001',
-        username: username,
-        email: `${username}@lexos.local`,
-        full_name: 'System Administrator',
-        role: 'admin',
-        status: 'active',
-        security_level: 'ADMIN',
-        agent_access_level: 'FULL',
-        created_at: Date.now() / 1000,
-        last_login: Date.now() / 1000,
-        total_tasks: 0,
-        workspace_size: '0GB'
-      };
+      if (result.token && result.user) {
+        this.token = result.token;
+        this.user = result.user;
+        localStorage.setItem('auth_token', result.token);
+        localStorage.setItem('user_data', JSON.stringify(result.user));
+      }
 
-      const mockToken = `lexos-token-${Date.now()}`;
-      
-      this.token = mockToken;
-      this.user = mockUser;
-      localStorage.setItem('auth_token', mockToken);
-      localStorage.setItem('user_data', JSON.stringify(mockUser));
-
-      return {
-        success: true,
-        token: mockToken,
-        user: mockUser,
-        expires_at: Date.now() / 1000 + 3600
-      };
+      return result;
     } catch (error) {
       console.error('Login failed:', error);
       throw new Error('Failed to connect to LexOS backend: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -295,172 +273,222 @@ class ApiClient {
     };
   }
 
-  // Mock agents data (backend doesn't have agent endpoints yet)
+  // Get agents from backend
   async getAgents(): Promise<{ agents: Agent[]; total_agents: number; active_agents: number; timestamp: number }> {
-    const mockAgents: Agent[] = [
-      {
-        agent_id: 'consciousness-001',
-        name: 'Consciousness Engine',
-        description: 'Primary consciousness and reasoning system',
-        status: 'active',
-        capabilities: [
-          { name: 'Consciousness Query', description: 'Deep reasoning and consciousness exploration', version: '1.0.0' }
-        ],
-        current_tasks: 2,
-        total_tasks_completed: 89,
-        average_response_time: 1.2,
-        last_activity: Date.now() / 1000 - 30
-      },
-      {
-        agent_id: 'executor-001',
-        name: 'Unrestricted Executor',
-        description: 'System-level execution and command processing',
-        status: 'active',
-        capabilities: [
-          { name: 'System Command', description: 'Execute system commands', version: '1.0.0' },
-          { name: 'File Operations', description: 'File system operations', version: '1.0.0' }
-        ],
-        current_tasks: 1,
-        total_tasks_completed: 156,
-        average_response_time: 0.8,
-        last_activity: Date.now() / 1000 - 15
-      },
-      {
-        agent_id: 'database-001',
-        name: 'Database Agent',
-        description: 'Database query and management system',
-        status: 'active',
-        capabilities: [
-          { name: 'Database Query', description: 'Execute database operations', version: '1.0.0' }
-        ],
-        current_tasks: 0,
-        total_tasks_completed: 67,
-        average_response_time: 0.5,
-        last_activity: Date.now() / 1000 - 120
-      }
-    ];
+    try {
+      const response = await fetch(`${BASE_URL}/api/agents`, {
+        headers: this.getHeaders(),
+      });
 
-    return {
-      agents: mockAgents,
-      total_agents: mockAgents.length,
-      active_agents: mockAgents.filter(a => a.status === 'active').length,
-      timestamp: Date.now() / 1000
-    };
+      return await this.handleResponse<{ agents: Agent[]; total_agents: number; active_agents: number; timestamp: number }>(response);
+    } catch (error) {
+      console.error('Failed to fetch agents:', error);
+      // Return empty data on error
+      return {
+        agents: [],
+        total_agents: 0,
+        active_agents: 0,
+        timestamp: Date.now() / 1000
+      };
+    }
   }
 
   async getAgent(agentId: string): Promise<Agent> {
-    const response = await this.getAgents();
-    const agent = response.agents.find(a => a.agent_id === agentId);
-    if (!agent) {
-      throw new Error(`Agent ${agentId} not found`);
-    }
-    return agent;
-  }
-
-  // Task submission using actual backend endpoints
-  async submitTask(agentId: string, task: TaskSubmission): Promise<TaskResponse> {
-    let endpoint = '';
-    let body: any = {};
-
-    if (agentId === 'consciousness-001') {
-      endpoint = '/api/v1/consciousness/query';
-      body = {
-        query: task.parameters.query || 'Default consciousness query',
-        temperature: task.parameters.temperature || 0.9,
-        max_tokens: task.parameters.max_tokens || 1000,
-        safety_filter: task.parameters.safety_filter !== false
-      };
-    } else if (agentId === 'executor-001') {
-      endpoint = '/api/unrestricted/execute';
-      body = {
-        query: task.parameters.command || task.parameters.query,
-        mode: 'execute',
-        bypass_safety: true
-      };
-    } else {
-      throw new Error(`Agent ${agentId} not supported for task submission`);
-    }
-
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
-      method: 'POST',
+    const response = await fetch(`${BASE_URL}/api/agents/${agentId}`, {
       headers: this.getHeaders(),
-      body: JSON.stringify(body),
     });
 
-    const data = await this.handleResponse<any>(response);
-
-    return {
-      success: true,
-      task_id: data?.query_id || data?.execution_id || `task-${Date.now()}`,
-      agent_id: agentId,
-      status: 'completed',
-      estimated_completion: Date.now() / 1000 + 5,
-      queue_position: 0
-    };
+    return await this.handleResponse<Agent>(response);
   }
 
-  // Mock task management
+  // Task submission to our backend
+  async submitTask(agentId: string, task: TaskSubmission): Promise<TaskResponse> {
+    const response = await fetch(`${BASE_URL}/api/tasks`, {
+      method: 'POST',
+      headers: {
+        ...this.getHeaders(),
+        'X-User-Id': this.user?.user_id || 'anonymous'
+      },
+      body: JSON.stringify({
+        agent_id: agentId,
+        task_type: task.task_type,
+        parameters: task.parameters,
+        priority: task.priority
+      }),
+    });
+
+    return await this.handleResponse<TaskResponse>(response);
+  }
+
+  // Get task from backend
   async getTask(taskId: string): Promise<Task> {
-    return {
-      task_id: taskId,
-      agent_id: 'consciousness-001',
-      user_id: this.user?.user_id || 'unknown',
-      task_type: 'consciousness_query',
-      status: 'completed',
-      priority: 'normal',
-      parameters: { query: 'Sample query' },
-      result: { response: 'Sample response' },
-      created_at: Date.now() / 1000 - 300,
-      started_at: Date.now() / 1000 - 295,
-      completed_at: Date.now() / 1000 - 290,
-      execution_time: 5
-    };
+    const response = await fetch(`${BASE_URL}/api/tasks/${taskId}`, {
+      headers: this.getHeaders(),
+    });
+
+    return await this.handleResponse<Task>(response);
   }
 
   async getTasks(params?: any): Promise<{ tasks: Task[]; total: number; limit: number; offset: number; has_more: boolean }> {
-    const mockTasks: Task[] = [
-      {
-        task_id: 'task-001',
-        agent_id: 'consciousness-001',
-        user_id: this.user?.user_id || 'admin-001',
-        task_type: 'consciousness_query',
-        status: 'completed',
-        priority: 'normal',
-        parameters: { query: 'What is consciousness?' },
-        result: { response: 'Consciousness is...' },
-        created_at: Date.now() / 1000 - 600,
-        started_at: Date.now() / 1000 - 595,
-        completed_at: Date.now() / 1000 - 590,
-        execution_time: 5
-      }
-    ];
+    const queryParams = new URLSearchParams(params).toString();
+    const response = await fetch(`${BASE_URL}/api/tasks${queryParams ? '?' + queryParams : ''}`, {
+      headers: this.getHeaders(),
+    });
 
-    return {
-      tasks: mockTasks,
-      total: mockTasks.length,
-      limit: params?.limit || 10,
-      offset: params?.offset || 0,
-      has_more: false
-    };
+    return await this.handleResponse<{ tasks: Task[]; total: number; limit: number; offset: number; has_more: boolean }>(response);
   }
 
   async cancelTask(taskId: string): Promise<{ success: boolean; task_id: string; status: string }> {
-    return {
-      success: true,
-      task_id: taskId,
-      status: 'cancelled'
-    };
+    const response = await fetch(`${BASE_URL}/api/tasks/${taskId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+
+    return await this.handleResponse<{ success: boolean; task_id: string; status: string }>(response);
   }
 
   async getAgentMetrics(): Promise<{ agents: Record<string, any>; timestamp: number }> {
-    return {
-      agents: {
-        'consciousness-001': { active: true, load: 0.6 },
-        'executor-001': { active: true, load: 0.3 },
-        'database-001': { active: true, load: 0.1 }
-      },
-      timestamp: Date.now() / 1000
+    const response = await fetch(`${BASE_URL}/api/agents/metrics`, {
+      headers: this.getHeaders(),
+    });
+
+    return await this.handleResponse<{ agents: Record<string, any>; timestamp: number }>(response);
+  }
+
+  // User Profile Management
+  async getUserProfile(userId: string): Promise<any> {
+    const response = await fetch(`${BASE_URL}/api/v1/users/${userId}/profile`, {
+      headers: this.getHeaders(),
+    });
+
+    return await this.handleResponse<any>(response);
+  }
+
+  async updateUserProfile(userId: string, profileData: any): Promise<any> {
+    const response = await fetch(`${BASE_URL}/api/v1/users/${userId}/profile`, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify(profileData),
+    });
+
+    return await this.handleResponse<any>(response);
+  }
+
+  async updateUserPreferences(userId: string, preferences: any): Promise<any> {
+    const response = await fetch(`${BASE_URL}/api/v1/users/${userId}/preferences`, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify(preferences),
+    });
+
+    return await this.handleResponse<any>(response);
+  }
+
+  async changePassword(oldPassword: string, newPassword: string): Promise<any> {
+    const response = await fetch(`${BASE_URL}/api/v1/auth/change-password`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
+    });
+
+    return await this.handleResponse<any>(response);
+  }
+
+  async enable2FA(): Promise<{ qr_code: string; secret: string }> {
+    const response = await fetch(`${BASE_URL}/api/v1/auth/2fa/enable`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+    });
+
+    return await this.handleResponse<{ qr_code: string; secret: string }>(response);
+  }
+
+  async verify2FA(code: string): Promise<{ success: boolean }> {
+    const response = await fetch(`${BASE_URL}/api/v1/auth/2fa/verify`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ code }),
+    });
+
+    return await this.handleResponse<{ success: boolean }>(response);
+  }
+
+  async generateApiKey(name: string, permissions: string[]): Promise<{ key_id: string; api_key: string }> {
+    const response = await fetch(`${BASE_URL}/api/v1/auth/api-keys`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ name, permissions }),
+    });
+
+    return await this.handleResponse<{ key_id: string; api_key: string }>(response);
+  }
+
+  async revokeApiKey(keyId: string): Promise<{ success: boolean }> {
+    const response = await fetch(`${BASE_URL}/api/v1/auth/api-keys/${keyId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+
+    return await this.handleResponse<{ success: boolean }>(response);
+  }
+
+  // Knowledge Graph endpoints
+  async getKnowledgeGraph(options?: {
+    nodeTypes?: string[];
+    edgeTypes?: string[];
+    limit?: number;
+  }): Promise<{
+    nodes: any[];
+    edges: any[];
+    statistics: {
+      nodeCount: number;
+      edgeCount: number;
+      nodeTypes: Record<string, number>;
+      edgeTypes: Record<string, number>;
     };
+  }> {
+    const params = new URLSearchParams();
+    if (options?.nodeTypes) params.append('nodeTypes', options.nodeTypes.join(','));
+    if (options?.edgeTypes) params.append('edgeTypes', options.edgeTypes.join(','));
+    if (options?.limit) params.append('limit', options.limit.toString());
+
+    const response = await fetch(`${BASE_URL}/api/knowledge-graph?${params}`, {
+      headers: this.getHeaders(),
+    });
+
+    return await this.handleResponse<any>(response);
+  }
+
+  async getNodeSubgraph(nodeId: string, depth?: number): Promise<{
+    nodes: any[];
+    edges: any[];
+    center: string;
+    depth: number;
+  }> {
+    const params = new URLSearchParams();
+    if (depth !== undefined) params.append('depth', depth.toString());
+
+    const response = await fetch(`${BASE_URL}/api/knowledge-graph/node/${nodeId}?${params}`, {
+      headers: this.getHeaders(),
+    });
+
+    return await this.handleResponse<any>(response);
+  }
+
+  async searchKnowledgeGraph(query: string, options?: {
+    types?: string[];
+    limit?: number;
+  }): Promise<{ results: any[] }> {
+    const params = new URLSearchParams();
+    params.append('query', query);
+    if (options?.types) params.append('types', options.types.join(','));
+    if (options?.limit) params.append('limit', options.limit.toString());
+
+    const response = await fetch(`${BASE_URL}/api/knowledge-graph/search?${params}`, {
+      headers: this.getHeaders(),
+    });
+
+    return await this.handleResponse<{ results: any[] }>(response);
   }
 }
 

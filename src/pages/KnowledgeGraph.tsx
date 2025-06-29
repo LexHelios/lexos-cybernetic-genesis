@@ -1,9 +1,26 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Network, Database, Share2, Brain } from 'lucide-react';
 import MetricCard from '../components/dashboard/MetricCard';
+import KnowledgeGraph2D from '../components/knowledge/KnowledgeGraph2D';
+import { apiClient } from '../services/api';
 
 const KnowledgeGraph = () => {
+  const [statistics, setStatistics] = useState<any>(null);
+  
+  useEffect(() => {
+    loadStatistics();
+  }, []);
+  
+  const loadStatistics = async () => {
+    try {
+      const response = await apiClient.getKnowledgeGraph({ limit: 1 });
+      setStatistics(response.statistics);
+    } catch (error) {
+      console.error('Failed to load graph statistics:', error);
+    }
+  };
+  
   return (
     <div className="p-6 relative min-h-screen">
       {/* Background */}
@@ -44,7 +61,7 @@ const KnowledgeGraph = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <MetricCard
             title="Knowledge Nodes"
-            value="12,847"
+            value={statistics?.nodeCount?.toLocaleString() || '0'}
             subtitle="Active concepts"
             color="neural"
             trend="up"
@@ -53,39 +70,32 @@ const KnowledgeGraph = () => {
           />
           <MetricCard
             title="Connections"
-            value="45,293"
+            value={statistics?.edgeCount?.toLocaleString() || '0'}
             subtitle="Semantic links"
             color="electric"
             trend="up"
             backgroundImage="/lovable-uploads/009716e7-a32f-4488-a637-55942e697dc6.png"
           />
           <MetricCard
-            title="Embeddings"
-            value="8.2M"
-            subtitle="Vector dimensions"
+            title="Agent Nodes"
+            value={statistics?.nodeTypes?.agent?.toLocaleString() || '0'}
+            subtitle="Active agents"
             color="matrix"
             trend="stable"
             backgroundImage="/lovable-uploads/d5f83983-511a-48b6-af8e-060d6c092d79.png"
           />
           <MetricCard
-            title="Query Speed"
-            value="0.3ms"
-            subtitle="Average latency"
+            title="Memory Nodes"
+            value={statistics?.nodeTypes?.memory?.toLocaleString() || '0'}
+            subtitle="Stored memories"
             color="cyber"
-            trend="down"
+            trend="up"
             backgroundImage="/lovable-uploads/117c006d-6418-44ac-8918-cf8e34bb18c8.png"
           />
         </div>
 
-        <div className="holographic-panel p-6 rounded-lg border border-neural-purple/30 bg-neural-purple/5">
-          <h2 className="text-xl font-orbitron font-bold text-neural-purple mb-4">Knowledge Network</h2>
-          <div className="flex items-center justify-center h-64 bg-black/20 rounded-lg border border-neural-purple/20">
-            <div className="text-center">
-              <Brain className="w-16 h-16 text-neural-purple mx-auto mb-4 opacity-50" />
-              <p className="text-muted-foreground">3D Knowledge Graph Visualization</p>
-              <p className="text-sm text-muted-foreground">Interactive neural network mapping</p>
-            </div>
-          </div>
+        <div className="holographic-panel rounded-lg border border-neural-purple/30 bg-neural-purple/5 overflow-hidden" style={{ height: 'calc(100vh - 320px)' }}>
+          <KnowledgeGraph2D />
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import LoginForm from "./components/auth/LoginForm";
 import Index from "./pages/Index";
@@ -30,7 +30,11 @@ const AppContent = () => {
     return <LoginForm />;
   }
 
-  return <Index />;
+  return (
+    <Routes>
+      <Route path="/*" element={<Index />} />
+    </Routes>
+  );
 };
 
 const App = () => (

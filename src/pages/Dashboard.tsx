@@ -2,6 +2,7 @@
 import React from 'react';
 import SystemOverview from '../components/dashboard/SystemOverview';
 import { Bot } from 'lucide-react';
+import { VoiceCommandPanel } from '../components/voice/VoiceCommandPanel';
 
 const Dashboard = () => {
   return (
@@ -41,7 +42,14 @@ const Dashboard = () => {
           </div>
         </div>
         
-        <SystemOverview />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <SystemOverview />
+          </div>
+          <div className="lg:col-span-1">
+            <VoiceCommandPanel />
+          </div>
+        </div>
       </div>
     </div>
   );

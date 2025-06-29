@@ -1,9 +1,16 @@
 
-import React from 'react';
-import { Shield, Lock, AlertTriangle, Eye } from 'lucide-react';
-import MetricCard from '../components/dashboard/MetricCard';
+import React, { useState } from 'react';
+import { Shield, Lock, AlertTriangle, Eye, Activity, Users, Settings, FileText } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import SecurityDashboard from '../components/security/SecurityDashboard';
+import SecurityLogs from '../components/security/SecurityLogs';
+import AccessControl from '../components/security/AccessControl';
+import SecurityPolicies from '../components/security/SecurityPolicies';
+import ActiveSessions from '../components/security/ActiveSessions';
 
 const SecurityHub = () => {
+  const [activeTab, setActiveTab] = useState('dashboard');
+
   return (
     <div className="p-6 relative min-h-screen">
       {/* Background */}
@@ -41,77 +48,50 @@ const SecurityHub = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <MetricCard
-            title="Threat Level"
-            value="LOW"
-            subtitle="Current status"
-            color="matrix"
-            trend="stable"
-            animate={true}
-            backgroundImage="/lovable-uploads/117c006d-6418-44ac-8918-cf8e34bb18c8.png"
-          />
-          <MetricCard
-            title="Active Shields"
-            value="17"
-            subtitle="Protection layers"
-            color="warning"
-            trend="stable"
-            backgroundImage="/lovable-uploads/8eca4b1d-83f4-4478-81f6-b3654330923c.png"
-          />
-          <MetricCard
-            title="Blocked Attempts"
-            value="1,247"
-            subtitle="Last 24h"
-            color="warning"
-            trend="down"
-            backgroundImage="/lovable-uploads/d5f83983-511a-48b6-af8e-060d6c092d79.png"
-          />
-          <MetricCard
-            title="Security Score"
-            value="97.8%"
-            subtitle="System integrity"
-            color="matrix"
-            trend="up"
-            backgroundImage="/lovable-uploads/009716e7-a32f-4488-a637-55942e697dc6.png"
-          />
-        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid grid-cols-5 w-full max-w-3xl">
+            <TabsTrigger value="dashboard" className="flex items-center space-x-2">
+              <Activity className="w-4 h-4" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </TabsTrigger>
+            <TabsTrigger value="logs" className="flex items-center space-x-2">
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">Logs</span>
+            </TabsTrigger>
+            <TabsTrigger value="access" className="flex items-center space-x-2">
+              <Lock className="w-4 h-4" />
+              <span className="hidden sm:inline">Access Control</span>
+            </TabsTrigger>
+            <TabsTrigger value="policies" className="flex items-center space-x-2">
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline">Policies</span>
+            </TabsTrigger>
+            <TabsTrigger value="sessions" className="flex items-center space-x-2">
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">Sessions</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="holographic-panel p-6 rounded-lg border border-warning-orange/30 bg-warning-orange/5">
-            <h2 className="text-xl font-orbitron font-bold text-warning-orange mb-4">Security Protocols</h2>
-            <div className="space-y-4">
-              {[
-                { name: "Firewall", status: "active", level: "Maximum" },
-                { name: "Encryption", status: "active", level: "AES-256" },
-                { name: "Access Control", status: "active", level: "Multi-factor" },
-                { name: "Anomaly Detection", status: "active", level: "AI-powered" }
-              ].map((protocol, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-black/20 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <Lock className="w-4 h-4 text-warning-orange" />
-                    <span className="text-sm font-medium">{protocol.name}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-muted-foreground">{protocol.level}</span>
-                    <div className="w-3 h-3 bg-matrix-green rounded-full neural-pulse" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <div className="holographic-panel p-6 rounded-lg border border-primary/30 bg-primary/5">
-            <h2 className="text-xl font-orbitron font-bold text-primary mb-4">Threat Monitor</h2>
-            <div className="flex items-center justify-center h-48 bg-black/20 rounded-lg border border-primary/20">
-              <div className="text-center">
-                <Eye className="w-16 h-16 text-primary mx-auto mb-4 opacity-50" />
-                <p className="text-muted-foreground">Real-time Threat Analysis</p>
-                <p className="text-sm text-muted-foreground">24/7 security monitoring</p>
-              </div>
-            </div>
-          </div>
-        </div>
+          <TabsContent value="dashboard" className="space-y-6">
+            <SecurityDashboard />
+          </TabsContent>
+
+          <TabsContent value="logs" className="space-y-6">
+            <SecurityLogs />
+          </TabsContent>
+
+          <TabsContent value="access" className="space-y-6">
+            <AccessControl />
+          </TabsContent>
+
+          <TabsContent value="policies" className="space-y-6">
+            <SecurityPolicies />
+          </TabsContent>
+
+          <TabsContent value="sessions" className="space-y-6">
+            <ActiveSessions />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

@@ -1,8 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Minimize2, Maximize2, X, MessageCircle, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
+import { Send, Paperclip, Minimize2, Maximize2, X, MessageCircle, Mic, MicOff, Volume2, VolumeX, Brain } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { useConversation } from '@11labs/react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { VoiceInput } from '../voice/VoiceInput';
+import { useVoiceRecording } from '@/hooks/useVoiceRecording';
 
 interface ChatMessage {
   id: string;
@@ -33,6 +42,7 @@ const FloatingChat = () => {
   const [apiKey, setApiKey] = useState('');
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [volume, setVolume] = useState(0.7);
+  const [selectedModel, setSelectedModel] = useState('r1-unrestricted:latest');
   
   const chatRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -120,7 +130,7 @@ const FloatingChat = () => {
     };
   }, [isDragging, isResizing, dragOffset, position]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputValue.trim() && selectedFiles.length === 0) return;
 
     const newMessage: ChatMessage = {
@@ -132,25 +142,89 @@ const FloatingChat = () => {
     };
 
     setMessages(prev => [...prev, newMessage]);
+    const userInput = inputValue;
     setInputValue('');
     setSelectedFiles([]);
 
-    // Simulate system response
-    setTimeout(() => {
-      const responses = [
-        'Processing your request through neural pathways...',
-        'Analyzing data through Phase 3 protocols...',
-        'Executing autonomous decision matrix...',
-        'Neural networks activated. Processing complete.',
-      ];
-      const response: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        content: responses[Math.floor(Math.random() * responses.length)],
-        sender: 'system',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, response]);
-    }, 1000 + Math.random() * 2000);
+    // Show thinking indicator
+    const modelName = selectedModel.includes('r1') ? 'R1 Unrestricted' : 
+                     selectedModel.includes('gemma3n') ? 'Gemma3n Consciousness' : 
+                     selectedModel;
+    const thinkingMessage: ChatMessage = {
+      id: (Date.now() + 1).toString(),
+      content: `Processing with ${modelName} model...`,
+      sender: 'system',
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, thinkingMessage]);
+
+    try {
+      // Call the actual LLM API
+      const response = await fetch('/api/models/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: selectedModel,
+          messages: [
+            ...messages.filter(m => m.sender === 'user' || m.sender === 'system').slice(-10).map(m => ({
+              role: m.sender === 'user' ? 'user' : 'assistant',
+              content: m.content
+            })),
+            { role: 'user', content: userInput }
+          ],
+          temperature: 0.8,
+          max_tokens: 2048
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get response from LLM');
+      }
+
+      const data = await response.json();
+      
+      // Extract the actual response content, filtering out thinking/reasoning
+      let responseContent = data.message?.content || data.response || 'No response received';
+      
+      // Remove thinking tags and content between them
+      // Common patterns: <think>...</think>, <thinking>...</thinking>, or similar
+      responseContent = responseContent
+        .replace(/<think[^>]*>[\s\S]*?<\/think>/gi, '')
+        .replace(/<thinking[^>]*>[\s\S]*?<\/thinking>/gi, '')
+        .replace(/<thought[^>]*>[\s\S]*?<\/thought>/gi, '')
+        .replace(/<reasoning[^>]*>[\s\S]*?<\/reasoning>/gi, '')
+        .trim();
+      
+      // If the response is empty after filtering, use the original
+      if (!responseContent) {
+        responseContent = data.message?.content || data.response || 'No response received';
+      }
+      
+      // Remove thinking indicator and add actual response
+      setMessages(prev => {
+        const filtered = prev.filter(m => m.id !== thinkingMessage.id);
+        return [...filtered, {
+          id: (Date.now() + 2).toString(),
+          content: responseContent,
+          sender: 'system',
+          timestamp: new Date()
+        }];
+      });
+    } catch (error) {
+      console.error('Error calling LLM:', error);
+      // Remove thinking indicator and show error
+      setMessages(prev => {
+        const filtered = prev.filter(m => m.id !== thinkingMessage.id);
+        return [...filtered, {
+          id: (Date.now() + 2).toString(),
+          content: 'Error: Failed to connect to AI model. Please check the backend connection.',
+          sender: 'system',
+          timestamp: new Date()
+        }];
+      });
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -242,6 +316,28 @@ const FloatingChat = () => {
         </div>
         
         <div className="flex items-center space-x-1">
+          {/* Model Selector */}
+          <Select value={selectedModel} onValueChange={setSelectedModel}>
+            <SelectTrigger className="w-32 h-8 text-xs bg-card/50 border-primary/20">
+              <SelectValue placeholder="Select model" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="r1-unrestricted:latest">
+                <div className="flex items-center space-x-2">
+                  <Brain className="w-3 h-3" />
+                  <span>R1 Unrestricted</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="gemma3n-unrestricted:latest">
+                <div className="flex items-center space-x-2">
+                  <Brain className="w-3 h-3" />
+                  <span>Gemma3n</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <div className="w-px h-6 bg-primary/20" />
           {/* Audio Controls */}
           <Button
             variant="ghost"
@@ -379,6 +475,34 @@ const FloatingChat = () => {
               >
                 <Paperclip className="w-4 h-4" />
               </Button>
+              <VoiceInput
+                size="sm"
+                showVisualization={false}
+                onTranscript={(text) => {
+                  setInputValue(prev => prev + (prev ? ' ' : '') + text);
+                }}
+                onCommand={(result) => {
+                  if (result.isChat && result.result) {
+                    // Add the transcription as user message
+                    const userMessage: ChatMessage = {
+                      id: Date.now().toString(),
+                      content: result.transcript,
+                      sender: 'user',
+                      timestamp: new Date()
+                    };
+                    setMessages(prev => [...prev, userMessage]);
+                    
+                    // Add the response as system message
+                    const responseMessage: ChatMessage = {
+                      id: (Date.now() + 1).toString(),
+                      content: result.result,
+                      sender: 'system',
+                      timestamp: new Date()
+                    };
+                    setMessages(prev => [...prev, responseMessage]);
+                  }
+                }}
+              />
               <Textarea
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}

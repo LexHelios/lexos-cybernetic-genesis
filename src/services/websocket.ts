@@ -14,9 +14,9 @@ class WebSocketService {
 
     this.isConnecting = true;
     
-    const BASE_URL = 'ws://147.185.40.39:20067';
+    const BASE_URL = 'ws://localhost:3001';
     
-    const wsUrl = `${BASE_URL}/ws/${this.clientId}`;
+    const wsUrl = BASE_URL;
     
     console.log('Connecting to WebSocket:', wsUrl);
 
