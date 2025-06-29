@@ -34,8 +34,18 @@ const Sidebar = () => {
   const { user, logout } = useAuth();
 
   return (
-    <aside className="w-64 border-r border-primary/20 bg-card/30 backdrop-blur-md flex flex-col">
-      <div className="p-4 flex-1">
+    <aside className="w-64 border-r border-primary/20 bg-card/30 backdrop-blur-md flex flex-col relative overflow-hidden">
+      {/* Background with chat interface image */}
+      <div 
+        className="absolute inset-0 opacity-5"
+        style={{
+          backgroundImage: `url('/lovable-uploads/d5f83983-511a-48b6-af8e-060d6c092d79.png')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      />
+      
+      <div className="p-4 flex-1 relative z-10">
         <div className="mb-4">
           <h2 className="text-sm font-orbitron font-bold text-primary mb-2">NEXUS NAVIGATION</h2>
           <div className="text-xs text-muted-foreground">
@@ -55,8 +65,16 @@ const Sidebar = () => {
                 }`
               }
             >
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center border border-primary/30 bg-black/50">
-                <item.icon className="w-4 h-4 opacity-80 hover:opacity-100 transition-opacity" />
+              <div 
+                className="w-8 h-8 rounded-lg flex items-center justify-center border border-primary/30 bg-black/50 overflow-hidden"
+                style={{
+                  backgroundImage: `url('/lovable-uploads/117c006d-6418-44ac-8918-cf8e34bb18c8.png')`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  opacity: 0.8
+                }}
+              >
+                <item.icon className="w-4 h-4 opacity-90 hover:opacity-100 transition-opacity text-primary" />
               </div>
               <span className="font-medium">{item.name}</span>
             </NavLink>
@@ -64,33 +82,44 @@ const Sidebar = () => {
         </nav>
       </div>
       
-      <div className="p-4 space-y-4">
-        <div className="holographic-panel p-4 rounded-lg">
-          <div className="text-xs text-muted-foreground mb-2">SYSTEM STATUS</div>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm">GPU Utilization</span>
-              <span className="text-sm text-matrix-green">
-                {systemStatus?.hardware.gpu.utilization.toFixed(1) || '--'}%
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Active Agents</span>
-              <span className="text-sm text-cyber-pink">
-                {systemStatus?.orchestrator.active_agents || '--'}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Active Tasks</span>
-              <span className="text-sm text-electric-blue">
-                {systemStatus?.orchestrator.active_tasks || '--'}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Temperature</span>
-              <span className="text-sm text-warning-orange">
-                {systemStatus?.hardware.gpu.temperature || '--'}°C
-              </span>
+      <div className="p-4 space-y-4 relative z-10">
+        <div 
+          className="holographic-panel p-4 rounded-lg relative overflow-hidden"
+          style={{
+            backgroundImage: `url('/lovable-uploads/009716e7-a32f-4488-a637-55942e697dc6.png')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundOpacity: 0.1
+          }}
+        >
+          <div className="absolute inset-0 bg-black/70 rounded-lg" />
+          <div className="relative">
+            <div className="text-xs text-muted-foreground mb-2">SYSTEM STATUS</div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm">GPU Utilization</span>
+                <span className="text-sm text-matrix-green">
+                  {systemStatus?.hardware.gpu.utilization.toFixed(1) || '--'}%
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Active Agents</span>
+                <span className="text-sm text-cyber-pink">
+                  {systemStatus?.orchestrator.active_agents || '--'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Active Tasks</span>
+                <span className="text-sm text-electric-blue">
+                  {systemStatus?.orchestrator.active_tasks || '--'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Temperature</span>
+                <span className="text-sm text-warning-orange">
+                  {systemStatus?.hardware.gpu.temperature || '--'}°C
+                </span>
+              </div>
             </div>
           </div>
         </div>
