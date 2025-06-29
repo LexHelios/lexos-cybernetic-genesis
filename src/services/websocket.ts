@@ -7,40 +7,47 @@ class WebSocketService {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
   private listeners: Map<string, Set<(data: any) => void>> = new Map();
+  private clientId: string = `client-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  private getWebSocketUrl(endpoint: string): string {
+  private getWebSocketUrl(): string {
     const baseUrl = process.env.NODE_ENV === 'production' 
       ? 'wss://lexos.sharma.family' 
       : 'ws://localhost:8000';
-    const token = localStorage.getItem('auth_token');
-    return `${baseUrl}${endpoint}?token=${token}`;
+    return `${baseUrl}/ws/${this.clientId}`;
   }
 
-  connect(endpoint: string = '/ws/monitoring'): void {
+  connect(): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       return;
     }
 
     try {
-      this.ws = new WebSocket(this.getWebSocketUrl(endpoint));
+      this.ws = new WebSocket(this.getWebSocketUrl());
       
       this.ws.onopen = () => {
-        console.log('WebSocket connected');
+        console.log('WebSocket connected to LexOS backend');
         this.reconnectAttempts = 0;
+        
+        // Send initial connection message
+        this.send({
+          type: 'connection',
+          data: { client_id: this.clientId, timestamp: Date.now() }
+        });
       };
 
       this.ws.onmessage = (event) => {
         try {
-          const message: WebSocketMessage = JSON.parse(event.data);
-          this.notifyListeners(message.type, message.data);
+          const message = JSON.parse(event.data);
+          console.log('WebSocket message received:', message);
+          this.notifyListeners(message.type || 'unknown', message.data || message);
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);
         }
       };
 
       this.ws.onclose = () => {
-        console.log('WebSocket disconnected');
-        this.attemptReconnect(endpoint);
+        console.log('WebSocket disconnected from LexOS backend');
+        this.attemptReconnect();
       };
 
       this.ws.onerror = (error) => {
@@ -48,16 +55,16 @@ class WebSocketService {
       };
     } catch (error) {
       console.error('Failed to connect WebSocket:', error);
-      this.attemptReconnect(endpoint);
+      this.attemptReconnect();
     }
   }
 
-  private attemptReconnect(endpoint: string): void {
+  private attemptReconnect(): void {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       setTimeout(() => {
         console.log(`Attempting to reconnect WebSocket (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-        this.connect(endpoint);
+        this.connect();
       }, this.reconnectDelay * this.reconnectAttempts);
     }
   }
@@ -66,6 +73,14 @@ class WebSocketService {
     if (this.ws) {
       this.ws.close();
       this.ws = null;
+    }
+  }
+
+  send(message: any): void {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(message));
+    } else {
+      console.warn('WebSocket not connected, message not sent:', message);
     }
   }
 
