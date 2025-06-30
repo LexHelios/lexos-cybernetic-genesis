@@ -1,14 +1,20 @@
+
 // Core API Types for NEXUS Backend Integration
 export interface Agent {
+  id: string;
   agent_id: string;
   name: string;
+  type: string;
   description: string;
-  status: 'active' | 'inactive' | 'busy' | 'error';
-  capabilities: AgentCapability[];
+  status: 'active' | 'inactive' | 'busy' | 'error' | 'idle';
+  capabilities: string[];
   current_tasks: number;
   total_tasks_completed: number;
+  tasksCompleted: number;
   average_response_time: number;
   last_activity: number;
+  performance: number;
+  uptime: string;
   configuration?: {
     rate_limit: number;
     max_concurrent_requests: number;
@@ -109,6 +115,7 @@ export interface DiskMetrics {
 export interface User {
   user_id: string;
   username: string;
+  name: string;
   email: string;
   full_name: string;
   role: 'admin' | 'family_member' | 'guest';
@@ -167,4 +174,15 @@ export interface GraphNode {
   y?: number;
   z?: number;
   properties?: Record<string, any>;
+}
+
+export interface CommandResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+  result?: {
+    message: string;
+  };
+  isChat?: boolean;
+  response?: string;
 }

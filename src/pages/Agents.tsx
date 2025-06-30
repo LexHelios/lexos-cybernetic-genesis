@@ -35,7 +35,8 @@ const Agents = () => {
     switch (status) {
       case 'active': return 'bg-green-500';
       case 'idle': return 'bg-yellow-500';
-      case 'offline': return 'bg-red-500';
+      case 'offline': 
+      case 'inactive': return 'bg-red-500';
       default: return 'bg-gray-500';
     }
   };
@@ -44,7 +45,8 @@ const Agents = () => {
     switch (status) {
       case 'active': return <Activity className="w-4 h-4" />;
       case 'idle': return <Pause className="w-4 h-4" />;
-      case 'offline': return <AlertCircle className="w-4 h-4" />;
+      case 'offline':
+      case 'inactive': return <AlertCircle className="w-4 h-4" />;
       default: return <Eye className="w-4 h-4" />;
     }
   };
@@ -162,19 +164,19 @@ const Agents = () => {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Performance</span>
-                  <span className="text-primary font-mono">{agent.performance}%</span>
+                  <span className="text-primary font-mono">{agent.performance || 0}%</span>
                 </div>
-                <Progress value={agent.performance} className="h-2" />
+                <Progress value={agent.performance || 0} className="h-2" />
               </div>
 
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="text-center p-2 bg-background/50 rounded">
-                  <div className="font-mono text-lg text-primary">{agent.tasksCompleted}</div>
+                  <div className="font-mono text-lg text-primary">{agent.tasksCompleted || agent.total_tasks_completed || 0}</div>
                   <div className="text-muted-foreground">Tasks</div>
                 </div>
                 <div className="text-center p-2 bg-background/50 rounded">
-                  <div className="font-mono text-lg text-green-400">{agent.uptime}</div>
+                  <div className="font-mono text-lg text-green-400">{agent.uptime || '0h'}</div>
                   <div className="text-muted-foreground">Uptime</div>
                 </div>
               </div>
@@ -185,7 +187,7 @@ const Agents = () => {
                 <div className="flex flex-wrap gap-1">
                   {agent.capabilities?.map((cap, idx) => (
                     <Badge key={idx} variant="secondary" className="text-xs">
-                      {cap}
+                      {typeof cap === 'string' ? cap : cap.name || 'Unknown'}
                     </Badge>
                   ))}
                 </div>

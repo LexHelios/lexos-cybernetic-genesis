@@ -40,13 +40,12 @@ const queryClient = new QueryClient({
   },
 });
 
-
 // Protected route wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
   
   if (isLoading) {
-    return <LoadingScreen />;
+    return <LoadingScreen isLoading={true} />;
   }
   
   if (!isAuthenticated) {
@@ -250,7 +249,7 @@ const App = () => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <ThemeProvider>
           <TooltipProvider>
             <Toaster />
             <Sonner />
