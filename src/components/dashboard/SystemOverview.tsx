@@ -43,15 +43,37 @@ const SystemOverview = () => {
 
   if (!systemStatus) return null;
 
-  // Provide proper default values for nested objects
-  const hardware = systemStatus.hardware || {};
-  const orchestrator = systemStatus.orchestrator || {};
-  const system = systemStatus.system || {};
+  // Provide proper default values for nested objects with expected properties
+  const hardware = systemStatus.hardware || {
+    gpu: { model: 'GPU', memory_total: '--', memory_used: '--', utilization: 0, temperature: 0 },
+    cpu: { cores: 0, usage: 0, load_average: [0, 0, 0] },
+    memory: { total: '--', used: '--', available: '--', usage_percent: 0 },
+    disk: { total: '--', used: '--', available: '--', usage_percent: 0 }
+  };
   
-  const gpu = hardware.gpu || {};
-  const cpu = hardware.cpu || {};
-  const memory = hardware.memory || {};
-  const disk = hardware.disk || {};
+  const orchestrator = systemStatus.orchestrator || {
+    status: 'unknown',
+    active_agents: 0,
+    total_tasks: 0,
+    active_tasks: 0,
+    queued_tasks: 0,
+    completed_tasks: 0,
+    failed_tasks: 0,
+    task_workers: 0,
+    workflow_workers: 0
+  };
+  
+  const system = systemStatus.system || {
+    status: 'unknown',
+    uptime: 0,
+    version: '--',
+    environment: 'unknown'
+  };
+  
+  const gpu = hardware.gpu || { model: 'GPU', memory_total: '--', memory_used: '--', utilization: 0, temperature: 0 };
+  const cpu = hardware.cpu || { cores: 0, usage: 0, load_average: [0, 0, 0] };
+  const memory = hardware.memory || { total: '--', used: '--', available: '--', usage_percent: 0 };
+  const disk = hardware.disk || { total: '--', used: '--', available: '--', usage_percent: 0 };
 
   return (
     <div className="space-y-6">
