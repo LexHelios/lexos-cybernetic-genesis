@@ -1,7 +1,7 @@
 
 import React from 'react';
 import SystemOverview from '../components/dashboard/SystemOverview';
-import { Bot } from 'lucide-react';
+import { Bot, Smile } from 'lucide-react';
 import { VoiceCommandPanel } from '../components/voice/VoiceCommandPanel';
 import { AutoRoutingStats } from '../components/dashboard/AutoRoutingStats';
 
@@ -34,9 +34,12 @@ const Dashboard = () => {
               {/* Remove icon to show background image clearly */}
             </div>
             <div>
-              <h1 className="text-3xl font-orbitron font-bold text-primary">
-                Neural Command Center
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl font-orbitron font-bold text-primary">
+                  Neural Command Center
+                </h1>
+                <Smile className="w-6 h-6 text-yellow-400 animate-pulse" />
+              </div>
               <p className="text-muted-foreground">
                 LEX AI Phase 3 - Real-time system overview and autonomous agent monitoring
               </p>
