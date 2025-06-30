@@ -12,7 +12,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { useToast } from '../ui/use-toast';
+import { useToast } from '../../hooks/use-toast';
 import { apiClient } from '../../services/api';
 
 interface ApiKeyModalProps {
