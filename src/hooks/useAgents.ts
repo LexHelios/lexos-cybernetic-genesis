@@ -14,7 +14,7 @@ export const useAgents = () => {
       setIsLoading(true);
       setError(null);
       const response = await apiClient.getAgents();
-      setAgents(response.agents);
+      setAgents(response.agents || []);
     } catch (err) {
       console.error('Failed to fetch agents:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch agents');

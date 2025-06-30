@@ -60,12 +60,19 @@ const AgentManagement = () => {
     });
   };
 
-  const filteredAgents = agents.filter(agent => {
-    const matchesSearch = agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         agent.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || agent.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredAgents = React.useMemo(() => {
+    if (!agents || !Array.isArray(agents)) {
+      console.warn('Agents data is not available or not an array:', agents);
+      return [];
+    }
+    
+    return agents.filter(agent => {
+      const matchesSearch = agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           agent.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = filterStatus === 'all' || agent.status === filterStatus;
+      return matchesSearch && matchesStatus;
+    });
+  }, [agents, searchQuery, filterStatus]);
 
   const getMetricValue = (key: string, fallback: string = '0') => {
     if (!systemMetrics) return fallback;
