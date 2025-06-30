@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import { WebSocketServer } from 'ws';
@@ -7,6 +6,12 @@ import { createServer } from 'http';
 const app = express();
 const server = createServer(app);
 const port = 9000;
+
+// Valid credentials matching the main backend
+const validCredentials = {
+  'admin': 'NEXUS_ADMIN_CHANGE_IMMEDIATELY',
+  'operator': 'NEXUS_OPERATOR_CHANGE_IMMEDIATELY'
+};
 
 // Middleware
 app.use(cors({
@@ -25,8 +30,9 @@ app.post('/api/auth/login', (req, res) => {
   console.log('Login request received:', req.body);
   const { username, password } = req.body;
   
-  // Simple mock authentication
-  if (username && password) {
+  // Check against valid credentials
+  if (username && password && validCredentials[username] === password) {
+    console.log(`Login successful for user: ${username}`);
     res.json({
       success: true,
       token: 'mock-jwt-token-12345',
@@ -34,17 +40,23 @@ app.post('/api/auth/login', (req, res) => {
         id: '1',
         user_id: '1',
         username: username,
-        email: `${username}@example.com`,
-        role: 'admin',
+        email: `${username}@lexos-genesis.com`,
+        role: username === 'admin' ? 'admin' : 'operator',
         created_at: new Date().toISOString(),
         last_login: new Date().toISOString(),
-        total_tasks: 0,
-        workspace_size: '0 MB'
+        total_tasks: username === 'admin' ? 150 : 75,
+        workspace_size: username === 'admin' ? '25.4 MB' : '12.1 MB'
       },
       expires_at: Date.now() + 24 * 60 * 60 * 1000
     });
   } else {
-    res.status(401).json({ error: 'Invalid credentials' });
+    console.log(`Login failed for user: ${username} with password: ${password}`);
+    console.log('Valid credentials:', Object.keys(validCredentials));
+    res.status(401).json({ 
+      success: false,
+      error: 'Invalid credentials',
+      message: 'Username or password is incorrect'
+    });
   }
 });
 
@@ -61,7 +73,7 @@ app.get('/api/auth/verify', (req, res) => {
         id: '1',
         user_id: '1',
         username: 'admin',
-        email: 'admin@example.com',
+        email: 'admin@lexos-genesis.com',
         role: 'admin'
       }
     });
@@ -77,12 +89,12 @@ app.get('/api/auth/me', (req, res) => {
       id: '1',
       user_id: '1',
       username: 'admin',
-      email: 'admin@example.com',
+      email: 'admin@lexos-genesis.com',
       role: 'admin',
       created_at: new Date().toISOString(),
       last_login: new Date().toISOString(),
-      total_tasks: 42,
-      workspace_size: '15.2 MB'
+      total_tasks: 150,
+      workspace_size: '25.4 MB'
     });
   } else {
     res.status(401).json({ error: 'Unauthorized' });
@@ -173,14 +185,14 @@ app.get('/api/system/status', (req, res) => {
         load_average: [1.2, 1.1, 0.9]
       },
       memory: {
-        total: 34359738368, // 32GB in bytes
-        used: 13303014195,  // ~12.4GB
+        total: 34359738368,
+        used: 13303014195,
         available: 21056724173,
         usage_percent: 38.75
       },
       disk: {
-        total: 107374182400, // 100GB
-        used: 48954982400,   // ~45.6GB
+        total: 107374182400,
+        used: 48954982400,
         available: 58419200000,
         usage_percent: 45.6
       }
@@ -233,14 +245,12 @@ const wss = new WebSocketServer({ server, path: '/ws/monitoring' });
 wss.on('connection', (ws) => {
   console.log('WebSocket client connected');
   
-  // Send initial connection message
   ws.send(JSON.stringify({
     type: 'connection',
     data: { message: 'Connected to LexOS Genesis' },
     timestamp: Date.now()
   }));
   
-  // Send periodic updates
   const interval = setInterval(() => {
     if (ws.readyState === ws.OPEN) {
       ws.send(JSON.stringify({
@@ -260,7 +270,6 @@ wss.on('connection', (ws) => {
       const data = JSON.parse(message);
       console.log('WebSocket message received:', data);
       
-      // Echo back the message
       ws.send(JSON.stringify({
         type: 'response',
         data: { received: data },
@@ -291,6 +300,9 @@ server.listen(port, '0.0.0.0', () => {
   console.log(`🚀 LexOS Genesis Mock Backend running on http://localhost:${port}`);
   console.log(`📡 WebSocket server available on ws://localhost:${port}/ws/monitoring`);
   console.log(`🔗 CORS enabled for all origins`);
+  console.log(`🔐 Valid login credentials:`);
+  console.log(`   admin / NEXUS_ADMIN_CHANGE_IMMEDIATELY`);
+  console.log(`   operator / NEXUS_OPERATOR_CHANGE_IMMEDIATELY`);
   console.log(`📋 Available endpoints:`);
   console.log(`   POST /api/auth/login`);
   console.log(`   GET  /api/auth/verify`);
