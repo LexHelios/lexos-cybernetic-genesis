@@ -26,11 +26,11 @@ interface GraphEdge {
 
 interface GraphData {
   nodes: GraphNode[];
-  edges: GraphEdge[];
+  links: GraphEdge[]; // Changed from 'edges' to 'links' for ForceGraph3D compatibility
 }
 
 const KnowledgeGraphVisualization = () => {
-  const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [] });
+  const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [nodePosition, setNodePosition] = useState<{ x: number; y: number; z: number }>({ x: 0, y: 0, z: 0 });
   const [loading, setLoading] = useState(true);
@@ -53,19 +53,22 @@ const KnowledgeGraphVisualization = () => {
       const response = await apiClient.getKnowledgeGraph();
       
       if (response?.nodes && response?.edges) {
-        setGraphData(response);
+        setGraphData({
+          nodes: response.nodes,
+          links: response.edges // Map edges to links
+        });
       } else {
         // Mock data fallback
         setGraphData({
           nodes: mockNodes,
-          edges: mockEdges
+          links: mockEdges
         });
       }
     } catch (error) {
       console.error('Failed to fetch graph data:', error);
       setGraphData({
         nodes: mockNodes,
-        edges: mockEdges
+        links: mockEdges
       });
     } finally {
       setLoading(false);
@@ -76,7 +79,10 @@ const KnowledgeGraphVisualization = () => {
     try {
       const response = await apiClient.getNodeSubgraph(nodeId);
       if (response?.nodes && response?.edges) {
-        setGraphData(response);
+        setGraphData({
+          nodes: response.nodes,
+          links: response.edges
+        });
       }
     } catch (error) {
       console.error('Failed to fetch subgraph:', error);

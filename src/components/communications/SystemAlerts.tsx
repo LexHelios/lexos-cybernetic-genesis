@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -98,7 +97,7 @@ const SystemAlerts = () => {
           ? { 
               ...alert, 
               acknowledged: true, 
-              acknowledgedBy: user.user_id, // Fix: use user.user_id instead of user.id
+              acknowledgedBy: Number(user.user_id), // Convert to number
               acknowledgedAt: new Date().toISOString() 
             }
           : alert

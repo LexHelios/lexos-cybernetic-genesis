@@ -16,13 +16,12 @@ import { useToast } from '../ui/use-toast';
 import { apiClient } from '../../services/api';
 
 interface ApiKeyModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  apiKeys: { id: string; name: string; key: string; masked_key: string; }[];
-  setApiKeys: React.Dispatch<React.SetStateAction<{ id: string; name: string; key: string; masked_key: string; }[]>>;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: (keyData: { id: string; name: string; permissions: string[]; }) => void;
 }
 
-const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, apiKeys, setApiKeys }) => {
+const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ open, onOpenChange, onSuccess }) => {
   const [newKey, setNewKey] = useState({ name: '', key: '' });
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -47,18 +46,19 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, apiKeys, set
         })
       });
       
-      setApiKeys(prev => [...prev, {
+      const keyData = {
         id: response.id || Date.now().toString(),
         name: newKey.name,
-        key: response.api_key,
-        masked_key: response.api_key
-      }]);
+        permissions: [] as string[]
+      };
+      
+      onSuccess(keyData);
 
       toast({
         title: "Success",
         description: "API key saved successfully.",
       });
-      onClose();
+      onOpenChange(false);
       setNewKey({ name: '', key: '' });
     } catch (error: any) {
       console.error("Error saving API key:", error);
@@ -73,7 +73,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, apiKeys, set
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add New API Key</DialogTitle>
@@ -107,7 +107,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, apiKeys, set
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" variant="secondary" onClick={onClose}>
+          <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button type="button" onClick={handleSaveKey} disabled={saving}>
