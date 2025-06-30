@@ -12,8 +12,7 @@ import {
   Eye, 
   MessageSquare, 
   Settings,
-  Play,
-  Stop
+  Play
 } from 'lucide-react';
 
 interface AgentCardProps {
@@ -22,6 +21,8 @@ interface AgentCardProps {
   onConfigClick?: (agentId: string) => void;
   onStartClick?: (agentId: string) => void;
   onStopClick?: (agentId: string) => void;
+  onTaskSubmit?: (agentId: string) => void;
+  onConfigure?: (agentId: string) => void;
 }
 
 const AgentCard: React.FC<AgentCardProps> = ({ 
@@ -29,7 +30,9 @@ const AgentCard: React.FC<AgentCardProps> = ({
   onChatClick, 
   onConfigClick,
   onStartClick,
-  onStopClick
+  onStopClick,
+  onTaskSubmit,
+  onConfigure
 }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -122,7 +125,7 @@ const AgentCard: React.FC<AgentCardProps> = ({
             size="sm" 
             variant="outline" 
             className="flex-1"
-            onClick={() => onConfigClick?.(agent.agent_id)}
+            onClick={() => onConfigClick?.(agent.agent_id) || onConfigure?.(agent.agent_id)}
           >
             <Settings className="w-3 h-3 mr-1" />
             Config

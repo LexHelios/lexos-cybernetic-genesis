@@ -140,7 +140,7 @@ const Agents = () => {
       {/* Agents Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredAgents.map((agent) => (
-          <Card key={agent.id} className="holographic-panel hover:border-primary/50 transition-all duration-300 group">
+          <Card key={agent.agent_id} className="holographic-panel hover:border-primary/50 transition-all duration-300 group">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -187,7 +187,7 @@ const Agents = () => {
                 <div className="flex flex-wrap gap-1">
                   {agent.capabilities?.map((cap, idx) => (
                     <Badge key={idx} variant="secondary" className="text-xs">
-                      {typeof cap === 'string' ? cap : cap.name || 'Unknown'}
+                      {typeof cap === 'string' ? cap : (cap as any)?.name || 'Unknown'}
                     </Badge>
                   ))}
                 </div>

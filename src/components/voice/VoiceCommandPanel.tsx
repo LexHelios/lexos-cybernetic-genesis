@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Mic, Volume2, HelpCircle, Command } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -117,7 +118,6 @@ export function VoiceCommandPanel() {
             onTranscript={setTranscript}
             onCommand={handleCommand}
             showVisualization={true}
-            autoCommand={true}
             size="lg"
           />
           
