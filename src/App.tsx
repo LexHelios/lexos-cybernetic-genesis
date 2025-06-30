@@ -7,22 +7,38 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import LoginForm from "./components/auth/LoginForm";
 import Index from "./pages/Index";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { useState, useEffect } from "react";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5, // 5 minutes
     },
   },
 });
 
 const AppContent = () => {
   const { isAuthenticated, loading, user } = useAuth();
+  const [forceShowLogin, setForceShowLogin] = useState(false);
 
   console.log('AppContent render:', { isAuthenticated, loading, user: !!user });
 
-  if (loading) {
+  // Add a timeout to force show login if loading takes too long
+  useEffect(() => {
+    if (loading) {
+      const timeout = setTimeout(() => {
+        console.warn('Loading timeout reached, forcing login screen');
+        setForceShowLogin(true);
+      }, 10000); // 10 seconds timeout
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [loading]);
+
+  if (loading && !forceShowLogin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
@@ -38,13 +54,19 @@ const AppContent = () => {
               <p>Backend: {import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'}</p>
               <p>Status: Authenticating...</p>
             </div>
+            <button 
+              onClick={() => setForceShowLogin(true)}
+              className="mt-4 px-4 py-2 text-xs bg-primary/20 hover:bg-primary/30 rounded border border-primary/40 text-primary"
+            >
+              Skip to Login
+            </button>
           </div>
         </div>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || forceShowLogin) {
     console.log('AppContent: User not authenticated, showing login form');
     return <LoginForm />;
   }
@@ -58,17 +80,19 @@ const AppContent = () => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

@@ -35,6 +35,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('AuthProvider: Starting auth initialization');
       
+      // Set a timeout for the entire auth process
+      const authTimeout = setTimeout(() => {
+        console.warn('AuthProvider: Authentication timeout, proceeding as unauthenticated');
+        setLoading(false);
+        setIsAuthenticated(false);
+        setUser(null);
+      }, 8000); // 8 second timeout
+      
       // Check for stored token
       const storedToken = localStorage.getItem('auth_token');
       console.log('AuthProvider: Stored token exists:', !!storedToken);
@@ -45,6 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         try {
           await fetchUser();
+          clearTimeout(authTimeout);
         } catch (error) {
           console.warn('AuthProvider: Failed to fetch user with stored token, clearing token');
           // Clear invalid token and continue as unauthenticated
@@ -52,11 +61,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           apiClient.clearToken();
           setIsAuthenticated(false);
           setUser(null);
+          clearTimeout(authTimeout);
         }
       } else {
         console.log('AuthProvider: No stored token, user not authenticated');
         setIsAuthenticated(false);
         setUser(null);
+        clearTimeout(authTimeout);
       }
     } catch (error) {
       console.error('AuthProvider: Auth initialization failed:', error);
@@ -74,7 +85,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUser = async () => {
     try {
       console.log('AuthProvider: Fetching current user...');
+      
+      // Add timeout for user fetch
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
       const userData = await apiClient.getCurrentUser();
+      clearTimeout(timeoutId);
+      
       console.log('AuthProvider: User fetched successfully:', userData);
       setUser(userData);
       setIsAuthenticated(true);
