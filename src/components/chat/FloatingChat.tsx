@@ -19,6 +19,8 @@ interface ChatMessage {
   sender: 'user' | 'system';
   timestamp: Date;
   files?: File[];
+  modelUsed?: string;
+  routingReason?: string;
 }
 
 const FloatingChat = () => {
@@ -42,7 +44,9 @@ const FloatingChat = () => {
   const [apiKey, setApiKey] = useState('');
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [volume, setVolume] = useState(0.7);
-  const [selectedModel, setSelectedModel] = useState('r1-unrestricted:latest');
+  const [selectedModel, setSelectedModel] = useState('auto');
+  const [lastUsedModel, setLastUsedModel] = useState<string | null>(null);
+  const [performanceMode, setPerformanceMode] = useState<'fast' | 'balanced' | 'quality'>('balanced');
   
   const chatRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -147,36 +151,59 @@ const FloatingChat = () => {
     setSelectedFiles([]);
 
     // Show thinking indicator
-    const modelName = selectedModel.includes('r1') ? 'R1 Unrestricted' : 
-                     selectedModel.includes('gemma3n') ? 'Gemma3n Consciousness' : 
+    const modelName = selectedModel === 'auto' ? 'Lex AI (Auto-routing)' :
+                     selectedModel.includes('phi3') ? 'Phi3 Mini' :
+                     selectedModel.includes('deepseek') ? 'DeepSeek R1' :
+                     selectedModel.includes('qwen') ? 'Qwen Coder' :
+                     selectedModel.includes('llama') ? 'Llama 3.3' :
+                     selectedModel.includes('mistral') ? 'Mistral' :
+                     selectedModel.includes('mixtral') ? 'Mixtral' :
+                     selectedModel.includes('gemma') ? 'Gemma 2' :
                      selectedModel;
     const thinkingMessage: ChatMessage = {
       id: (Date.now() + 1).toString(),
-      content: `Processing with ${modelName} model...`,
+      content: selectedModel === 'auto' ? 'Lex is analyzing your request...' : `Processing with ${modelName} model...`,
       sender: 'system',
       timestamp: new Date()
     };
     setMessages(prev => [...prev, thinkingMessage]);
 
     try {
-      // Call the actual LLM API
-      const response = await fetch('/api/models/chat', {
+      // Call the actual LLM API with auto mode support
+      const endpoint = selectedModel === 'auto' ? '/api/chat/auto' : '/api/chat';
+      const token = localStorage.getItem('token');
+      
+      const requestBody = selectedModel === 'auto' ? {
+        message: userInput,
+        messages: messages.filter(m => m.sender === 'user' || m.sender === 'system').slice(-10).map(m => ({
+          role: m.sender === 'user' ? 'user' : 'assistant',
+          content: m.content
+        })),
+        performance_mode: performanceMode,
+        options: {
+          temperature: 0.8,
+          max_tokens: 2048
+        }
+      } : {
+        model: selectedModel,
+        messages: [
+          ...messages.filter(m => m.sender === 'user' || m.sender === 'system').slice(-10).map(m => ({
+            role: m.sender === 'user' ? 'user' : 'assistant',
+            content: m.content
+          })),
+          { role: 'user', content: userInput }
+        ],
+        temperature: 0.8,
+        max_tokens: 2048
+      };
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify({
-          model: selectedModel,
-          messages: [
-            ...messages.filter(m => m.sender === 'user' || m.sender === 'system').slice(-10).map(m => ({
-              role: m.sender === 'user' ? 'user' : 'assistant',
-              content: m.content
-            })),
-            { role: 'user', content: userInput }
-          ],
-          temperature: 0.8,
-          max_tokens: 2048
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -202,14 +229,21 @@ const FloatingChat = () => {
         responseContent = data.message?.content || data.response || 'No response received';
       }
       
-      // Remove thinking indicator and add actual response
+      // Check if auto mode was used and update last used model
+      if (data.model_used) {
+        setLastUsedModel(data.model_used);
+      }
+      
+      // Remove thinking indicator and add actual response with model info
       setMessages(prev => {
         const filtered = prev.filter(m => m.id !== thinkingMessage.id);
         return [...filtered, {
           id: (Date.now() + 2).toString(),
           content: responseContent,
           sender: 'system',
-          timestamp: new Date()
+          timestamp: new Date(),
+          modelUsed: data.model_used,
+          routingReason: data.routing_reason
         }];
       });
     } catch (error) {
@@ -311,31 +345,102 @@ const FloatingChat = () => {
           </div>
           <div>
             <h3 className="text-sm font-orbitron font-bold text-primary">Neural Interface</h3>
-            <p className="text-xs text-muted-foreground">LEX AI Command</p>
+            <p className="text-xs text-muted-foreground">
+              {selectedModel === 'auto' ? 'Lex AI' : 'Manual Mode'}
+              {lastUsedModel && selectedModel === 'auto' && (
+                <span className="text-primary/60"> • {lastUsedModel}</span>
+              )}
+            </p>
           </div>
         </div>
         
         <div className="flex items-center space-x-1">
           {/* Model Selector */}
           <Select value={selectedModel} onValueChange={setSelectedModel}>
-            <SelectTrigger className="w-32 h-8 text-xs bg-card/50 border-primary/20">
+            <SelectTrigger className="w-40 h-8 text-xs bg-card/50 border-primary/20">
               <SelectValue placeholder="Select model" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="r1-unrestricted:latest">
+              <SelectItem value="auto">
                 <div className="flex items-center space-x-2">
-                  <Brain className="w-3 h-3" />
-                  <span>R1 Unrestricted</span>
+                  <Brain className="w-3 h-3 text-primary animate-pulse" />
+                  <span className="font-semibold">Auto (Lex AI)</span>
                 </div>
               </SelectItem>
-              <SelectItem value="gemma3n-unrestricted:latest">
+              <div className="px-2 py-1 text-xs text-muted-foreground border-t">Manual Selection</div>
+              <SelectItem value="phi3:mini">
                 <div className="flex items-center space-x-2">
                   <Brain className="w-3 h-3" />
-                  <span>Gemma3n</span>
+                  <span>Phi3 Mini (Fast)</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="mistral:7b">
+                <div className="flex items-center space-x-2">
+                  <Brain className="w-3 h-3" />
+                  <span>Mistral 7B</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="deepseek-r1:7b">
+                <div className="flex items-center space-x-2">
+                  <Brain className="w-3 h-3" />
+                  <span>DeepSeek R1</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="qwen2.5-coder:7b">
+                <div className="flex items-center space-x-2">
+                  <Brain className="w-3 h-3" />
+                  <span>Qwen Coder</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="llama3.3:70b">
+                <div className="flex items-center space-x-2">
+                  <Brain className="w-3 h-3" />
+                  <span>Llama 3.3 70B</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="mixtral:8x7b">
+                <div className="flex items-center space-x-2">
+                  <Brain className="w-3 h-3" />
+                  <span>Mixtral 8x7B</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="gemma2:9b">
+                <div className="flex items-center space-x-2">
+                  <Brain className="w-3 h-3" />
+                  <span>Gemma 2 9B</span>
                 </div>
               </SelectItem>
             </SelectContent>
           </Select>
+          
+          {/* Performance Mode Selector (only show in auto mode) */}
+          {selectedModel === 'auto' && (
+            <>
+              <div className="w-px h-6 bg-primary/20" />
+              <Select value={performanceMode} onValueChange={(value: 'fast' | 'balanced' | 'quality') => setPerformanceMode(value)}>
+                <SelectTrigger className="w-24 h-8 text-xs bg-card/50 border-primary/20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fast">
+                    <div className="flex items-center space-x-1">
+                      <span className="text-xs">⚡ Fast</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="balanced">
+                    <div className="flex items-center space-x-1">
+                      <span className="text-xs">⚖️ Balanced</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="quality">
+                    <div className="flex items-center space-x-1">
+                      <span className="text-xs">💎 Quality</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </>
+          )}
           
           <div className="w-px h-6 bg-primary/20" />
           {/* Audio Controls */}
@@ -427,8 +532,19 @@ const FloatingChat = () => {
                       ))}
                     </div>
                   )}
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {formatTime(message.timestamp)}
+                  <div className="flex items-center justify-between mt-1">
+                    <div className="text-xs text-muted-foreground">
+                      {formatTime(message.timestamp)}
+                    </div>
+                    {message.modelUsed && message.sender === 'system' && (
+                      <div className="text-xs text-primary/60 flex items-center space-x-1">
+                        <Brain className="w-3 h-3" />
+                        <span>{message.modelUsed}</span>
+                        {message.routingReason && (
+                          <span className="text-muted-foreground"> • {message.routingReason}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

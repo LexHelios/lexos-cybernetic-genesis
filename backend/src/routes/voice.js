@@ -1,8 +1,5 @@
 import express from 'express';
 import multer from 'multer';
-import { whisperService } from '../services/whisperService.js';
-import { voiceCommandService } from '../services/voiceCommandService.js';
-import { authService } from '../services/authService.js';
 
 const router = express.Router();
 

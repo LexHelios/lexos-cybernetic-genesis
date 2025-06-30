@@ -3,6 +3,7 @@ import React from 'react';
 import SystemOverview from '../components/dashboard/SystemOverview';
 import { Bot } from 'lucide-react';
 import { VoiceCommandPanel } from '../components/voice/VoiceCommandPanel';
+import { AutoRoutingStats } from '../components/dashboard/AutoRoutingStats';
 
 const Dashboard = () => {
   return (
@@ -47,7 +48,8 @@ const Dashboard = () => {
           <div className="lg:col-span-2">
             <SystemOverview />
           </div>
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-6">
+            <AutoRoutingStats />
             <div className="holographic-panel p-1 rounded-lg">
               <VoiceCommandPanel />
             </div>

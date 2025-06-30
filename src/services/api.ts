@@ -241,6 +241,51 @@ class ApiClient {
   async getSystemStatus(): Promise<SystemStatus> {
     return this.request('/system/status');
   }
+
+  // Chat endpoints
+  async chat(messages: any[], model: string, options?: any): Promise<any> {
+    return this.request('/chat', {
+      method: 'POST',
+      body: JSON.stringify({
+        messages,
+        model,
+        ...options
+      }),
+    });
+  }
+
+  async chatAuto(
+    message: string, 
+    messages: any[], 
+    performanceMode: 'fast' | 'balanced' | 'quality' = 'balanced',
+    options?: any
+  ): Promise<{
+    response: string;
+    model_used: string;
+    routing_reason: string;
+    confidence: number;
+    response_time: number;
+    session_id?: string;
+  }> {
+    return this.request('/chat/auto', {
+      method: 'POST',
+      body: JSON.stringify({
+        message,
+        messages,
+        performance_mode: performanceMode,
+        options
+      }),
+    });
+  }
+
+  async getChatAutoStats(): Promise<{
+    routing_cache_size: number;
+    model_usage: Record<string, number>;
+    average_response_times: Record<string, number>;
+    total_requests: number;
+  }> {
+    return this.request('/chat/auto/stats');
+  }
 }
 
 export const apiClient = new ApiClient();

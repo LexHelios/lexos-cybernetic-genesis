@@ -1,9 +1,10 @@
-import { agentManager } from './agentManager.js';
-import { taskQueue } from './taskQueue.js';
-import { workflowEngine } from './workflowEngine.js';
+import { AgentManager } from './agentManager.js';
 
 class VoiceCommandService {
-  constructor() {
+  constructor(agentManager, taskQueue, workflowEngine) {
+    this.agentManager = agentManager;
+    this.taskQueue = taskQueue;
+    this.workflowEngine = workflowEngine;
     this.commands = new Map();
     this.initializeCommands();
   }
@@ -142,12 +143,12 @@ class VoiceCommandService {
 
   // Command handlers
   async startAgent(agentName, context) {
-    const agent = await agentManager.getAgent(agentName);
+    const agent = await this.agentManager.getAgent(agentName);
     if (!agent) {
       throw new Error(`Agent "${agentName}" not found`);
     }
     
-    await agentManager.initializeAgent(agentName);
+    await this.agentManager.initializeAgent(agentName);
     return {
       message: `Agent "${agentName}" started successfully`,
       agent: {
@@ -169,7 +170,7 @@ class VoiceCommandService {
   }
 
   async listAgents(params, context) {
-    const agents = await agentManager.listAgents();
+    const agents = await this.agentManager.listAgents();
     return {
       message: `Found ${agents.length} agents`,
       agents
@@ -177,7 +178,7 @@ class VoiceCommandService {
   }
 
   async getAgentStatus(agentName, context) {
-    const status = await agentManager.getAgentStatus(agentName);
+    const status = await this.agentManager.getAgentStatus(agentName);
     return {
       message: `Agent "${agentName}" status retrieved`,
       status
@@ -200,7 +201,7 @@ class VoiceCommandService {
       }
     };
 
-    const taskId = await taskQueue.addTask(task);
+    const taskId = await this.taskQueue.addTask(task);
     return {
       message: `Task created successfully`,
       taskId,
@@ -217,7 +218,7 @@ class VoiceCommandService {
   }
 
   async getTaskStatus(taskId, context) {
-    const task = await taskQueue.getTask(taskId);
+    const task = await this.taskQueue.getTask(taskId);
     return {
       message: `Task status retrieved`,
       task
@@ -225,7 +226,7 @@ class VoiceCommandService {
   }
 
   async listTasks(params, context) {
-    const tasks = await taskQueue.getTasks();
+    const tasks = await this.taskQueue.getTasks();
     return {
       message: `Found ${tasks.length} tasks`,
       tasks
@@ -233,7 +234,7 @@ class VoiceCommandService {
   }
 
   async cancelTask(taskId, context) {
-    await taskQueue.removeTask(taskId);
+    await this.taskQueue.removeTask(taskId);
     return {
       message: `Task ${taskId} cancelled`,
       taskId
@@ -249,7 +250,7 @@ class VoiceCommandService {
   }
 
   async runWorkflow(workflowId, context) {
-    const result = await workflowEngine.executeWorkflow(workflowId);
+    const result = await this.workflowEngine.executeWorkflow(workflowId);
     return {
       message: `Workflow ${workflowId} executed`,
       result
@@ -267,8 +268,8 @@ class VoiceCommandService {
     return {
       message: 'System is operational',
       status: {
-        agents: await agentManager.listAgents(),
-        tasks: await taskQueue.getQueueStatus(),
+        agents: await this.agentManager.listAgents(),
+        tasks: await this.taskQueue.getQueueStatus(),
         uptime: process.uptime()
       }
     };
@@ -290,7 +291,7 @@ class VoiceCommandService {
   }
 
   async clearQueue(params, context) {
-    await taskQueue.clearQueue();
+    await this.taskQueue.clearQueue();
     return {
       message: 'Task queue cleared successfully'
     };
@@ -332,6 +333,6 @@ class VoiceCommandService {
   }
 }
 
-// Export singleton instance
-export const voiceCommandService = new VoiceCommandService();
-export default voiceCommandService;
+// Export class
+export { VoiceCommandService };
+export default VoiceCommandService;

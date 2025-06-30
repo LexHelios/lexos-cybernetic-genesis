@@ -24,6 +24,7 @@ import { analyticsService } from './services/analyticsService.js';
 import analyticsRoutes from './routes/analytics.js';
 import voiceRoutes from './routes/voice.js';
 import voiceWebSocketService from './services/voiceWebSocket.js';
+import llmOrchestrator from './services/llmOrchestrator.js';
 
 // Load environment variables
 dotenv.config();
@@ -54,6 +55,39 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
+});
+
+// API health check endpoint
+app.get('/api/health', async (req, res) => {
+  try {
+    const systemInfo = await systemMonitor.getSystemInfo();
+    const agentStatus = agentManager.getSystemStatus();
+    
+    res.json({
+      status: 'healthy',
+      service: 'LexOS Backend',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      version: '1.0.0',
+      system: {
+        cpu: systemInfo.cpu,
+        memory: systemInfo.memory,
+        disk: systemInfo.disk
+      },
+      services: {
+        api: 'operational',
+        websocket: 'operational',
+        agents: agentStatus.active_agents > 0 ? 'operational' : 'idle',
+        database: 'operational'
+      }
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Agent endpoints
@@ -555,7 +589,43 @@ app.delete('/api/models/ollama/:modelName', authService.authMiddleware(), authSe
 // Chat endpoint for direct model interaction
 app.post('/api/chat', authService.authMiddleware(), async (req, res) => {
   try {
-    const { messages, model, options, session_id, agent_id } = req.body;
+    const { messages, model, options, session_id, agent_id, auto_mode = false } = req.body;
+    
+    // If auto mode is enabled, use the orchestrator
+    if (auto_mode || model === 'auto') {
+      const userMessage = messages[messages.length - 1].content;
+      const userId = req.user.id;
+      
+      // Analyze and route request
+      const routingDecision = await llmOrchestrator.analyzeRequest(userMessage, {
+        sessionId: session_id,
+        userId,
+        conversationHistory: messages,
+        performanceMode: options?.performance_mode || 'balanced'
+      });
+      
+      // Generate response with selected model
+      const result = await llmOrchestrator.generateResponse(userMessage, routingDecision, {
+        sessionId: session_id,
+        userId,
+        conversationHistory: messages,
+        ...options
+      });
+      
+      res.json({
+        message: {
+          role: 'assistant',
+          content: result.response
+        },
+        model_used: result.metadata.model,
+        routing_metadata: {
+          reason: result.metadata.reasoning,
+          confidence: result.metadata.confidence,
+          response_time: result.metadata.responseTime
+        }
+      });
+      return;
+    }
     
     // If agent_id is provided, use the chat service for comprehensive logging
     if (agent_id && messages && messages.length > 0) {
@@ -618,6 +688,75 @@ app.post('/api/chat/session/:sessionId/end', authService.authMiddleware(), async
   try {
     const result = await chatService.endSession(req.params.sessionId);
     res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Auto-routing chat endpoint
+app.post('/api/chat/auto', authService.authMiddleware(), async (req, res) => {
+  try {
+    const { 
+      message, 
+      messages = [], 
+      session_id, 
+      performance_mode = 'balanced',
+      options = {} 
+    } = req.body;
+    
+    const userId = req.user.id;
+    
+    // Get the message content
+    const userMessage = message || (messages.length > 0 ? messages[messages.length - 1].content : '');
+    
+    if (!userMessage) {
+      return res.status(400).json({ error: 'No message provided' });
+    }
+    
+    // Analyze request and select best model
+    const routingDecision = await llmOrchestrator.analyzeRequest(userMessage, {
+      sessionId: session_id,
+      userId,
+      conversationHistory: messages,
+      performanceMode: performance_mode,
+      explicitModel: options.model
+    });
+    
+    // Generate response with selected model
+    const result = await llmOrchestrator.generateResponse(userMessage, routingDecision, {
+      sessionId: session_id,
+      userId,
+      conversationHistory: messages,
+      ...options
+    });
+    
+    // Track usage for analytics
+    await analyticsService.trackEvent('chat', 'auto_response', {
+      userId,
+      sessionId: session_id,
+      selectedModel: result.metadata.model,
+      responseTime: result.metadata.responseTime
+    });
+    
+    res.json({
+      response: result.response,
+      model_used: result.metadata.model,
+      routing_reason: result.metadata.reasoning,
+      confidence: result.metadata.confidence,
+      response_time: result.metadata.responseTime,
+      session_id
+    });
+  } catch (error) {
+    console.error('Auto-routing error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get orchestrator statistics
+app.get('/api/chat/auto/stats', authService.authMiddleware(), async (req, res) => {
+  try {
+    const stats = await llmOrchestrator.getStatistics();
+    res.json(stats);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1543,6 +1682,11 @@ async function startServer() {
     
     // Start system monitoring
     systemMonitor.startMetricsCollection(60000); // Collect metrics every minute
+    
+    // Start LLM orchestrator cache cleanup
+    setInterval(() => {
+      llmOrchestrator.cleanupCache();
+    }, 3600000); // Cleanup every hour
     
     // Start server
     server.listen(port, () => {

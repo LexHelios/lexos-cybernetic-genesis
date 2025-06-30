@@ -1,5 +1,7 @@
 
 import React from 'react';
+import { GlassmorphismPanel } from '../effects/GlassmorphismPanel';
+import { useAudioFeedback } from '@/utils/audioFeedback';
 
 interface MetricCardProps {
   title: string;
@@ -22,6 +24,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
   animate = false,
   backgroundImage = '/lovable-uploads/117c006d-6418-44ac-8918-cf8e34bb18c8.png'
 }) => {
+  const { playHover } = useAudioFeedback();
   const colorClasses = {
     primary: 'border-primary/30 bg-primary/5',
     matrix: 'border-matrix-green/30 bg-matrix-green/5',
@@ -47,9 +50,14 @@ const MetricCard: React.FC<MetricCardProps> = ({
   };
 
   return (
-    <div className={`holographic-panel p-6 rounded-lg border ${colorClasses[color]} ${animate ? 'neural-pulse' : ''} relative overflow-hidden`}>
+    <GlassmorphismPanel
+      className={`p-6 ${colorClasses[color]} ${animate ? 'neural-pulse' : ''}`}
+      hoverable
+      animated={animate}
+      onMouseEnter={() => playHover()}
+    >
       <div 
-        className="absolute inset-0 opacity-5"
+        className="absolute inset-0 opacity-5 pointer-events-none"
         style={{
           backgroundImage: `url('${backgroundImage}')`,
           backgroundSize: 'cover',
@@ -78,7 +86,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </GlassmorphismPanel>
   );
 };
 
