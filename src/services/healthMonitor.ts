@@ -126,8 +126,12 @@ class HealthMonitor {
     this.showRecoveryNotification();
     
     // Try to reconnect WebSocket
-    if (websocketService && websocketService.isConnected && !websocketService.isConnected()) {
-      websocketService.connect();
+    try {
+      if (websocketService && !websocketService.isConnected()) {
+        websocketService.connect();
+      }
+    } catch (error) {
+      console.error('❌ WebSocket reconnection failed:', error);
     }
     
     setTimeout(() => {

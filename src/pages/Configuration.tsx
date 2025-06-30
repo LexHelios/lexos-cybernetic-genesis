@@ -1,10 +1,8 @@
 
 import React, { useState } from 'react';
-import { Settings, Users, Shield, Key, Plus } from 'lucide-react';
+import { Settings, Users, Shield, Key } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import AccessLevelManager from '../components/configuration/AccessLevelManager';
 import UserManagement from '../components/configuration/UserManagement';
 import SecuritySettings from '../components/configuration/SecuritySettings';
