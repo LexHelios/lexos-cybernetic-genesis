@@ -1,0 +1,31 @@
+[Unit]
+Description=LexOS Genesis Monitoring Agent
+Documentation=https://github.com/lexos/monitoring-agent
+After=network.target
+
+[Service]
+Type=simple
+User=user
+WorkingDirectory=/home/user/lexos-genesis/monitoring-agent
+Environment="NODE_ENV=production"
+Environment="MONITORING_PORT=4000"
+ExecStart=/usr/bin/node src/index.js
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lexos-monitoring
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Resource limits
+LimitNOFILE=65536
+MemoryLimit=512M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target
