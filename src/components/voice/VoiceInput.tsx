@@ -1,175 +1,132 @@
-import React, { useEffect, useRef } from 'react';
-import { Mic, MicOff, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+
+import React, { useState } from 'react';
+import { Button } from '../ui/button';
+import { Mic, MicOff } from 'lucide-react';
 import { useVoiceRecording } from '@/hooks/useVoiceRecording';
 
 interface VoiceInputProps {
   onTranscript?: (text: string) => void;
   onCommand?: (result: any) => void;
-  className?: string;
   size?: 'sm' | 'md' | 'lg';
   showVisualization?: boolean;
-  autoCommand?: boolean;
-  realtime?: boolean;
+  className?: string;
 }
 
-export function VoiceInput({
+export const VoiceInput: React.FC<VoiceInputProps> = ({
   onTranscript,
   onCommand,
-  className,
   size = 'md',
   showVisualization = true,
-  autoCommand = false,
-  realtime = false
-}: VoiceInputProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number | null>(null);
-  
+  className = ''
+}) => {
+  const [isProcessing, setIsProcessing] = useState(false);
   const {
     isRecording,
-    isProcessing,
-    audioLevel,
     transcript,
     error,
     startRecording,
     stopRecording
-  } = useVoiceRecording({
-    autoCommand,
-    realtime,
-    onTranscription: (result) => {
-      if (onTranscript) {
-        onTranscript(result.text);
-      }
-    },
-    onCommand
-  });
+  } = useVoiceRecording();
 
-  // Audio visualization
-  useEffect(() => {
-    if (!showVisualization || !canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  const handleToggleRecording = async () => {
+    if (isRecording) {
+      await stopRecording();
+    } else {
+      await startRecording();
+    }
+  };
 
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Handle transcript when recording stops
+  React.useEffect(() => {
+    if (transcript && !isRecording && !isProcessing) {
+      setIsProcessing(true);
       
-      if (isRecording || audioLevel > 0) {
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        const baseRadius = Math.min(canvas.width, canvas.height) * 0.3;
-        const pulseRadius = baseRadius + (audioLevel * 50);
-        
-        // Draw outer pulse
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, pulseRadius, 0, 2 * Math.PI);
-        ctx.strokeStyle = `rgba(59, 130, 246, ${0.3 + audioLevel * 0.4})`;
-        ctx.lineWidth = 2 + audioLevel * 3;
-        ctx.stroke();
-        
-        // Draw inner circle
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, baseRadius, 0, 2 * Math.PI);
-        ctx.fillStyle = isRecording ? 'rgba(239, 68, 68, 0.8)' : 'rgba(59, 130, 246, 0.8)';
-        ctx.fill();
-        
-        // Draw audio level bars
-        const barCount = 12;
-        const barWidth = 4;
-        const barSpacing = (2 * Math.PI) / barCount;
-        
-        for (let i = 0; i < barCount; i++) {
-          const angle = i * barSpacing;
-          const barHeight = 10 + audioLevel * 30 * (0.5 + 0.5 * Math.sin(Date.now() * 0.005 + i));
-          
-          ctx.save();
-          ctx.translate(centerX, centerY);
-          ctx.rotate(angle);
-          
-          ctx.beginPath();
-          ctx.rect(-barWidth / 2, baseRadius + 10, barWidth, barHeight);
-          ctx.fillStyle = `rgba(59, 130, 246, ${0.6 + audioLevel * 0.4})`;
-          ctx.fill();
-          
-          ctx.restore();
+      // Process the transcript
+      if (onTranscript) {
+        onTranscript(transcript);
+      }
+      
+      // Optionally process as command
+      if (onCommand) {
+        processVoiceCommand(transcript);
+      }
+      
+      setIsProcessing(false);
+    }
+  }, [transcript, isRecording, onTranscript, onCommand]);
+
+  const processVoiceCommand = async (text: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/voice/command', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ 
+          command: text,
+          transcript: text
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (onCommand) {
+          onCommand({ ...result, transcript: text });
         }
       }
-      
-      animationRef.current = requestAnimationFrame(draw);
-    };
-    
-    draw();
-    
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [isRecording, audioLevel, showVisualization]);
-
-  const handleClick = () => {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      startRecording();
+    } catch (error) {
+      console.error('Voice command processing error:', error);
     }
   };
 
   const sizeClasses = {
-    sm: 'h-10 w-10',
-    md: 'h-12 w-12',
-    lg: 'h-16 w-16'
+    sm: 'w-8 h-8 p-0',
+    md: 'w-10 h-10 p-0',
+    lg: 'w-12 h-12 p-0'
   };
 
-  const iconSize = {
-    sm: 16,
-    md: 20,
-    lg: 24
+  const iconSizes = {
+    sm: 'w-4 h-4',
+    md: 'w-5 h-5',
+    lg: 'w-6 h-6'
   };
 
   return (
-    <div className={cn('relative inline-flex items-center justify-center', className)}>
-      {showVisualization && (
-        <canvas
-          ref={canvasRef}
-          width={120}
-          height={120}
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)'
-          }}
-        />
-      )}
-      
+    <div className={`flex flex-col items-center space-y-2 ${className}`}>
       <Button
-        variant={isRecording ? 'destructive' : 'default'}
-        size="icon"
-        className={cn(
-          sizeClasses[size],
-          'relative z-10 transition-all duration-200',
-          isRecording && 'animate-pulse'
-        )}
-        onClick={handleClick}
+        onClick={handleToggleRecording}
+        variant={isRecording ? "destructive" : "outline"}
+        className={`${sizeClasses[size]} ${
+          isRecording ? 'animate-pulse bg-red-500/20 border-red-500/50' : 'hover:bg-primary/20'
+        }`}
         disabled={isProcessing}
       >
-        {isProcessing ? (
-          <Loader2 className={cn('animate-spin', `h-${iconSize[size] / 4} w-${iconSize[size] / 4}`)} />
-        ) : isRecording ? (
-          <MicOff className={`h-${iconSize[size] / 4} w-${iconSize[size] / 4}`} />
+        {isRecording ? (
+          <MicOff className={iconSizes[size]} />
         ) : (
-          <Mic className={`h-${iconSize[size] / 4} w-${iconSize[size] / 4}`} />
+          <Mic className={iconSizes[size]} />
         )}
       </Button>
-      
+
       {error && (
-        <div className="absolute top-full mt-2 text-sm text-red-500 whitespace-nowrap">
+        <div className="text-xs text-red-400 text-center max-w-[100px]">
           {error}
+        </div>
+      )}
+
+      {showVisualization && transcript && (
+        <div className="text-xs text-muted-foreground text-center max-w-[150px] p-2 bg-background/50 rounded border border-primary/20">
+          "{transcript}"
+        </div>
+      )}
+
+      {isProcessing && (
+        <div className="text-xs text-primary animate-pulse">
+          Processing...
         </div>
       )}
     </div>
   );
-}
+};

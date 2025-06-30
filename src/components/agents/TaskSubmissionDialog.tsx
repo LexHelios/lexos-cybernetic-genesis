@@ -1,240 +1,242 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Textarea } from '../ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Badge } from '../ui/badge';
-import { useToast } from '../ui/use-toast';
-import { Agent, TaskSubmission } from '../../types/api';
-import { apiClient } from '../../services/api';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Agent, TaskSubmission } from '@/types/api';
+import { useToast } from '@/components/ui/use-toast';
+import { Play, Zap } from 'lucide-react';
 
 interface TaskSubmissionDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  agent?: Agent;
+  agent: Agent;
+  onTaskSubmit?: (taskId: string) => void;
 }
 
-const TaskSubmissionDialog: React.FC<TaskSubmissionDialogProps> = ({
-  open,
-  onOpenChange,
-  agent
+const TaskSubmissionDialog: React.FC<TaskSubmissionDialogProps> = ({ 
+  agent, 
+  onTaskSubmit 
 }) => {
-  const { toast } = useToast();
+  const [isOpen, setIsOpen] = useState(false);
+  const [taskType, setTaskType] = useState('');
+  const [priority, setPriority] = useState<'low' | 'normal' | 'high' | 'urgent'>('normal');
+  const [description, setDescription] = useState('');
+  const [parameters, setParameters] = useState('{}');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [taskData, setTaskData] = useState<TaskSubmission>({
-    task_type: 'analysis',
-    parameters: {},
-    priority: 'normal'
-  });
-  const [queryText, setQueryText] = useState('');
-  const [customParams, setCustomParams] = useState('');
-
-  const taskTypes = {
-    'consciousness_query': { 
-      label: 'Consciousness Query', 
-      description: 'Deep reasoning and philosophical exploration',
-      params: ['query', 'depth', 'temperature']
-    },
-    'code_generation': { 
-      label: 'Code Generation', 
-      description: 'Generate code in various programming languages',
-      params: ['prompt', 'language', 'temperature']
-    },
-    'research': { 
-      label: 'Research Task', 
-      description: 'Information gathering and synthesis',
-      params: ['query', 'research_type', 'depth']
-    },
-    'analysis': { 
-      label: 'General Analysis', 
-      description: 'Analyze and provide insights',
-      params: ['request', 'temperature']
-    },
-    'task_planning': { 
-      label: 'Task Planning', 
-      description: 'Break down complex tasks into steps',
-      params: ['task_description', 'temperature']
-    }
-  };
+  const { toast } = useToast();
 
   const handleSubmit = async () => {
-    if (!agent || !queryText.trim()) return;
+    if (!taskType || !description) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
-    
+
     try {
-      // Build parameters based on task type
-      let parameters = { query: queryText };
-      
-      // Add custom parameters if provided
-      if (customParams.trim()) {
-        try {
-          const parsed = JSON.parse(customParams);
-          parameters = { ...parameters, ...parsed };
-        } catch (e) {
-          toast({
-            title: "Invalid Parameters",
-            description: "Custom parameters must be valid JSON",
-            variant: "destructive"
-          });
-          setIsSubmitting(false);
-          return;
-        }
+      let parsedParameters = {};
+      if (parameters.trim()) {
+        parsedParameters = JSON.parse(parameters);
       }
 
-      const submission: TaskSubmission = {
-        ...taskData,
-        parameters
+      const taskSubmission: TaskSubmission = {
+        task_type: taskType,
+        parameters: {
+          description,
+          ...parsedParameters
+        },
+        priority,
+        timeout: 300000 // 5 minutes default
       };
 
-      const result = await apiClient.submitTask(agent.agent_id, submission);
-      
-      toast({
-        title: "Task Submitted Successfully",
-        description: `Task ${result.task_id} submitted to ${agent.name}. Queue position: ${result.queue_position}`,
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/agents/${agent.agent_id}/tasks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(taskSubmission)
       });
 
-      // Reset form
-      setQueryText('');
-      setCustomParams('');
-      setTaskData({
-        task_type: 'analysis',
-        parameters: {},
-        priority: 'normal'
-      });
+      if (!response.ok) {
+        throw new Error('Failed to submit task');
+      }
+
+      const result = await response.json();
       
-      onOpenChange(false);
-    } catch (error) {
       toast({
-        title: "Submission Failed",
-        description: error instanceof Error ? error.message : "Failed to submit task",
-        variant: "destructive"
+        title: "Task Submitted",
+        description: `Task ${result.task_id} has been queued for ${agent.name}`,
+      });
+
+      if (onTaskSubmit) {
+        onTaskSubmit(result.task_id);
+      }
+
+      // Reset form
+      setTaskType('');
+      setDescription('');
+      setParameters('{}');
+      setPriority('normal');
+      setIsOpen(false);
+
+    } catch (error) {
+      console.error('Task submission error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit task. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const selectedTaskType = taskTypes[taskData.task_type as keyof typeof taskTypes];
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" className="neural-button">
+          <Play className="w-3 h-3 mr-1" />
+          Assign Task
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="holographic-panel max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl font-orbitron">
-            Submit Task to {agent?.name}
+          <DialogTitle className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-primary" />
+            Assign Task to {agent.name}
           </DialogTitle>
           <DialogDescription>
-            Configure and submit a task to the selected agent
+            Configure and submit a new task for this agent to execute.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-4">
           {/* Agent Info */}
-          <div className="flex items-center space-x-3 p-3 border border-matrix-green/20 rounded-lg">
-            <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${
-                agent?.status === 'active' ? 'bg-green-500' : 
-                agent?.status === 'busy' ? 'bg-blue-500' : 'bg-yellow-500'
-              } animate-pulse`} />
-              <span className="font-medium">{agent?.name}</span>
+          <div className="p-3 bg-background/50 rounded border border-primary/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">{agent.name}</p>
+                <p className="text-sm text-muted-foreground">{agent.type}</p>
+              </div>
+              <Badge variant="outline">{agent.status}</Badge>
             </div>
-            <div className="flex flex-wrap gap-1">
-              {agent?.capabilities?.slice(0, 2).map((cap, i) => (
-                <Badge key={i} variant="outline" className="text-xs">
-                  {cap.name}
-                </Badge>
-              ))}
-            </div>
-          </div>
-
-          {/* Task Type */}
-          <div className="space-y-2">
-            <Label htmlFor="task_type">Task Type</Label>
-            <Select
-              value={taskData.task_type}
-              onValueChange={(value) => setTaskData(prev => ({ ...prev, task_type: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(taskTypes).map(([key, type]) => (
-                  <SelectItem key={key} value={key}>
-                    <div>
-                      <div className="font-medium">{type.label}</div>
-                      <div className="text-xs text-muted-foreground">{type.description}</div>
-                    </div>
-                  </SelectItem>
+            <div className="mt-2">
+              <p className="text-xs text-muted-foreground">Capabilities:</p>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {agent.capabilities?.slice(0, 3).map((cap, idx) => (
+                  <Badge key={idx} variant="secondary" className="text-xs">
+                    {typeof cap === 'string' ? cap : 'Unknown'}
+                  </Badge>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Query/Prompt */}
-          <div className="space-y-2">
-            <Label htmlFor="query">Query/Prompt</Label>
-            <Textarea
-              id="query"
-              placeholder="Enter your query or prompt here..."
-              value={queryText}
-              onChange={(e) => setQueryText(e.target.value)}
-              rows={4}
-              className="resize-none"
-            />
-          </div>
-
-          {/* Priority */}
-          <div className="space-y-2">
-            <Label htmlFor="priority">Priority</Label>
-            <Select
-              value={taskData.priority}
-              onValueChange={(value) => setTaskData(prev => ({ ...prev, priority: value as any }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="normal">Normal</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Custom Parameters */}
-          <div className="space-y-2">
-            <Label htmlFor="params">Custom Parameters (JSON)</Label>
-            <Textarea
-              id="params"
-              placeholder='{"temperature": 0.7, "max_tokens": 1000}'
-              value={customParams}
-              onChange={(e) => setCustomParams(e.target.value)}
-              rows={3}
-              className="resize-none font-mono text-sm"
-            />
-            <div className="text-xs text-muted-foreground">
-              Available parameters: {selectedTaskType?.params.join(', ')}
+                {agent.capabilities && agent.capabilities.length > 3 && (
+                  <Badge variant="secondary" className="text-xs">
+                    +{agent.capabilities.length - 3} more
+                  </Badge>
+                )}
+              </div>
             </div>
+          </div>
+
+          {/* Task Configuration */}
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="task-type">Task Type *</Label>
+              <Select value={taskType} onValueChange={setTaskType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select task type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="analysis">Data Analysis</SelectItem>
+                  <SelectItem value="generation">Content Generation</SelectItem>
+                  <SelectItem value="processing">Data Processing</SelectItem>
+                  <SelectItem value="research">Research Task</SelectItem>
+                  <SelectItem value="computation">Computation</SelectItem>
+                  <SelectItem value="custom">Custom Task</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="priority">Priority</Label>
+              <Select value={priority} onValueChange={(value: 'low' | 'normal' | 'high' | 'urgent') => setPriority(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low Priority</SelectItem>
+                  <SelectItem value="normal">Normal Priority</SelectItem>
+                  <SelectItem value="high">High Priority</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe what you want the agent to do..."
+                className="neural-input"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="parameters">Parameters (JSON)</Label>
+              <Textarea
+                id="parameters"
+                value={parameters}
+                onChange={(e) => setParameters(e.target.value)}
+                placeholder='{"key": "value"}'
+                className="neural-input font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Optional JSON parameters for the task
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              className="flex-1"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              className="flex-1 neural-button"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit Task'}
+            </Button>
           </div>
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSubmit}
-            disabled={isSubmitting || !queryText.trim()}
-            className="bg-matrix-green/20 hover:bg-matrix-green/30 border-matrix-green/50"
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit Task'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

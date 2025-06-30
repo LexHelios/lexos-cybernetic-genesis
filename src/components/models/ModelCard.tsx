@@ -1,182 +1,144 @@
-import React from 'react';
-import { Bot, Play, Pause, Settings, Trash2, Activity, Zap, Clock, StopCircle } from 'lucide-react';
-import { Button } from '../ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { Progress } from '../ui/progress';
-import { useToast } from '../ui/use-toast';
-import { Agent } from '../../types/api';
 
-interface ModelCardProps {
-  model: Agent;
-  onStart?: (agentId: string) => void;
-  onStop?: (agentId: string) => void;
-  onConfigure?: (agentId: string) => void;
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Brain, Cpu, HardDrive, Zap } from 'lucide-react';
+
+interface ModelInfo {
+  id: string;
+  name: string;
+  type: string;
+  status: 'active' | 'inactive' | 'loading';
+  description: string;
+  parameters: string;
+  memory_usage: string;
+  performance: number;
+  capabilities: string[];
 }
 
-const ModelCard: React.FC<ModelCardProps> = ({ model, onStart, onStop, onConfigure }) => {
-  const { toast } = useToast();
+interface ModelCardProps {
+  model: ModelInfo;
+  onLoadClick?: (modelId: string) => void;
+  onUnloadClick?: (modelId: string) => void;
+  onConfigClick?: (modelId: string) => void;
+}
 
+const ModelCard: React.FC<ModelCardProps> = ({ 
+  model, 
+  onLoadClick, 
+  onUnloadClick,
+  onConfigClick
+}) => {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'bg-green-500';
-      case 'busy':
-        return 'bg-blue-500';
-      case 'inactive':
-        return 'bg-yellow-500';
-      case 'error':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
+      case 'active': return 'bg-green-500';
+      case 'loading': return 'bg-yellow-500';
+      case 'inactive': return 'bg-gray-500';
+      default: return 'bg-gray-500';
     }
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'ONLINE';
-      case 'busy':
-        return 'PROCESSING';
-      case 'inactive':
-        return 'OFFLINE';
-      case 'error':
-        return 'ERROR';
-      default:
-        return status.toUpperCase();
+      case 'active': return <Brain className="w-4 h-4" />;
+      case 'loading': return <Cpu className="w-4 h-4 animate-spin" />;
+      case 'inactive': return <HardDrive className="w-4 h-4" />;
+      default: return <Brain className="w-4 h-4" />;
     }
-  };
-
-  const formatUptime = (lastActivity: number) => {
-    const now = Date.now();
-    const diff = now - lastActivity;
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(hours / 24);
-    
-    if (days > 0) return `${days}d ${hours % 24}h`;
-    if (hours > 0) return `${hours}h`;
-    return 'Just now';
-  };
-
-  const calculatePerformance = () => {
-    if (model.total_tasks_completed === 0) return 0;
-    // Simple performance calculation based on response time and completion rate
-    const basePerformance = Math.max(0, 100 - (model.average_response_time * 10));
-    return Math.min(100, Math.max(0, basePerformance));
   };
 
   return (
-    <Card className="holographic-panel border-matrix-green/30 hover:border-matrix-green/50 transition-all duration-300">
-      <CardHeader>
+    <Card className="holographic-panel hover:border-primary/50 transition-all duration-300 group">
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-lg bg-matrix-green/20 flex items-center justify-center">
-              <Bot className="w-6 h-6 text-matrix-green" />
-            </div>
-            <div>
-              <CardTitle className="text-lg font-orbitron">{model.name}</CardTitle>
-              <CardDescription className="text-sm truncate max-w-48">
-                {model.description}
-              </CardDescription>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${getStatusColor(model.status)} animate-pulse`} />
-            <Badge variant="outline" className="border-matrix-green/50 text-xs">
-              {getStatusLabel(model.status)}
+          <div className="flex items-center gap-2">
+            <div className={`w-3 h-3 rounded-full ${getStatusColor(model.status)} animate-pulse`}></div>
+            <Badge variant="outline" className="text-xs">
+              {model.status.toUpperCase()}
             </Badge>
           </div>
+          <div className="flex items-center gap-1">
+            {getStatusIcon(model.status)}
+          </div>
         </div>
+        <CardTitle className="text-lg font-orbitron text-primary group-hover:text-cyan-300 transition-colors">
+          {model.name}
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">{model.type}</p>
       </CardHeader>
       
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Performance</span>
-            <span className="text-sm font-mono">{Math.round(calculatePerformance())}%</span>
-          </div>
-          <Progress value={calculatePerformance()} className="h-2" />
-        </div>
+        <p className="text-sm text-muted-foreground">{model.description}</p>
         
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="flex items-center space-x-2">
-            <Activity className="w-4 h-4 text-electric-blue" />
-            <span>{model.total_tasks_completed} tasks</span>
+        {/* Performance Metrics */}
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>Performance</span>
+            <span className="text-primary font-mono">{model.performance}%</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <Clock className="w-4 h-4 text-cyber-pink" />
-            <span>{formatUptime(model.last_activity)}</span>
+          <Progress value={model.performance} className="h-2" />
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="text-center p-2 bg-background/50 rounded">
+            <div className="font-mono text-sm text-primary">{model.parameters}</div>
+            <div className="text-muted-foreground">Parameters</div>
+          </div>
+          <div className="text-center p-2 bg-background/50 rounded">
+            <div className="font-mono text-sm text-green-400">{model.memory_usage}</div>
+            <div className="text-muted-foreground">Memory</div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Active:</span>
-            <span className="font-mono">{model.current_tasks}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Avg Response:</span>
-            <span className="font-mono">{model.average_response_time.toFixed(1)}s</span>
+        {/* Capabilities */}
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">Capabilities:</p>
+          <div className="flex flex-wrap gap-1">
+            {model.capabilities?.map((cap, idx) => (
+              <Badge key={idx} variant="secondary" className="text-xs">
+                {typeof cap === 'string' ? cap : 'Unknown'}
+              </Badge>
+            ))}
           </div>
         </div>
-        
-        <div className="flex flex-wrap gap-1">
-          {model.capabilities?.slice(0, 3).map((capability, index) => (
-            <Badge key={index} variant="secondary" className="text-xs">
-              {capability.name}
-            </Badge>
-          ))}
-          {model.capabilities?.length > 3 && (
-            <Badge variant="secondary" className="text-xs">
-              +{model.capabilities.length - 3} more
-            </Badge>
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-2">
+          {model.status === 'inactive' ? (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => onLoadClick?.(model.id)}
+            >
+              <Zap className="w-3 h-3 mr-1" />
+              Load
+            </Button>
+          ) : (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => onUnloadClick?.(model.id)}
+            >
+              <HardDrive className="w-3 h-3 mr-1" />
+              Unload
+            </Button>
           )}
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="flex-1"
+            onClick={() => onConfigClick?.(model.id)}
+          >
+            <Cpu className="w-3 h-3 mr-1" />
+            Config
+          </Button>
         </div>
       </CardContent>
-      
-      <CardFooter className="flex justify-between">
-        <div className="flex space-x-2">
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-matrix-green/50 hover:bg-matrix-green/20"
-            onClick={() => {
-              onStart?.(model.agent_id);
-              toast({
-                title: "Model Start",
-                description: `Starting model ${model.name}`,
-              });
-            }}
-            disabled={model.status === 'error' || model.status === 'active'}
-          >
-            <Play className="w-4 h-4 mr-1" />
-            Start
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="border-red-500/50 hover:bg-red-500/20"
-            onClick={() => onStop?.(model.agent_id)}
-          >
-            <StopCircle className="w-4 h-4 mr-1" />
-            Stop
-          </Button>
-        </div>
-        
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => {
-            onConfigure?.(model.agent_id);
-            toast({
-              title: "Model Configuration",
-              description: `Opening configuration for ${model.name}`,
-            });
-          }}
-        >
-          <Settings className="w-4 h-4" />
-        </Button>
-      </CardFooter>
     </Card>
   );
 };
