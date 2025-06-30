@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,13 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 
 const LoginForm = () => {
-  const { login, isLoading } = useAuth();
+  const { login, loading } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(username, password);
+    await login({ username, password });
   };
 
   return (
@@ -82,9 +81,9 @@ const LoginForm = () => {
             <Button 
               type="submit" 
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-              disabled={isLoading}
+              disabled={loading}
             >
-              {isLoading ? 'Authenticating...' : 'Access NEXUS'}
+              {loading ? 'Authenticating...' : 'Access NEXUS'}
             </Button>
           </form>
           

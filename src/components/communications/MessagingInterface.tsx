@@ -385,17 +385,17 @@ export default function MessagingInterface() {
                         <div className="font-medium text-sm text-muted-foreground">Agents</div>
                         {agents.map(agent => (
                           <div
-                            key={agent.id}
+                            key={agent.agent_id}
                             className={`flex items-center space-x-2 p-2 rounded cursor-pointer hover:bg-muted ${
-                              selectedParticipants.some(p => p.id === agent.id) ? 'bg-muted' : ''
+                              selectedParticipants.some(p => p.id === agent.agent_id) ? 'bg-muted' : ''
                             }`}
                             onClick={() => {
-                              const isSelected = selectedParticipants.some(p => p.id === agent.id);
+                              const isSelected = selectedParticipants.some(p => p.id === agent.agent_id);
                               if (isSelected) {
-                                setSelectedParticipants(prev => prev.filter(p => p.id !== agent.id));
+                                setSelectedParticipants(prev => prev.filter(p => p.id !== agent.agent_id));
                               } else {
                                 setSelectedParticipants(prev => [...prev, { 
-                                  id: agent.id, 
+                                  id: agent.agent_id, 
                                   type: 'agent',
                                   name: agent.name,
                                   role: 'member'

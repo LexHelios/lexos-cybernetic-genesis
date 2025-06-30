@@ -1,4 +1,3 @@
-
 import { AuthResponse, SystemStatus, Agent, Task, TaskSubmission, TaskResponse, User } from '../types/api';
 
 export interface ApiResponse<T> {
@@ -20,7 +19,7 @@ class ApiClient {
     this.token = token;
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     const headers: HeadersInit = {
       'Content-Type': 'application/json',

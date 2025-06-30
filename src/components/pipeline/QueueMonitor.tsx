@@ -50,9 +50,9 @@ const QueueMonitor: React.FC<QueueMonitorProps> = ({
           </CardTitle>
           <div className="flex items-center space-x-2">
             {queue.paused ? (
-              <Badge variant="warning">Paused</Badge>
+              <Badge variant="secondary">Paused</Badge>
             ) : (
-              <Badge variant="success">Active</Badge>
+              <Badge variant="outline">Active</Badge>
             )}
           </div>
         </div>

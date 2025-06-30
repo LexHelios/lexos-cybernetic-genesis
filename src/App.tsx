@@ -11,12 +11,12 @@ import Index from "./pages/Index";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
-  console.log('AppContent render:', { isAuthenticated, isLoading });
+  console.log('AppContent render:', { isAuthenticated, loading });
 
   // Debug: Add visible text
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#1a1a1a' }}>
         <div className="text-center">

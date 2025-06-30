@@ -161,7 +161,7 @@ export default function SystemAlerts() {
       setAlerts(prev => 
         prev.map(alert => 
           alert.id === alertId 
-            ? { ...alert, acknowledged: true, acknowledgedBy: user?.id }
+            ? { ...alert, acknowledged: true, acknowledgedBy: user?.user_id }
             : alert
         )
       );
