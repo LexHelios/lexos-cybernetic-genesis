@@ -52,6 +52,118 @@ app.get('/api/system/metrics', (req, res) => {
   });
 });
 
+// System Status endpoint - matches the SystemStatus interface
+app.get('/api/system/status', (req, res) => {
+  res.json({
+    system: {
+      status: 'online',
+      uptime: 86400, // 1 day in seconds
+      version: '2.0.0-nexus',
+      environment: 'production'
+    },
+    orchestrator: {
+      status: 'active',
+      active_agents: 3,
+      total_tasks: 1247,
+      active_tasks: 5,
+      queued_tasks: 12,
+      completed_tasks: 1230,
+      failed_tasks: 17,
+      task_workers: 8,
+      workflow_workers: 4
+    },
+    hardware: {
+      gpu: {
+        model: 'NVIDIA H100 80GB HBM3',
+        memory_total: '80.0 GB',
+        memory_used: '45.2 GB',
+        utilization: 78,
+        temperature: 72
+      },
+      cpu: {
+        cores: 32,
+        usage: 45,
+        load_average: [2.1, 1.8, 1.5]
+      },
+      memory: {
+        total: '256 GB',
+        used: '98.4 GB',
+        available: '157.6 GB',
+        usage_percent: 38
+      },
+      disk: {
+        total: '20 TB',
+        used: '9.1 TB',
+        available: '10.9 TB',
+        usage_percent: 46
+      }
+    },
+    security: {
+      active_sessions: 3,
+      failed_login_attempts: 0,
+      content_filter_blocks: 2,
+      access_control_denials: 0
+    },
+    timestamp: Math.floor(Date.now() / 1000)
+  });
+});
+
+// System Status endpoint - matches the SystemStatus interface
+app.get('/api/system/status', (req, res) => {
+  res.json({
+    system: {
+      status: 'online',
+      uptime: 86400, // 1 day in seconds
+      version: '2.0.0-nexus',
+      environment: 'production'
+    },
+    orchestrator: {
+      status: 'active',
+      active_agents: 3,
+      total_tasks: 1247,
+      active_tasks: 5,
+      queued_tasks: 12,
+      completed_tasks: 1230,
+      failed_tasks: 17,
+      task_workers: 8,
+      workflow_workers: 4
+    },
+    hardware: {
+      gpu: {
+        model: 'NVIDIA H100 80GB HBM3',
+        memory_total: '80.0 GB',
+        memory_used: '45.2 GB',
+        utilization: 78,
+        temperature: 72
+      },
+      cpu: {
+        cores: 32,
+        usage: 45,
+        load_average: [2.1, 1.8, 1.5]
+      },
+      memory: {
+        total: '256 GB',
+        used: '98.4 GB',
+        available: '157.6 GB',
+        usage_percent: 38
+      },
+      disk: {
+        total: '20 TB',
+        used: '9.1 TB',
+        available: '10.9 TB',
+        usage_percent: 46
+      }
+    },
+    security: {
+      active_sessions: 3,
+      failed_login_attempts: 0,
+      content_filter_blocks: 2,
+      access_control_denials: 0
+    },
+    timestamp: Math.floor(Date.now() / 1000)
+  });
+});
+
 app.post('/api/auth/login', (req, res) => {
   res.json({
     success: true,

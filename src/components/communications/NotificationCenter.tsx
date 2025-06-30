@@ -323,7 +323,7 @@ export default function NotificationCenter() {
                       <Label htmlFor="in-app-notifications">In-app notifications</Label>
                       <Switch
                         id="in-app-notifications"
-                        checked={preferences.inAppEnabled}
+                        checked={preferences?.inAppEnabled || false}
                         onCheckedChange={(checked) => 
                           updatePreferences({ inAppEnabled: checked })
                         }
