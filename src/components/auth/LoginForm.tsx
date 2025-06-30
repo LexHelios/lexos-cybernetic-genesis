@@ -55,10 +55,10 @@ const LoginForm = () => {
       const result = await login(username, password);
       console.log('LoginForm: Login result:', result);
       
-      if (!result.success) {
+      if (!result) {
         toast({
           title: "Login Failed",
-          description: result.error || "Invalid credentials",
+          description: "Invalid credentials",
           variant: "destructive",
         });
       } else {
@@ -157,7 +157,7 @@ const LoginForm = () => {
               type="submit" 
               className="w-full neural-button bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground font-medium font-orbitron tracking-wider py-3 text-base touch-manipulation"
               disabled={isLoading || isSubmitting}
-              style={{ minHeight: '48px' }} // Ensure minimum touch target size
+              style={{ minHeight: '48px' }}
             >
               {(isLoading || isSubmitting) ? (
                 <div className="flex items-center gap-2 justify-center">
@@ -185,21 +185,6 @@ const LoginForm = () => {
                   connectionStatus === 'disconnected' ? 'Disconnected' : 'Checking...'
                 }
               </p>
-            </div>
-            <div className="text-center space-y-2">
-              <p className="text-xs text-primary font-orbitron font-bold tracking-wider">
-                DEFAULT ACCESS CREDENTIALS
-              </p>
-              <div className="grid grid-cols-2 gap-4 text-xs">
-                <div className="text-center">
-                  <div className="text-muted-foreground">Username:</div>
-                  <div className="font-mono text-cyan-300">admin</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-muted-foreground">Password:</div>
-                  <div className="font-mono text-cyan-300">Admin123!</div>
-                </div>
-              </div>
             </div>
           </div>
 

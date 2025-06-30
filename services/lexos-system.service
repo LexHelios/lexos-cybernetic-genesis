@@ -1,0 +1,38 @@
+
+[Unit]
+Description=LexOS System Monitor
+Documentation=https://github.com/lexos/genesis
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=user
+WorkingDirectory=/home/user/lexos-genesis
+Environment="NODE_ENV=production"
+ExecStart=/home/user/lexos-genesis/services/system-monitor.sh monitor
+ExecReload=/home/user/lexos-genesis/services/system-monitor.sh recover
+Restart=always
+RestartSec=10
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=lexos-system
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/user/lexos-genesis/logs /home/user/lexos-genesis/pids
+
+# Resource limits
+LimitNOFILE=65536
+MemoryLimit=1G
+CPUQuota=80%
+
+[Install]
+WantedBy=multi-user.target
