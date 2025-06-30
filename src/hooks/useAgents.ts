@@ -17,9 +17,9 @@ export const useAgents = () => {
       const response = await apiClient.getAgents();
       console.log('Agents response:', response);
       
-      // More robust response handling
+      // Handle the actual API response structure
       if (response && typeof response === 'object') {
-        const agentsList = response.agents || response.data || [];
+        const agentsList = response.agents || [];
         const safeAgents = Array.isArray(agentsList) ? agentsList : [];
         console.log('Setting agents:', safeAgents);
         setAgents(safeAgents);
