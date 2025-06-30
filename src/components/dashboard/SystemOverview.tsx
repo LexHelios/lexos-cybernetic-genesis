@@ -69,45 +69,40 @@ const SystemOverview = () => {
     version: '--',
     environment: 'unknown'
   };
-  
-  const gpu = hardware.gpu || { model: 'GPU', memory_total: '--', memory_used: '--', utilization: 0, temperature: 0 };
-  const cpu = hardware.cpu || { cores: 0, usage: 0, load_average: [0, 0, 0] };
-  const memory = hardware.memory || { total: '--', used: '--', available: '--', usage_percent: 0 };
-  const disk = hardware.disk || { total: '--', used: '--', available: '--', usage_percent: 0 };
 
   return (
     <div className="space-y-6">
       {/* Real Hardware Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
-          title={gpu.model || 'GPU'}
-          value={`${gpu.memory_used || '--'} / ${gpu.memory_total || '--'}`}
-          subtitle={`${gpu.utilization || '--'}% Utilization • ${gpu.temperature || '--'}°C`}
+          title={hardware.gpu.model || 'GPU'}
+          value={`${hardware.gpu.memory_used || '--'} / ${hardware.gpu.memory_total || '--'}`}
+          subtitle={`${hardware.gpu.utilization || '--'}% Utilization • ${hardware.gpu.temperature || '--'}°C`}
           trend="stable"
           color="matrix"
           icon="⚡"
-          animate={(gpu.utilization || 0) > 50}
+          animate={(hardware.gpu.utilization || 0) > 50}
         />
         <MetricCard
           title="System Storage"
-          value={disk.used || '--'}
-          subtitle={`${disk.total || '--'} Total • ${disk.usage_percent || '--'}% Used`}
+          value={hardware.disk.used || '--'}
+          subtitle={`${hardware.disk.total || '--'} Total • ${hardware.disk.usage_percent || '--'}% Used`}
           trend="stable"
           color="cyber"
           icon="💾"
         />
         <MetricCard
           title="CPU Cores"
-          value={(cpu.cores || '--').toString()}
-          subtitle={`${cpu.usage || '--'}% Usage • Load: ${cpu.load_average?.[0]?.toFixed(1) || '--'}`}
+          value={(hardware.cpu.cores || '--').toString()}
+          subtitle={`${hardware.cpu.usage || '--'}% Usage • Load: ${hardware.cpu.load_average?.[0]?.toFixed(1) || '--'}`}
           trend="stable"
           color="electric"
           icon="🔥"
         />
         <MetricCard
           title="System Memory"
-          value={memory.used || '--'}
-          subtitle={`${memory.total || '--'} Total • ${memory.usage_percent || '--'}% Used`}
+          value={hardware.memory.used || '--'}
+          subtitle={`${hardware.memory.total || '--'} Total • ${hardware.memory.usage_percent || '--'}% Used`}
           trend="stable"
           color="neural"
           icon="🧠"
@@ -151,28 +146,28 @@ const SystemOverview = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="holographic-panel p-6 rounded-lg">
           <h3 className="text-lg font-orbitron font-bold text-primary mb-4">
-            {gpu.model || 'GPU'} Specifications
+            {hardware.gpu.model || 'GPU'} Specifications
           </h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
               <span className="font-medium">GPU Model</span>
-              <span className="text-matrix-green font-mono">{gpu.model || 'GPU'}</span>
+              <span className="text-matrix-green font-mono">{hardware.gpu.model || 'GPU'}</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
               <span className="font-medium">VRAM Total</span>
-              <span className="text-matrix-green font-mono">{gpu.memory_total || '--'}</span>
+              <span className="text-matrix-green font-mono">{hardware.gpu.memory_total || '--'}</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
               <span className="font-medium">VRAM Used</span>
-              <span className="text-matrix-green font-mono">{gpu.memory_used || '--'}</span>
+              <span className="text-matrix-green font-mono">{hardware.gpu.memory_used || '--'}</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
               <span className="font-medium">GPU Utilization</span>
-              <span className="text-matrix-green font-mono">{gpu.utilization || '--'}%</span>
+              <span className="text-matrix-green font-mono">{hardware.gpu.utilization || '--'}%</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
               <span className="font-medium">Temperature</span>
-              <span className="text-matrix-green font-mono">{gpu.temperature || '--'}°C</span>
+              <span className="text-matrix-green font-mono">{hardware.gpu.temperature || '--'}°C</span>
             </div>
           </div>
         </div>
@@ -184,15 +179,15 @@ const SystemOverview = () => {
           <div className="space-y-4">
             <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
               <span className="font-medium">CPU Cores</span>
-              <span className="text-electric-blue font-mono">{cpu.cores || '--'}</span>
+              <span className="text-electric-blue font-mono">{hardware.cpu.cores || '--'}</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
               <span className="font-medium">System RAM</span>
-              <span className="text-electric-blue font-mono">{memory.total || '--'}</span>
+              <span className="text-electric-blue font-mono">{hardware.memory.total || '--'}</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
               <span className="font-medium">Storage</span>
-              <span className="text-electric-blue font-mono">{disk.total || '--'}</span>
+              <span className="text-electric-blue font-mono">{hardware.disk.total || '--'}</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
               <span className="font-medium">System Status</span>
@@ -209,7 +204,7 @@ const SystemOverview = () => {
       {/* Storage Breakdown */}
       <div className="holographic-panel p-6 rounded-lg">
         <h3 className="text-lg font-orbitron font-bold text-primary mb-4">
-          Storage Allocation ({disk.total || '--'})
+          Storage Allocation ({hardware.disk.total || '--'})
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-4">
@@ -217,10 +212,10 @@ const SystemOverview = () => {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-sm">Storage Used</span>
-                <span className="text-sm font-mono">{disk.used || '--'}</span>
+                <span className="text-sm font-mono">{hardware.disk.used || '--'}</span>
               </div>
               <div className="w-full bg-muted/20 rounded-full h-2">
-                <div className="bg-primary h-2 rounded-full" style={{ width: `${disk.usage_percent || 0}%` }}></div>
+                <div className="bg-primary h-2 rounded-full" style={{ width: `${hardware.disk.usage_percent || 0}%` }}></div>
               </div>
             </div>
           </div>
@@ -230,10 +225,10 @@ const SystemOverview = () => {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-sm">Free Space</span>
-                <span className="text-sm font-mono">{disk.available || '--'}</span>
+                <span className="text-sm font-mono">{hardware.disk.available || '--'}</span>
               </div>
               <div className="w-full bg-muted/20 rounded-full h-2">
-                <div className="bg-matrix-green h-2 rounded-full" style={{ width: `${100 - (disk.usage_percent || 0)}%` }}></div>
+                <div className="bg-matrix-green h-2 rounded-full" style={{ width: `${100 - (hardware.disk.usage_percent || 0)}%` }}></div>
               </div>
             </div>
           </div>
@@ -243,10 +238,10 @@ const SystemOverview = () => {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-sm">RAM Used</span>
-                <span className="text-sm font-mono">{memory.used || '--'}</span>
+                <span className="text-sm font-mono">{hardware.memory.used || '--'}</span>
               </div>
               <div className="w-full bg-muted/20 rounded-full h-2">
-                <div className="bg-cyber-pink h-2 rounded-full" style={{ width: `${memory.usage_percent || 0}%` }}></div>
+                <div className="bg-cyber-pink h-2 rounded-full" style={{ width: `${hardware.memory.usage_percent || 0}%` }}></div>
               </div>
             </div>
           </div>
@@ -267,7 +262,7 @@ const SystemOverview = () => {
           </div>
           <div className="text-center p-4 bg-muted/10 rounded-lg">
             <div className="text-2xl font-orbitron font-bold text-matrix-green">
-              {(gpu.utilization || 0) > 0 ? 'ACTIVE' : 'READY'}
+              {(hardware.gpu.utilization || 0) > 0 ? 'ACTIVE' : 'READY'}
             </div>
             <div className="text-sm text-muted-foreground">GPU Status</div>
           </div>
