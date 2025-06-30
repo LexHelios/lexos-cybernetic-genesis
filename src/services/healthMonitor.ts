@@ -1,4 +1,6 @@
 
+import { websocketService } from './websocket';
+
 class HealthMonitor {
   private intervalId: NodeJS.Timeout | null = null;
   private readonly checkInterval = 30000; // 30 seconds
@@ -58,11 +60,10 @@ class HealthMonitor {
     try {
       const response = await fetch(this.endpoints.backend, {
         method: 'GET',
-        timeout: 10000,
         headers: {
           'Content-Type': 'application/json'
         }
-      } as RequestInit);
+      });
 
       if (response.ok) {
         const health = await response.json();
@@ -95,7 +96,6 @@ class HealthMonitor {
     console.log('🔄 Attempting system recovery...');
     
     try {
-      // Attempt to restart backend via recovery endpoint
       const response = await fetch('/api/system/restart', {
         method: 'POST',
         headers: {
@@ -109,7 +109,6 @@ class HealthMonitor {
 
       if (response.ok) {
         console.log('✅ Backend restart initiated');
-        // Wait for system to stabilize
         await new Promise(resolve => setTimeout(resolve, 10000));
       } else {
         console.error('❌ Failed to restart backend via API');
@@ -124,15 +123,13 @@ class HealthMonitor {
   private fallbackRecovery() {
     console.log('🔄 Attempting fallback recovery...');
     
-    // Show user notification
     this.showRecoveryNotification();
     
-    // Try to reconnect WebSocket if available
-    if (window.websocketService) {
-      window.websocketService.connect();
+    // Try to reconnect WebSocket
+    if (websocketService && websocketService.isConnected && !websocketService.isConnected()) {
+      websocketService.connect();
     }
     
-    // Reload page as last resort after delay
     setTimeout(() => {
       console.log('🔄 Performing page reload for recovery...');
       window.location.reload();
@@ -140,21 +137,18 @@ class HealthMonitor {
   }
 
   private updateConnectionStatus(isHealthy: boolean) {
-    // Update UI to show connection status
     const statusElement = document.getElementById('connection-status');
     if (statusElement) {
       statusElement.className = isHealthy ? 'status-healthy' : 'status-unhealthy';
       statusElement.textContent = isHealthy ? 'Online' : 'Recovering...';
     }
     
-    // Dispatch custom event for components to listen to
     window.dispatchEvent(new CustomEvent('connectionStatusChanged', {
       detail: { isHealthy, timestamp: Date.now() }
     }));
   }
 
   private showRecoveryNotification() {
-    // Create recovery notification
     const notification = document.createElement('div');
     notification.className = 'recovery-notification';
     notification.innerHTML = `
@@ -168,7 +162,6 @@ class HealthMonitor {
     
     document.body.appendChild(notification);
     
-    // Remove notification after 10 seconds
     setTimeout(() => {
       if (notification.parentNode) {
         notification.parentNode.removeChild(notification);

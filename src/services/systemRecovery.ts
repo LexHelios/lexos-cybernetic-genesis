@@ -1,4 +1,6 @@
 
+import { websocketService } from './websocket';
+
 class SystemRecoveryService {
   private readonly maxRetries = 5;
   private readonly retryDelay = 5000; // 5 seconds
@@ -29,17 +31,14 @@ class SystemRecoveryService {
           break;
       }
       
-      // Reset attempts on success
       this.recoveryAttempts.delete(serviceName);
       console.log(`✅ Successfully recovered ${serviceName}`);
       
     } catch (error) {
       console.error(`❌ Recovery attempt failed for ${serviceName}:`, error);
       
-      // Wait before next attempt
       await new Promise(resolve => setTimeout(resolve, this.retryDelay));
       
-      // Try next recovery method
       const nextMethod = this.getNextRecoveryMethod(recoveryMethod);
       if (nextMethod) {
         return this.recoverService(serviceName, nextMethod);
@@ -61,7 +60,6 @@ class SystemRecoveryService {
       throw new Error(`Failed to restart ${serviceName}: ${response.statusText}`);
     }
 
-    // Wait for service to stabilize
     await new Promise(resolve => setTimeout(resolve, 10000));
   }
 
@@ -78,8 +76,8 @@ class SystemRecoveryService {
     window.location.reload();
   }
 
-  private getNextRecoveryMethod(currentMethod: string): string | null {
-    const methods = ['restart', 'reconnect', 'reload'];
+  private getNextRecoveryMethod(currentMethod: 'restart' | 'reconnect' | 'reload'): 'restart' | 'reconnect' | 'reload' | null {
+    const methods: ('restart' | 'reconnect' | 'reload')[] = ['restart', 'reconnect', 'reload'];
     const currentIndex = methods.indexOf(currentMethod);
     
     if (currentIndex < methods.length - 1) {
