@@ -13,11 +13,18 @@ export const useAgents = () => {
     try {
       setIsLoading(true);
       setError(null);
+      console.log('Fetching agents...');
       const response = await apiClient.getAgents();
-      setAgents(response.agents);
+      console.log('Agents response:', response);
+      
+      // Ensure we always set an array
+      const agentsList = response?.agents || [];
+      setAgents(Array.isArray(agentsList) ? agentsList : []);
     } catch (err) {
       console.error('Failed to fetch agents:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch agents');
+      // Set empty array on error to prevent undefined
+      setAgents([]);
     } finally {
       setIsLoading(false);
     }

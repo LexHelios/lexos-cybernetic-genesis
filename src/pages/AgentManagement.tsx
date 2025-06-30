@@ -24,8 +24,12 @@ const AgentManagement = () => {
   
   const { agents, isLoading, error } = useAgents();
 
-  // Ensure agents is always an array
-  const safeAgents = Array.isArray(agents) ? agents : [];
+  // Ensure agents is always an array with more robust checking
+  const safeAgents = React.useMemo(() => {
+    if (!agents) return [];
+    if (Array.isArray(agents)) return agents;
+    return [];
+  }, [agents]);
 
   // WebSocket connection for real-time updates
   useEffect(() => {
@@ -63,12 +67,14 @@ const AgentManagement = () => {
     });
   };
 
-  const filteredAgents = safeAgents.filter(agent => {
-    const matchesSearch = agent.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         agent.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || agent.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredAgents = React.useMemo(() => {
+    return safeAgents.filter(agent => {
+      const matchesSearch = (agent.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           (agent.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = filterStatus === 'all' || agent.status === filterStatus;
+      return matchesSearch && matchesStatus;
+    });
+  }, [safeAgents, searchQuery, filterStatus]);
 
   const getMetricValue = (key: string, fallback: string = '0') => {
     if (!systemMetrics) return fallback;
