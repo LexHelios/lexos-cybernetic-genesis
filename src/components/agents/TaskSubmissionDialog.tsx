@@ -1,349 +1,200 @@
+
 import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Play, Loader2 } from 'lucide-react';
-import { apiClient } from '@/services/api';
-import { toast } from '@/hooks/use-toast';
-import { Agent } from '@/types/api';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Badge } from '../ui/badge';
+import { useToast } from '../ui/use-toast';
+import { Agent, TaskSubmission } from '../../types/api';
+import { apiClient } from '../../services/api';
 
 interface TaskSubmissionDialogProps {
-  agent: Agent;
-  onTaskSubmitted?: (taskId: string) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  agent?: Agent;
 }
 
-const TaskSubmissionDialog: React.FC<TaskSubmissionDialogProps> = ({ agent, onTaskSubmitted }) => {
-  const [open, setOpen] = useState(false);
+const TaskSubmissionDialog: React.FC<TaskSubmissionDialogProps> = ({
+  open,
+  onOpenChange,
+  agent
+}) => {
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [taskType, setTaskType] = useState('');
-  const [priority, setPriority] = useState('normal');
-  const [parameters, setParameters] = useState<Record<string, any>>({});
+  const [taskData, setTaskData] = useState<TaskSubmission>({
+    task_type: 'analysis',
+    parameters: {},
+    priority: 'normal'
+  });
+  const [queryText, setQueryText] = useState('');
+  const [customParams, setCustomParams] = useState('');
 
-  // Define task types based on agent
-  const getTaskTypes = () => {
-    switch (agent.agent_id) {
-      case 'consciousness-001':
-        return [
-          { value: 'consciousness_query', label: 'Consciousness Query' },
-          { value: 'self_reflection', label: 'Self Reflection' },
-          { value: 'philosophical_reasoning', label: 'Philosophical Reasoning' }
-        ];
-      case 'executor-001':
-        return [
-          { value: 'code_generation', label: 'Code Generation' },
-          { value: 'task_planning', label: 'Task Planning' },
-          { value: 'file_operation', label: 'File Operation' },
-          { value: 'analysis', label: 'General Analysis' }
-        ];
-      case 'research-001':
-        return [
-          { value: 'general', label: 'General Research' },
-          { value: 'synthesis', label: 'Information Synthesis' },
-          { value: 'fact_check', label: 'Fact Checking' },
-          { value: 'research_plan', label: 'Research Planning' },
-          { value: 'extraction', label: 'Knowledge Extraction' }
-        ];
-      default:
-        return [{ value: 'general', label: 'General Task' }];
+  const taskTypes = {
+    'consciousness_query': { 
+      label: 'Consciousness Query', 
+      description: 'Deep reasoning and philosophical exploration',
+      params: ['query', 'depth', 'temperature']
+    },
+    'code_generation': { 
+      label: 'Code Generation', 
+      description: 'Generate code in various programming languages',
+      params: ['prompt', 'language', 'temperature']
+    },
+    'research': { 
+      label: 'Research Task', 
+      description: 'Information gathering and synthesis',
+      params: ['query', 'research_type', 'depth']
+    },
+    'analysis': { 
+      label: 'General Analysis', 
+      description: 'Analyze and provide insights',
+      params: ['request', 'temperature']
+    },
+    'task_planning': { 
+      label: 'Task Planning', 
+      description: 'Break down complex tasks into steps',
+      params: ['task_description', 'temperature']
     }
-  };
-
-  const getParameterFields = () => {
-    if (agent.agent_id === 'consciousness-001') {
-      return (
-        <>
-          <div className="space-y-2">
-            <Label htmlFor="query">Query</Label>
-            <Textarea
-              id="query"
-              placeholder="Enter your consciousness query..."
-              value={parameters.query || ''}
-              onChange={(e) => setParameters({ ...parameters, query: e.target.value })}
-              className="min-h-[100px]"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="depth">Depth</Label>
-            <Select
-              value={parameters.depth || 'standard'}
-              onValueChange={(value) => setParameters({ ...parameters, depth: value })}
-            >
-              <SelectTrigger id="depth">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="standard">Standard</SelectItem>
-                <SelectItem value="deep">Deep Analysis</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="temperature">Temperature ({parameters.temperature || 0.9})</Label>
-            <Input
-              id="temperature"
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={parameters.temperature || 0.9}
-              onChange={(e) => setParameters({ ...parameters, temperature: parseFloat(e.target.value) })}
-            />
-          </div>
-        </>
-      );
-    } else if (agent.agent_id === 'executor-001') {
-      if (taskType === 'code_generation') {
-        return (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="command">Code Description</Label>
-              <Textarea
-                id="command"
-                placeholder="Describe the code you want to generate..."
-                value={parameters.command || ''}
-                onChange={(e) => setParameters({ ...parameters, command: e.target.value })}
-                className="min-h-[100px]"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="language">Programming Language</Label>
-              <Select
-                value={parameters.language || 'javascript'}
-                onValueChange={(value) => setParameters({ ...parameters, language: value })}
-              >
-                <SelectTrigger id="language">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="javascript">JavaScript</SelectItem>
-                  <SelectItem value="python">Python</SelectItem>
-                  <SelectItem value="typescript">TypeScript</SelectItem>
-                  <SelectItem value="java">Java</SelectItem>
-                  <SelectItem value="cpp">C++</SelectItem>
-                  <SelectItem value="go">Go</SelectItem>
-                  <SelectItem value="rust">Rust</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </>
-        );
-      } else if (taskType === 'file_operation') {
-        return (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="operation">Operation</Label>
-              <Select
-                value={parameters.operation || 'read'}
-                onValueChange={(value) => setParameters({ ...parameters, operation: value })}
-              >
-                <SelectTrigger id="operation">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="read">Read</SelectItem>
-                  <SelectItem value="write">Write</SelectItem>
-                  <SelectItem value="append">Append</SelectItem>
-                  <SelectItem value="delete">Delete</SelectItem>
-                  <SelectItem value="exists">Check Exists</SelectItem>
-                  <SelectItem value="mkdir">Create Directory</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="file_path">File Path</Label>
-              <Input
-                id="file_path"
-                placeholder="/path/to/file"
-                value={parameters.file_path || ''}
-                onChange={(e) => setParameters({ ...parameters, file_path: e.target.value })}
-              />
-            </div>
-            {(parameters.operation === 'write' || parameters.operation === 'append') && (
-              <div className="space-y-2">
-                <Label htmlFor="content">Content</Label>
-                <Textarea
-                  id="content"
-                  placeholder="File content..."
-                  value={parameters.content || ''}
-                  onChange={(e) => setParameters({ ...parameters, content: e.target.value })}
-                  className="min-h-[100px]"
-                />
-              </div>
-            )}
-          </>
-        );
-      } else {
-        return (
-          <div className="space-y-2">
-            <Label htmlFor="command">Command/Description</Label>
-            <Textarea
-              id="command"
-              placeholder="Enter your task description..."
-              value={parameters.command || ''}
-              onChange={(e) => setParameters({ ...parameters, command: e.target.value })}
-              className="min-h-[100px]"
-            />
-          </div>
-        );
-      }
-    } else if (agent.agent_id === 'research-001') {
-      return (
-        <>
-          <div className="space-y-2">
-            <Label htmlFor="query">Research Query</Label>
-            <Textarea
-              id="query"
-              placeholder="What would you like to research?"
-              value={parameters.query || ''}
-              onChange={(e) => setParameters({ ...parameters, query: e.target.value })}
-              className="min-h-[100px]"
-            />
-          </div>
-          {taskType === 'extraction' && (
-            <div className="space-y-2">
-              <Label htmlFor="text">Source Text</Label>
-              <Textarea
-                id="text"
-                placeholder="Paste the text to extract knowledge from..."
-                value={parameters.text || ''}
-                onChange={(e) => setParameters({ ...parameters, text: e.target.value })}
-                className="min-h-[150px]"
-              />
-            </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="depth">Research Depth</Label>
-            <Select
-              value={parameters.depth || 'standard'}
-              onValueChange={(value) => setParameters({ ...parameters, depth: value })}
-            >
-              <SelectTrigger id="depth">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="standard">Standard</SelectItem>
-                <SelectItem value="deep">Deep Research</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </>
-      );
-    }
-    
-    return (
-      <div className="space-y-2">
-        <Label htmlFor="parameters">Parameters (JSON)</Label>
-        <Textarea
-          id="parameters"
-          placeholder='{"key": "value"}'
-          value={JSON.stringify(parameters, null, 2)}
-          onChange={(e) => {
-            try {
-              setParameters(JSON.parse(e.target.value));
-            } catch (error) {
-              // Invalid JSON, ignore
-            }
-          }}
-          className="min-h-[100px] font-mono text-sm"
-        />
-      </div>
-    );
   };
 
   const handleSubmit = async () => {
+    if (!agent || !queryText.trim()) return;
+
     setIsSubmitting(true);
     
     try {
-      // Add task_type to parameters for executor agent
-      const submissionParams = { ...parameters };
-      if (agent.agent_id === 'executor-001') {
-        submissionParams.task_type = taskType;
-      } else if (agent.agent_id === 'research-001') {
-        submissionParams.research_type = taskType === 'general' ? 'general' : taskType;
-      }
+      // Build parameters based on task type
+      let parameters = { query: queryText };
       
-      const response = await apiClient.submitTask(agent.agent_id, {
-        task_type: taskType,
-        parameters: submissionParams,
-        priority: priority as any
-      });
+      // Add custom parameters if provided
+      if (customParams.trim()) {
+        try {
+          const parsed = JSON.parse(customParams);
+          parameters = { ...parameters, ...parsed };
+        } catch (e) {
+          toast({
+            title: "Invalid Parameters",
+            description: "Custom parameters must be valid JSON",
+            variant: "destructive"
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      const submission: TaskSubmission = {
+        ...taskData,
+        parameters
+      };
+
+      const result = await apiClient.submitTask(agent.agent_id, submission);
       
       toast({
         title: "Task Submitted Successfully",
-        description: `Task ID: ${response.task_id}`,
+        description: `Task ${result.task_id} submitted to ${agent.name}. Queue position: ${result.queue_position}`,
+      });
+
+      // Reset form
+      setQueryText('');
+      setCustomParams('');
+      setTaskData({
+        task_type: 'analysis',
+        parameters: {},
+        priority: 'normal'
       });
       
-      setOpen(false);
-      setParameters({});
-      
-      if (onTaskSubmitted) {
-        onTaskSubmitted(response.task_id);
-      }
+      onOpenChange(false);
     } catch (error) {
       toast({
-        variant: "destructive",
-        title: "Task Submission Failed",
-        description: error instanceof Error ? error.message : "Unknown error",
+        title: "Submission Failed",
+        description: error instanceof Error ? error.message : "Failed to submit task",
+        variant: "destructive"
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const selectedTaskType = taskTypes[taskData.task_type as keyof typeof taskTypes];
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="gap-2">
-          <Play className="h-4 w-4" />
-          Submit Task
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Submit Task to {agent.name}</DialogTitle>
+          <DialogTitle className="text-xl font-orbitron">
+            Submit Task to {agent?.name}
+          </DialogTitle>
           <DialogDescription>
-            Configure and submit a task to this agent for processing.
+            Configure and submit a task to the selected agent
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="grid gap-4 py-4">
+
+        <div className="space-y-6 py-4">
+          {/* Agent Info */}
+          <div className="flex items-center space-x-3 p-3 border border-matrix-green/20 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <div className={`w-2 h-2 rounded-full ${
+                agent?.status === 'active' ? 'bg-green-500' : 
+                agent?.status === 'busy' ? 'bg-blue-500' : 'bg-yellow-500'
+              } animate-pulse`} />
+              <span className="font-medium">{agent?.name}</span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {agent?.capabilities?.slice(0, 2).map((cap, i) => (
+                <Badge key={i} variant="outline" className="text-xs">
+                  {cap.name}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          {/* Task Type */}
           <div className="space-y-2">
-            <Label htmlFor="task-type">Task Type</Label>
-            <Select value={taskType} onValueChange={setTaskType}>
-              <SelectTrigger id="task-type">
-                <SelectValue placeholder="Select a task type" />
+            <Label htmlFor="task_type">Task Type</Label>
+            <Select
+              value={taskData.task_type}
+              onValueChange={(value) => setTaskData(prev => ({ ...prev, task_type: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {getTaskTypes().map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
+                {Object.entries(taskTypes).map(([key, type]) => (
+                  <SelectItem key={key} value={key}>
+                    <div>
+                      <div className="font-medium">{type.label}</div>
+                      <div className="text-xs text-muted-foreground">{type.description}</div>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          
+
+          {/* Query/Prompt */}
+          <div className="space-y-2">
+            <Label htmlFor="query">Query/Prompt</Label>
+            <Textarea
+              id="query"
+              placeholder="Enter your query or prompt here..."
+              value={queryText}
+              onChange={(e) => setQueryText(e.target.value)}
+              rows={4}
+              className="resize-none"
+            />
+          </div>
+
+          {/* Priority */}
           <div className="space-y-2">
             <Label htmlFor="priority">Priority</Label>
-            <Select value={priority} onValueChange={setPriority}>
-              <SelectTrigger id="priority">
+            <Select
+              value={taskData.priority}
+              onValueChange={(value) => setTaskData(prev => ({ ...prev, priority: value as any }))}
+            >
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -354,30 +205,34 @@ const TaskSubmissionDialog: React.FC<TaskSubmissionDialogProps> = ({ agent, onTa
               </SelectContent>
             </Select>
           </div>
-          
-          {taskType && getParameterFields()}
+
+          {/* Custom Parameters */}
+          <div className="space-y-2">
+            <Label htmlFor="params">Custom Parameters (JSON)</Label>
+            <Textarea
+              id="params"
+              placeholder='{"temperature": 0.7, "max_tokens": 1000}'
+              value={customParams}
+              onChange={(e) => setCustomParams(e.target.value)}
+              rows={3}
+              className="resize-none font-mono text-sm"
+            />
+            <div className="text-xs text-muted-foreground">
+              Available parameters: {selectedTaskType?.params.join(', ')}
+            </div>
+          </div>
         </div>
-        
+
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button 
-            onClick={handleSubmit} 
-            disabled={!taskType || isSubmitting}
-            className="gap-2"
+            onClick={handleSubmit}
+            disabled={isSubmitting || !queryText.trim()}
+            className="bg-matrix-green/20 hover:bg-matrix-green/30 border-matrix-green/50"
           >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              <>
-                <Play className="h-4 w-4" />
-                Submit Task
-              </>
-            )}
+            {isSubmitting ? 'Submitting...' : 'Submit Task'}
           </Button>
         </DialogFooter>
       </DialogContent>
