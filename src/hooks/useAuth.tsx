@@ -40,9 +40,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('AuthProvider: Stored token exists:', !!storedToken);
       
       if (storedToken) {
-        console.log('AuthProvider: Setting token and fetching user');
+        console.log('AuthProvider: Setting token and attempting to fetch user');
         apiClient.setToken(storedToken);
-        await fetchUser();
+        
+        try {
+          await fetchUser();
+        } catch (error) {
+          console.warn('AuthProvider: Failed to fetch user with stored token, clearing token');
+          // Clear invalid token and continue as unauthenticated
+          localStorage.removeItem('auth_token');
+          apiClient.clearToken();
+          setIsAuthenticated(false);
+          setUser(null);
+        }
       } else {
         console.log('AuthProvider: No stored token, user not authenticated');
         setIsAuthenticated(false);
@@ -50,13 +60,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('AuthProvider: Auth initialization failed:', error);
-      // Clear invalid token
+      // Clear any stored data and continue as unauthenticated
       localStorage.removeItem('auth_token');
       apiClient.clearToken();
       setIsAuthenticated(false);
       setUser(null);
     } finally {
-      console.log('AuthProvider: Auth initialization complete');
+      console.log('AuthProvider: Auth initialization complete, setting loading to false');
       setLoading(false);
     }
   };

@@ -8,7 +8,14 @@ import { AuthProvider, useAuth } from "./hooks/useAuth";
 import LoginForm from "./components/auth/LoginForm";
 import Index from "./pages/Index";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const AppContent = () => {
   const { isAuthenticated, loading, user } = useAuth();
