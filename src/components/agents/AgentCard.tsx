@@ -54,6 +54,14 @@ const AgentCard: React.FC<AgentCardProps> = ({
     }
   };
 
+  const handleConfigClick = () => {
+    if (onConfigClick) {
+      onConfigClick(agent.agent_id);
+    } else if (onConfigure) {
+      onConfigure(agent.agent_id);
+    }
+  };
+
   return (
     <Card className="holographic-panel hover:border-primary/50 transition-all duration-300 group">
       <CardHeader className="pb-3">
@@ -125,7 +133,7 @@ const AgentCard: React.FC<AgentCardProps> = ({
             size="sm" 
             variant="outline" 
             className="flex-1"
-            onClick={() => onConfigClick?.(agent.agent_id) || onConfigure?.(agent.agent_id)}
+            onClick={handleConfigClick}
           >
             <Settings className="w-3 h-3 mr-1" />
             Config
