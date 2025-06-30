@@ -24,6 +24,9 @@ const AgentManagement = () => {
   
   const { agents, isLoading, error } = useAgents();
 
+  // Ensure agents is always an array
+  const safeAgents = Array.isArray(agents) ? agents : [];
+
   // WebSocket connection for real-time updates
   useEffect(() => {
     websocketService.connect();
@@ -46,7 +49,7 @@ const AgentManagement = () => {
   }, []);
 
   const handleTaskSubmit = (agentId: string) => {
-    const agent = agents.find(a => a.agent_id === agentId);
+    const agent = safeAgents.find(a => a.agent_id === agentId);
     if (agent) {
       setSelectedAgent(agent);
       setShowTaskDialog(true);
@@ -60,9 +63,9 @@ const AgentManagement = () => {
     });
   };
 
-  const filteredAgents = agents.filter(agent => {
-    const matchesSearch = agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         agent.description.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredAgents = safeAgents.filter(agent => {
+    const matchesSearch = agent.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         agent.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = filterStatus === 'all' || agent.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -252,7 +255,7 @@ const AgentManagement = () => {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm">Total Agents</span>
-                <span className="text-sm font-mono">{agents.length}</span>
+                <span className="text-sm font-mono">{safeAgents.length}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm">Active Connections</span>
