@@ -17,14 +17,20 @@ export const useAgents = () => {
       const response = await apiClient.getAgents();
       console.log('Agents response:', response);
       
-      // Ensure we always set an array
-      const agentsList = response?.agents || [];
-      setAgents(Array.isArray(agentsList) ? agentsList : []);
+      // More robust response handling
+      if (response && typeof response === 'object') {
+        const agentsList = response.agents || response.data || [];
+        const safeAgents = Array.isArray(agentsList) ? agentsList : [];
+        console.log('Setting agents:', safeAgents);
+        setAgents(safeAgents);
+      } else {
+        console.warn('Invalid response format, setting empty array');
+        setAgents([]);
+      }
     } catch (err) {
       console.error('Failed to fetch agents:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch agents');
-      // Set empty array on error to prevent undefined
-      setAgents([]);
+      setAgents([]); // Always ensure agents is an array
     } finally {
       setIsLoading(false);
     }
@@ -36,21 +42,23 @@ export const useAgents = () => {
     // Subscribe to real-time agent updates
     const unsubscribeAgentStatus = websocketService.subscribe('agent_status', (data) => {
       console.log('Agent status update:', data);
-      setAgents(prevAgents => 
-        prevAgents.map(agent => 
+      setAgents(prevAgents => {
+        // Ensure prevAgents is always an array
+        const safeAgents = Array.isArray(prevAgents) ? prevAgents : [];
+        return safeAgents.map(agent => 
           agent.agent_id === data.agent_id 
             ? { ...agent, ...data }
             : agent
-        )
-      );
+        );
+      });
     });
 
     const unsubscribeTaskUpdate = websocketService.subscribe('task_update', (data) => {
       console.log('Task update:', data);
-      // Update agent current_tasks count when tasks complete
       if (data.status === 'completed' || data.status === 'failed') {
-        setAgents(prevAgents => 
-          prevAgents.map(agent => 
+        setAgents(prevAgents => {
+          const safeAgents = Array.isArray(prevAgents) ? prevAgents : [];
+          return safeAgents.map(agent => 
             agent.agent_id === data.agent_id 
               ? { 
                   ...agent, 
@@ -58,8 +66,8 @@ export const useAgents = () => {
                   total_tasks_completed: agent.total_tasks_completed + (data.status === 'completed' ? 1 : 0)
                 }
               : agent
-          )
-        );
+          );
+        });
       }
     });
 
@@ -70,7 +78,7 @@ export const useAgents = () => {
   }, []);
 
   return { 
-    agents, 
+    agents: Array.isArray(agents) ? agents : [], // Final safeguard
     isLoading, 
     error, 
     refetch: fetchAgents 
