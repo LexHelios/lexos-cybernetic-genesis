@@ -65,11 +65,16 @@ class ApiClient {
     }
   }
 
+  clearToken() {
+    this.token = null;
+    localStorage.removeItem('auth_token');
+  }
+
   // Authentication endpoints
-  async login(username: string, password: string) {
+  async login(credentials: { username: string; password: string }) {
     const response = await this.request<any>('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify(credentials),
     });
     
     if (response.success && response.token) {
@@ -88,8 +93,33 @@ class ApiClient {
     return this.request<{ valid: boolean; user?: any }>('/api/auth/verify');
   }
 
+  async getCurrentUser() {
+    return this.request<any>('/api/auth/me');
+  }
+
   async getProfile() {
     return this.request<any>('/api/auth/me');
+  }
+
+  async changePassword(currentPassword: string, newPassword: string) {
+    return this.request<any>('/api/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
+
+  // 2FA endpoints
+  async enable2FA() {
+    return this.request<{ qr_code: string; secret: string }>('/api/auth/2fa/enable', {
+      method: 'POST',
+    });
+  }
+
+  async verify2FA(code: string) {
+    return this.request<{ success: boolean }>('/api/auth/2fa/verify', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    });
   }
 
   // System endpoints
@@ -99,6 +129,39 @@ class ApiClient {
 
   async getAgents() {
     return this.request<any>('/api/agents');
+  }
+
+  // Task endpoints
+  async submitTask(agentId: string, task: any) {
+    return this.request<{ success: boolean; queue_position: number }>(`/api/agents/${agentId}/tasks`, {
+      method: 'POST',
+      body: JSON.stringify(task),
+    });
+  }
+
+  // Knowledge Graph endpoints
+  async getKnowledgeGraph() {
+    return this.request<any>('/api/knowledge/graph');
+  }
+
+  async getNodeSubgraph(nodeId: string) {
+    return this.request<any>(`/api/knowledge/nodes/${nodeId}/subgraph`);
+  }
+
+  async searchKnowledgeGraph(query: string) {
+    return this.request<any>(`/api/knowledge/search?q=${encodeURIComponent(query)}`);
+  }
+
+  // Chat auto-routing endpoints
+  async getChatAutoStats() {
+    return this.request<any>('/api/chat/auto/stats');
+  }
+
+  // API Key endpoints
+  async revokeApiKey(keyId: string) {
+    return this.request<any>(`/api/keys/${keyId}`, {
+      method: 'DELETE',
+    });
   }
 
   // Health check
