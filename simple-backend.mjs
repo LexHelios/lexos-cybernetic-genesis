@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import { WebSocketServer } from 'ws';
@@ -25,12 +26,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Authentication endpoints that match the frontend expectations
+// Authentication endpoints
 app.post('/api/auth/login', (req, res) => {
   console.log('Login request received:', req.body);
   const { username, password } = req.body;
   
-  // Check against valid credentials
   if (username && password && validCredentials[username] === password) {
     console.log(`Login successful for user: ${username}`);
     res.json({
@@ -50,8 +50,7 @@ app.post('/api/auth/login', (req, res) => {
       expires_at: Date.now() + 24 * 60 * 60 * 1000
     });
   } else {
-    console.log(`Login failed for user: ${username} with password: ${password}`);
-    console.log('Valid credentials:', Object.keys(validCredentials));
+    console.log(`Login failed for user: ${username}`);
     res.status(401).json({ 
       success: false,
       error: 'Invalid credentials',
@@ -135,22 +134,6 @@ app.get('/api/agents', (req, res) => {
   });
 });
 
-app.get('/api/agents/:agentId', (req, res) => {
-  const agent = {
-    id: req.params.agentId,
-    name: 'LEX-Alpha-001',
-    type: 'General Purpose AI',
-    status: 'active',
-    performance: 95,
-    tasksCompleted: 1247,
-    uptime: '7d 14h',
-    model: 'llama3.2',
-    capabilities: ['reasoning', 'analysis', 'generation'],
-    last_activity: new Date().toISOString()
-  };
-  res.json(agent);
-});
-
 // System status endpoint
 app.get('/api/system/status', (req, res) => {
   res.json({
@@ -207,38 +190,6 @@ app.get('/api/system/status', (req, res) => {
   });
 });
 
-// Task endpoints
-app.post('/api/agents/:agentId/tasks', (req, res) => {
-  const taskId = `task_${Date.now()}`;
-  res.json({
-    success: true,
-    task_id: taskId,
-    agent_id: req.params.agentId,
-    status: 'queued',
-    created_at: new Date().toISOString(),
-    estimated_completion: new Date(Date.now() + 30000).toISOString()
-  });
-});
-
-app.get('/api/tasks/:taskId', (req, res) => {
-  res.json({
-    id: req.params.taskId,
-    agent_id: 'lex-alpha-001',
-    status: 'completed',
-    type: 'analysis',
-    parameters: { query: 'sample task' },
-    result: 'Task completed successfully',
-    created_at: new Date(Date.now() - 60000).toISOString(),
-    completed_at: new Date().toISOString()
-  });
-});
-
-// Catch-all for undefined routes
-app.use('*', (req, res) => {
-  console.log('Unhandled request:', req.method, req.originalUrl);
-  res.status(404).json({ error: 'Endpoint not found', path: req.originalUrl });
-});
-
 // WebSocket
 const wss = new WebSocketServer({ server, path: '/ws/monitoring' });
 
@@ -265,66 +216,14 @@ wss.on('connection', (ws) => {
     }
   }, 2000);
 
-  ws.on('message', (message) => {
-    try {
-      const data = JSON.parse(message);
-      console.log('WebSocket message received:', data);
-      
-      ws.send(JSON.stringify({
-        type: 'response',
-        data: { received: data },
-        timestamp: Date.now()
-      }));
-    } catch (error) {
-      console.error('WebSocket message error:', error);
-    }
-  });
-
   ws.on('close', () => {
     console.log('WebSocket client disconnected');
     clearInterval(interval);
   });
-
-  ws.on('error', (error) => {
-    console.error('WebSocket error:', error);
-  });
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({ error: 'Internal server error' });
 });
 
 server.listen(port, '0.0.0.0', () => {
-  console.log(`🚀 LexOS Genesis Mock Backend running on http://localhost:${port}`);
+  console.log(`🚀 LexOS Genesis Backend running on http://localhost:${port}`);
   console.log(`📡 WebSocket server available on ws://localhost:${port}/ws/monitoring`);
-  console.log(`🔗 CORS enabled for all origins`);
-  console.log(`🔐 Valid login credentials:`);
-  console.log(`   admin / NEXUS_ADMIN_CHANGE_IMMEDIATELY`);
-  console.log(`   operator / NEXUS_OPERATOR_CHANGE_IMMEDIATELY`);
-  console.log(`📋 Available endpoints:`);
-  console.log(`   POST /api/auth/login`);
-  console.log(`   GET  /api/auth/verify`);
-  console.log(`   GET  /api/auth/me`);
-  console.log(`   GET  /api/agents`);
-  console.log(`   GET  /api/system/status`);
-  console.log(`   GET  /health`);
-});
-
-// Handle process termination
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully...');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
-  });
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully...');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
-  });
+  console.log(`🔐 Valid credentials: admin/NEXUS_ADMIN_CHANGE_IMMEDIATELY`);
 });
