@@ -29,8 +29,17 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ open, onOpenChange, onSuccess
   const handleSaveKey = async () => {
     if (!newKey.name || !newKey.key) {
       toast({
-        title: "Error",
-        description: "Please provide both key name and value.",
+        title: "Validation Error",
+        description: "Please provide both API key name and value.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newKey.key.length < 32) {
+      toast({
+        title: "Security Error",
+        description: "API key must be at least 32 characters long for security.",
         variant: "destructive",
       });
       return;
@@ -42,29 +51,31 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ open, onOpenChange, onSuccess
         method: 'POST',
         body: JSON.stringify({
           name: newKey.name,
-          api_key: newKey.key
+          api_key: newKey.key,
+          created_at: new Date().toISOString(),
+          status: 'active'
         })
       });
       
       const keyData = {
-        id: response.id || Date.now().toString(),
+        id: response.id || `key_${Date.now()}`,
         name: newKey.name,
-        permissions: [] as string[]
+        permissions: ['read', 'write'] as string[]
       };
       
       onSuccess(keyData);
 
       toast({
-        title: "Success",
-        description: "API key saved successfully.",
+        title: "API Key Created",
+        description: `API key "${newKey.name}" has been successfully created and activated.`,
       });
       onOpenChange(false);
       setNewKey({ name: '', key: '' });
     } catch (error: any) {
       console.error("Error saving API key:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to save API key.",
+        title: "Creation Failed",
+        description: error.message || "Failed to create API key. Please check your connection and try again.",
         variant: "destructive",
       });
     } finally {
@@ -72,13 +83,22 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ open, onOpenChange, onSuccess
     }
   };
 
+  const generateSecureKey = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = 'nxs_';
+    for (let i = 0; i < 40; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewKey({ ...newKey, key: result });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New API Key</DialogTitle>
+          <DialogTitle>Create New API Key</DialogTitle>
           <DialogDescription>
-            Create a new API key for accessing system resources.
+            Generate a secure API key for accessing NEXUS Genesis system resources and services.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -91,19 +111,31 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ open, onOpenChange, onSuccess
               value={newKey.name}
               onChange={(e) => setNewKey({ ...newKey, name: e.target.value })}
               className="col-span-3"
+              placeholder="e.g., Production API, Development Key"
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="key-value" className="text-right">
               Key Value
             </Label>
-            <Input
-              id="key-value"
-              type="password"
-              value={newKey.key}
-              onChange={(e) => setNewKey({ ...newKey, key: e.target.value })}
-              className="col-span-3"
-            />
+            <div className="col-span-3 space-y-2">
+              <Input
+                id="key-value"
+                type="password"
+                value={newKey.key}
+                onChange={(e) => setNewKey({ ...newKey, key: e.target.value })}
+                placeholder="Enter or generate secure API key"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={generateSecureKey}
+                className="w-full"
+              >
+                Generate Secure Key
+              </Button>
+            </div>
           </div>
         </div>
         <DialogFooter>
@@ -111,7 +143,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ open, onOpenChange, onSuccess
             Cancel
           </Button>
           <Button type="button" onClick={handleSaveKey} disabled={saving}>
-            {saving ? 'Saving...' : 'Save Key'}
+            {saving ? 'Creating...' : 'Create API Key'}
           </Button>
         </DialogFooter>
       </DialogContent>
