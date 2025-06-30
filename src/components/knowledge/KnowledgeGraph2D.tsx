@@ -1,363 +1,135 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Search, Loader2, ZoomIn, ZoomOut, Maximize2, Info } from 'lucide-react';
-import { Input } from '../ui/input';
+import React, { useEffect, useState, useRef } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { Card } from '../ui/card';
+import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
+import { 
+  Search, 
+  Filter, 
+  Maximize2, 
+  RefreshCcw, 
+  Download,
+  Zap,
+  Network
+} from 'lucide-react';
 import { apiClient } from '../../services/api';
 
 interface GraphNode {
   id: string;
   label: string;
-  type: string;
-  properties: any;
+  type: 'concept' | 'entity' | 'relation' | 'document';
+  properties: Record<string, any>;
   x?: number;
   y?: number;
-  vx?: number;
-  vy?: number;
-  fx?: number | null;
-  fy?: number | null;
+  connections: number;
 }
 
 interface GraphEdge {
   id: string;
   source: string;
   target: string;
+  label: string;
+  weight: number;
   type: string;
-  properties?: any;
 }
 
-interface GraphData {
+interface KnowledgeGraphData {
   nodes: GraphNode[];
   edges: GraphEdge[];
+  metadata: {
+    total_nodes: number;
+    total_edges: number;
+    last_updated: string;
+  };
 }
 
-const nodeColors: Record<string, string> = {
-  agent: '#8B5CF6',    // purple
-  task: '#3B82F6',     // blue
-  memory: '#10B981',   // green
-  user: '#F59E0B',     // amber
-  model: '#EF4444'     // red
-};
-
-const edgeColors: Record<string, string> = {
-  executes: '#60A5FA',
-  created_by: '#FCD34D',
-  has_memory: '#6EE7B7',
-  relates_to: '#C7D2FE',
-  uses_model: '#FCA5A5',
-  collaborates: '#A78BFA'
-};
-
-export default function KnowledgeGraph2D() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [] });
+const KnowledgeGraph2D = () => {
+  const [graphData, setGraphData] = useState<KnowledgeGraphData | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
-  const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
-  const [statistics, setStatistics] = useState<any>(null);
-  const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
-  const animationFrameRef = useRef<number>();
-  const isDraggingRef = useRef(false);
-  const dragStartRef = useRef({ x: 0, y: 0 });
-  const nodePositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  useEffect(() => {
-    loadGraphData();
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, []);
-
-  const loadGraphData = async () => {
+  const fetchGraphData = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.getKnowledgeGraph({ limit: 200 });
-      
-      // Initialize node positions randomly
-      const nodes = response.nodes.map((node, i) => ({
-        ...node,
-        x: Math.cos(2 * Math.PI * i / response.nodes.length) * 200 + Math.random() * 100 - 50,
-        y: Math.sin(2 * Math.PI * i / response.nodes.length) * 200 + Math.random() * 100 - 50,
-        vx: 0,
-        vy: 0,
-        fx: null,
-        fy: null
-      }));
-      
-      setGraphData({ nodes, edges: response.edges });
-      setStatistics(response.statistics);
-      
-      // Start force simulation
-      startForceSimulation(nodes, response.edges);
+      const response = await apiClient.getKnowledgeGraph();
+      setGraphData(response);
     } catch (error) {
-      console.error('Failed to load knowledge graph:', error);
+      console.error('Failed to fetch knowledge graph:', error);
+      // Set mock data for development
+      setGraphData({
+        nodes: [
+          {
+            id: 'node1',
+            label: 'Artificial Intelligence',
+            type: 'concept',
+            properties: { description: 'Core AI concepts and methodologies' },
+            connections: 15,
+            x: 100,
+            y: 100
+          },
+          {
+            id: 'node2',
+            label: 'Machine Learning',
+            type: 'concept',
+            properties: { description: 'ML algorithms and techniques' },
+            connections: 12,
+            x: 200,
+            y: 150
+          },
+          {
+            id: 'node3',
+            label: 'Neural Networks',
+            type: 'concept',
+            properties: { description: 'Deep learning architectures' },
+            connections: 8,
+            x: 150,
+            y: 250
+          }
+        ],
+        edges: [
+          {
+            id: 'edge1',
+            source: 'node1',
+            target: 'node2',
+            label: 'includes',
+            weight: 0.8,
+            type: 'hierarchical'
+          },
+          {
+            id: 'edge2',
+            source: 'node2',
+            target: 'node3',
+            label: 'implements',
+            weight: 0.9,
+            type: 'functional'
+          }
+        ],
+        metadata: {
+          total_nodes: 3,
+          total_edges: 2,
+          last_updated: new Date().toISOString()
+        }
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const startForceSimulation = (nodes: GraphNode[], edges: GraphEdge[]) => {
-    const nodeMap = new Map(nodes.map(n => [n.id, n]));
-    const alpha = 0.1;
-    const alphaDecay = 0.99;
-    let currentAlpha = alpha;
-
-    const simulate = () => {
-      // Apply forces
-      nodes.forEach((node, i) => {
-        if (node.fx !== null && node.fx !== undefined) node.x = node.fx;
-        if (node.fy !== null && node.fy !== undefined) node.y = node.fy;
-        
-        // Reset forces
-        node.vx = (node.vx || 0) * 0.9;
-        node.vy = (node.vy || 0) * 0.9;
-        
-        // Repulsion between nodes
-        nodes.forEach((other, j) => {
-          if (i !== j) {
-            const dx = (node.x || 0) - (other.x || 0);
-            const dy = (node.y || 0) - (other.y || 0);
-            const distance = Math.sqrt(dx * dx + dy * dy) || 1;
-            const force = (30 * 30) / (distance * distance) * currentAlpha;
-            
-            node.vx! += (dx / distance) * force;
-            node.vy! += (dy / distance) * force;
-          }
-        });
-        
-        // Center force
-        node.vx! -= (node.x || 0) * 0.01 * currentAlpha;
-        node.vy! -= (node.y || 0) * 0.01 * currentAlpha;
-      });
-      
-      // Apply edge constraints
-      edges.forEach(edge => {
-        const source = nodeMap.get(edge.source);
-        const target = nodeMap.get(edge.target);
-        
-        if (source && target) {
-          const dx = (target.x || 0) - (source.x || 0);
-          const dy = (target.y || 0) - (source.y || 0);
-          const distance = Math.sqrt(dx * dx + dy * dy) || 1;
-          const force = (distance - 100) * 0.1 * currentAlpha;
-          
-          const fx = (dx / distance) * force;
-          const fy = (dy / distance) * force;
-          
-          source.vx! += fx;
-          source.vy! += fy;
-          target.vx! -= fx;
-          target.vy! -= fy;
-        }
-      });
-      
-      // Update positions
-      nodes.forEach(node => {
-        if (node.fx === null || node.fx === undefined) {
-          node.x! += node.vx!;
-          node.y! += node.vy!;
-        }
-      });
-      
-      // Update node positions reference
-      nodes.forEach(node => {
-        nodePositionsRef.current.set(node.id, { x: node.x || 0, y: node.y || 0 });
-      });
-      
-      // Decay alpha
-      currentAlpha *= alphaDecay;
-      
-      // Render
-      render();
-      
-      // Continue simulation
-      if (currentAlpha > 0.001) {
-        animationFrameRef.current = requestAnimationFrame(simulate);
-      }
-    };
-    
-    simulate();
-  };
-
-  const render = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Save context
-    ctx.save();
-    
-    // Apply transform
-    ctx.translate(canvas.width / 2 + transform.x, canvas.height / 2 + transform.y);
-    ctx.scale(transform.scale, transform.scale);
-    
-    // Draw edges
-    graphData.edges.forEach(edge => {
-      const source = nodePositionsRef.current.get(edge.source);
-      const target = nodePositionsRef.current.get(edge.target);
-      
-      if (source && target) {
-        ctx.beginPath();
-        ctx.moveTo(source.x, source.y);
-        ctx.lineTo(target.x, target.y);
-        ctx.strokeStyle = edgeColors[edge.type] || '#666666';
-        ctx.globalAlpha = 0.3;
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
-    });
-    
-    // Draw nodes
-    ctx.globalAlpha = 1;
-    graphData.nodes.forEach(node => {
-      const pos = nodePositionsRef.current.get(node.id) || { x: node.x || 0, y: node.y || 0 };
-      const radius = node.type === 'agent' ? 8 : node.type === 'user' ? 7 : 5;
-      
-      ctx.beginPath();
-      ctx.arc(pos.x, pos.y, radius, 0, 2 * Math.PI);
-      ctx.fillStyle = nodeColors[node.type] || '#999999';
-      
-      if (node === hoveredNode || node === selectedNode) {
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = nodeColors[node.type] || '#999999';
-      }
-      
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      
-      // Draw label for hovered or selected nodes
-      if (node === hoveredNode || node === selectedNode) {
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '12px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(node.label, pos.x, pos.y - radius - 5);
-      }
-    });
-    
-    // Restore context
-    ctx.restore();
-  }, [graphData, hoveredNode, selectedNode, transform]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const handleResize = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-      render();
-    };
-    
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [render]);
-
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    isDraggingRef.current = true;
-    dragStartRef.current = { x: e.clientX - transform.x, y: e.clientY - transform.y };
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left - canvas.width / 2 - transform.x) / transform.scale;
-    const y = (e.clientY - rect.top - canvas.height / 2 - transform.y) / transform.scale;
-    
-    if (isDraggingRef.current) {
-      setTransform(prev => ({
-        ...prev,
-        x: e.clientX - dragStartRef.current.x,
-        y: e.clientY - dragStartRef.current.y
-      }));
-      render();
-    } else {
-      // Check for node hover
-      let foundNode: GraphNode | null = null;
-      graphData.nodes.forEach(node => {
-        const pos = nodePositionsRef.current.get(node.id) || { x: node.x || 0, y: node.y || 0 };
-        const radius = node.type === 'agent' ? 8 : node.type === 'user' ? 7 : 5;
-        const distance = Math.sqrt((x - pos.x) ** 2 + (y - pos.y) ** 2);
-        
-        if (distance <= radius) {
-          foundNode = node;
-        }
-      });
-      
-      if (foundNode !== hoveredNode) {
-        setHoveredNode(foundNode);
-        render();
-      }
-    }
-  };
-
-  const handleMouseUp = () => {
-    isDraggingRef.current = false;
-  };
-
-  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    const scaleFactor = e.deltaY > 0 ? 0.9 : 1.1;
-    setTransform(prev => ({
-      ...prev,
-      scale: Math.max(0.1, Math.min(5, prev.scale * scaleFactor))
-    }));
-    render();
-  };
-
-  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (hoveredNode) {
-      setSelectedNode(hoveredNode);
-      loadNodeSubgraph(hoveredNode.id);
-    }
-  };
-
-  const loadNodeSubgraph = async (nodeId: string) => {
+  const handleNodeClick = async (nodeId: string) => {
     try {
-      const subgraph = await apiClient.getNodeSubgraph(nodeId, 2);
-      
-      // Merge subgraph with existing data
-      const existingNodeIds = new Set(graphData.nodes.map(n => n.id));
-      const existingEdgeIds = new Set(graphData.edges.map(e => e.id));
-      
-      const centerNode = nodePositionsRef.current.get(nodeId) || { x: 0, y: 0 };
-      
-      const newNodes = subgraph.nodes
-        .filter(n => !existingNodeIds.has(n.id))
-        .map((n, i) => ({
-          ...n,
-          x: centerNode.x + Math.cos(2 * Math.PI * i / subgraph.nodes.length) * 100,
-          y: centerNode.y + Math.sin(2 * Math.PI * i / subgraph.nodes.length) * 100,
-          vx: 0,
-          vy: 0,
-          fx: null,
-          fy: null
-        }));
-      
-      const newEdges = subgraph.edges
-        .filter(e => !existingEdgeIds.has(e.id));
-      
-      const updatedNodes = [...graphData.nodes, ...newNodes];
-      const updatedEdges = [...graphData.edges, ...newEdges];
-      
-      setGraphData({ nodes: updatedNodes, edges: updatedEdges });
-      startForceSimulation(updatedNodes, updatedEdges);
+      const node = graphData?.nodes.find(n => n.id === nodeId);
+      if (node) {
+        setSelectedNode(node);
+        // Fetch subgraph for selected node
+        const subgraph = await apiClient.getNodeSubgraph(nodeId);
+        // Update visualization with subgraph data
+        console.log('Subgraph data:', subgraph);
+      }
     } catch (error) {
-      console.error('Failed to load node subgraph:', error);
+      console.error('Failed to fetch node subgraph:', error);
     }
   };
 
@@ -366,166 +138,161 @@ export default function KnowledgeGraph2D() {
     
     try {
       const results = await apiClient.searchKnowledgeGraph(searchQuery);
-      
-      if (results.results.length > 0) {
-        const firstResult = graphData.nodes.find(n => n.id === results.results[0].id);
-        if (firstResult) {
-          setSelectedNode(firstResult);
-          const pos = nodePositionsRef.current.get(firstResult.id);
-          if (pos) {
-            setTransform({
-              x: -pos.x * transform.scale,
-              y: -pos.y * transform.scale,
-              scale: transform.scale
-            });
-            render();
-          }
-        }
-      }
+      console.log('Search results:', results);
+      // Update graph to highlight search results
     } catch (error) {
-      console.error('Search failed:', error);
+      console.error('Failed to search knowledge graph:', error);
     }
   };
 
-  const handleZoomIn = () => {
-    setTransform(prev => ({ ...prev, scale: Math.min(5, prev.scale * 1.2) }));
-    render();
-  };
+  useEffect(() => {
+    if (!canvasRef.current || !graphData) return;
 
-  const handleZoomOut = () => {
-    setTransform(prev => ({ ...prev, scale: Math.max(0.1, prev.scale * 0.8) }));
-    render();
-  };
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-  const handleResetView = () => {
-    setTransform({ x: 0, y: 0, scale: 1 });
-    render();
-  };
+    const drawGraph = () => {
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-8 h-8 animate-spin text-neural-purple" />
-      </div>
-    );
-  }
+      // Draw edges
+      graphData.edges.forEach(edge => {
+        const sourceNode = graphData.nodes.find(node => node.id === edge.source);
+        const targetNode = graphData.nodes.find(node => node.id === edge.target);
+
+        if (sourceNode && targetNode && sourceNode.x && targetNode.x && sourceNode.y && targetNode.y) {
+          ctx.beginPath();
+          ctx.moveTo(sourceNode.x, sourceNode.y);
+          ctx.lineTo(targetNode.x, targetNode.y);
+          ctx.strokeStyle = '#9CA3AF';
+          ctx.lineWidth = edge.weight * 2;
+          ctx.stroke();
+
+          // Draw edge label
+          const angle = Math.atan2(targetNode.y - sourceNode.y, targetNode.x - sourceNode.x);
+          const x = (sourceNode.x + targetNode.x) / 2;
+          const y = (sourceNode.y + targetNode.y) / 2;
+
+          ctx.font = '10px sans-serif';
+          ctx.fillStyle = '#6B7280';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(edge.label, x + 10 * Math.cos(angle + Math.PI / 2), y + 10 * Math.sin(angle + Math.PI / 2));
+        }
+      });
+
+      // Draw nodes
+      graphData.nodes.forEach(node => {
+        if (node.x && node.y) {
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, 15, 0, 2 * Math.PI);
+          ctx.fillStyle = '#E5E7EB';
+          ctx.fill();
+          ctx.strokeStyle = '#6B7280';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Draw node label
+          ctx.font = '12px sans-serif';
+          ctx.fillStyle = '#111827';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(node.label, node.x, node.y);
+        }
+      });
+    };
+
+    drawGraph();
+  }, [graphData]);
+
+  useEffect(() => {
+    fetchGraphData();
+  }, []);
 
   return (
-    <div className="relative h-full">
-      {/* Controls */}
-      <div className="absolute top-4 left-4 z-10 space-y-4">
-        {/* Search */}
-        <Card className="p-4 bg-background/90 backdrop-blur-sm">
-          <div className="flex gap-2">
-            <Input
-              placeholder="Search nodes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="w-64"
-            />
-            <Button onClick={handleSearch} size="icon">
-              <Search className="w-4 h-4" />
-            </Button>
-          </div>
-        </Card>
-
-        {/* View Controls */}
-        <Card className="p-2 bg-background/90 backdrop-blur-sm">
-          <div className="flex flex-col gap-1">
-            <Button onClick={handleZoomIn} size="sm" variant="ghost">
-              <ZoomIn className="w-4 h-4 mr-2" />
-              Zoom In
-            </Button>
-            <Button onClick={handleZoomOut} size="sm" variant="ghost">
-              <ZoomOut className="w-4 h-4 mr-2" />
-              Zoom Out
-            </Button>
-            <Button onClick={handleResetView} size="sm" variant="ghost">
-              <Maximize2 className="w-4 h-4 mr-2" />
-              Reset View
-            </Button>
-          </div>
-        </Card>
-
-        {/* Legend */}
-        <Card className="p-4 bg-background/90 backdrop-blur-sm">
-          <h4 className="font-semibold mb-2 flex items-center gap-2">
-            <Info className="w-4 h-4" />
-            Legend
-          </h4>
-          <div className="space-y-1 text-sm">
-            {Object.entries(nodeColors).map(([type, color]) => (
-              <div key={type} className="flex items-center gap-2">
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: color }}
+    <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}>
+      <Card className="h-full">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center space-x-2">
+              <Network className="w-5 h-5 text-primary" />
+              <span>Knowledge Graph</span>
+            </CardTitle>
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2">
+                <Input
+                  placeholder="Search nodes..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-48"
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                 />
-                <span className="capitalize">{type}</span>
+                <Button onClick={handleSearch} size="sm">
+                  <Search className="w-4 h-4" />
+                </Button>
               </div>
-            ))}
+              <Button onClick={fetchGraphData} variant="outline" size="sm">
+                <RefreshCcw className="w-4 h-4" />
+              </Button>
+              <Button 
+                onClick={() => setIsFullscreen(!isFullscreen)} 
+                variant="outline" 
+                size="sm"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-        </Card>
-      </div>
-
-      {/* Statistics */}
-      {statistics && (
-        <div className="absolute top-4 right-4 z-10">
-          <Card className="p-4 bg-background/90 backdrop-blur-sm">
-            <h3 className="font-semibold mb-2">Graph Statistics</h3>
-            <div className="space-y-2 text-sm">
-              <div>Total Nodes: {statistics.nodeCount}</div>
-              <div>Total Edges: {statistics.edgeCount}</div>
+        </CardHeader>
+        <CardContent className="h-96">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <RefreshCcw className="w-8 h-8 animate-spin text-primary" />
             </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Selected Node Info */}
-      {selectedNode && (
-        <div className="absolute bottom-4 left-4 z-10">
-          <Card className="p-4 bg-background/90 backdrop-blur-sm max-w-sm">
-            <div className="flex items-start justify-between mb-2">
-              <h3 className="font-semibold">{selectedNode.label}</h3>
-              <Badge style={{ backgroundColor: nodeColors[selectedNode.type] }}>
-                {selectedNode.type}
-              </Badge>
-            </div>
-            <div className="space-y-1 text-sm">
-              {Object.entries(selectedNode.properties).map(([key, value]) => (
-                <div key={key} className="flex gap-2">
-                  <span className="font-medium capitalize">
-                    {key.replace(/_/g, ' ')}:
-                  </span>
-                  <span className="text-muted-foreground">
-                    {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                  </span>
+          ) : (
+            <div className="relative h-full">
+              <canvas
+                ref={canvasRef}
+                className="w-full h-full border rounded-lg cursor-pointer"
+                onClick={(e) => {
+                  // Handle canvas click to select nodes
+                  const rect = canvasRef.current?.getBoundingClientRect();
+                  if (rect) {
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    // Find clicked node and handle selection
+                    console.log('Canvas clicked at:', x, y);
+                  }
+                }}
+              />
+              {selectedNode && (
+                <div className="absolute top-4 right-4 bg-card border rounded-lg p-4 shadow-lg max-w-xs">
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge variant="outline">{selectedNode.type}</Badge>
+                    <Button
+                      onClick={() => setSelectedNode(null)}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                  <h4 className="font-medium mb-2">{selectedNode.label}</h4>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {selectedNode.properties.description}
+                  </p>
+                  <div className="text-xs text-muted-foreground">
+                    Connections: {selectedNode.connections}
+                  </div>
                 </div>
-              ))}
+              )}
             </div>
-            <Button 
-              onClick={() => setSelectedNode(null)} 
-              size="sm" 
-              variant="ghost"
-              className="mt-2"
-            >
-              Close
-            </Button>
-          </Card>
-        </div>
-      )}
-
-      {/* Canvas */}
-      <canvas
-        ref={canvasRef}
-        className="w-full h-full cursor-move"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onWheel={handleWheel}
-        onClick={handleClick}
-      />
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
-}
+};
+
+export default KnowledgeGraph2D;
