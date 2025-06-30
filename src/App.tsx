@@ -34,13 +34,34 @@ const queryClient = new QueryClient({
   },
 });
 
-// Loading component
+// Enhanced Loading component with cyberpunk style
 const LoadingScreen = () => (
-  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-    <div className="text-center">
-      <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mb-4"></div>
-      <h2 className="text-2xl font-bold text-white mb-2">Initializing NEXUS...</h2>
-      <p className="text-purple-300">Please wait while we load the system</p>
+  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center relative overflow-hidden">
+    {/* Animated background grid */}
+    <div className="absolute inset-0 opacity-20">
+      <div className="absolute inset-0" style={{
+        backgroundImage: `
+          linear-gradient(rgba(0,255,255,0.1) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0,255,255,0.1) 1px, transparent 1px)
+        `,
+        backgroundSize: '50px 50px'
+      }}></div>
+    </div>
+    
+    <div className="text-center z-10">
+      <div className="relative mb-8">
+        <div className="inline-block animate-spin rounded-full h-16 w-16 border-2 border-transparent border-t-cyan-400 border-r-purple-400"></div>
+        <div className="absolute inset-0 inline-block animate-ping rounded-full h-16 w-16 border border-cyan-400 opacity-20"></div>
+      </div>
+      <h2 className="text-3xl font-orbitron font-bold text-white mb-4 animate-pulse">
+        INITIALIZING NEXUS...
+      </h2>
+      <div className="flex items-center justify-center space-x-2 mb-4">
+        <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
+        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+        <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+      </div>
+      <p className="text-cyan-300 font-rajdhani tracking-wider">Neural pathways synchronizing...</p>
     </div>
   </div>
 );
@@ -60,10 +81,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// Main app layout
+// Enhanced app layout with cyberpunk effects
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
-    // Connect to WebSocket when authenticated
     console.log('App: Connecting to WebSocket...');
     websocketService.connect();
     
@@ -74,9 +94,15 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 overflow-hidden">
+      {/* Animated background effects */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+      
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden relative z-10">
         <Header />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900 p-6">
           {children}
