@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Bot, Plus, Brain, Activity, Cpu, Database, Zap, Users, Clock } from 'lucide-react';
 import MetricCard from '../components/dashboard/MetricCard';
@@ -15,6 +16,8 @@ import { websocketService } from '../services/websocket';
 import { useAgents } from '../hooks/useAgents';
 
 const AgentManagement = () => {
+  console.log('AgentManagement: Component rendering...');
+  
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -23,75 +26,105 @@ const AgentManagement = () => {
   const [systemMetrics, setSystemMetrics] = useState<SystemStatus | null>(null);
   
   const { agents, isLoading, error } = useAgents();
+  console.log('AgentManagement: useAgents returned - agents:', agents, 'isLoading:', isLoading, 'error:', error);
 
   // Ensure agents is always an array - multiple layers of protection
   const safeAgents = React.useMemo(() => {
-    console.log('AgentManagement - agents:', agents);
+    console.log('AgentManagement: Processing agents for safety - input agents:', agents);
     if (!agents) {
-      console.log('AgentManagement - agents is null/undefined, returning empty array');
+      console.log('AgentManagement: agents is null/undefined, returning empty array');
       return [];
     }
     if (Array.isArray(agents)) {
-      console.log('AgentManagement - agents is array with length:', agents.length);
+      console.log('AgentManagement: agents is array with length:', agents.length);
       return agents;
     }
-    console.log('AgentManagement - agents is not array, returning empty array');
+    console.log('AgentManagement: agents is not array, returning empty array. Type:', typeof agents);
     return [];
   }, [agents]);
 
   // WebSocket connection for real-time updates
   useEffect(() => {
-    websocketService.connect();
+    console.log('AgentManagement: Setting up WebSocket connection...');
+    
+    try {
+      websocketService.connect();
 
-    const unsubscribeSystem = websocketService.subscribe('system_status', (data) => {
-      setSystemMetrics(data);
-    });
-
-    // Request initial status
-    setTimeout(() => {
-      websocketService.send({
-        type: 'status_request',
-        data: { metrics: true }
+      const unsubscribeSystem = websocketService.subscribe('system_status', (data) => {
+        console.log('AgentManagement: System status update:', data);
+        setSystemMetrics(data);
       });
-    }, 1000);
 
-    return () => {
-      unsubscribeSystem();
-    };
+      // Request initial status
+      setTimeout(() => {
+        console.log('AgentManagement: Requesting initial system status...');
+        websocketService.send({
+          type: 'status_request',
+          data: { metrics: true }
+        });
+      }, 1000);
+
+      return () => {
+        console.log('AgentManagement: Cleaning up WebSocket subscription...');
+        unsubscribeSystem();
+      };
+    } catch (error) {
+      console.error('AgentManagement: WebSocket setup error:', error);
+    }
   }, []);
 
   const handleTaskSubmit = (agentId: string) => {
-    const agent = safeAgents.find(a => a.agent_id === agentId);
-    if (agent) {
-      setSelectedAgent(agent);
-      setShowTaskDialog(true);
+    console.log('AgentManagement: Task submit for agent:', agentId);
+    try {
+      const agent = safeAgents.find(a => a.agent_id === agentId);
+      if (agent) {
+        setSelectedAgent(agent);
+        setShowTaskDialog(true);
+      } else {
+        console.warn('AgentManagement: Agent not found for task submission:', agentId);
+      }
+    } catch (error) {
+      console.error('AgentManagement: Error in handleTaskSubmit:', error);
     }
   };
 
   const handleAgentConfigure = (agentId: string) => {
-    toast({
-      title: "Agent Configuration",
-      description: "Agent configuration interface coming soon...",
-    });
+    console.log('AgentManagement: Configure agent:', agentId);
+    try {
+      toast({
+        title: "Agent Configuration",
+        description: "Agent configuration interface coming soon...",
+      });
+    } catch (error) {
+      console.error('AgentManagement: Error in handleAgentConfigure:', error);
+    }
   };
 
   const filteredAgents = React.useMemo(() => {
-    console.log('AgentManagement - filtering agents, safeAgents:', safeAgents);
+    console.log('AgentManagement: Filtering agents - safeAgents:', safeAgents, 'searchQuery:', searchQuery, 'filterStatus:', filterStatus);
+    
     if (!Array.isArray(safeAgents)) {
-      console.warn('AgentManagement - safeAgents is not an array!', safeAgents);
+      console.warn('AgentManagement: safeAgents is not an array!', safeAgents);
       return [];
     }
     
     try {
-      return safeAgents.filter(agent => {
-        if (!agent) return false;
+      const filtered = safeAgents.filter(agent => {
+        if (!agent) {
+          console.warn('AgentManagement: Found null/undefined agent in array');
+          return false;
+        }
+        
         const matchesSearch = (agent.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                              (agent.description || '').toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = filterStatus === 'all' || agent.status === filterStatus;
         return matchesSearch && matchesStatus;
       });
-    } catch (err) {
-      console.error('Error filtering agents:', err);
+      
+      console.log('AgentManagement: Filtered agents result:', filtered);
+      return filtered;
+    } catch (error) {
+      console.error('AgentManagement: Error filtering agents:', error);
       return [];
     }
   }, [safeAgents, searchQuery, filterStatus]);
@@ -106,14 +139,20 @@ const AgentManagement = () => {
     return systemMetrics.hardware.cpu.usage;
   };
 
+  console.log('AgentManagement: About to render - error:', error, 'isLoading:', isLoading, 'filteredAgents.length:', filteredAgents.length);
+
   if (error) {
+    console.log('AgentManagement: Rendering error state');
     return (
       <div className="p-6 text-center">
         <div className="text-red-500 mb-4">
           <Bot className="w-12 h-12 mx-auto mb-2" />
           <h2 className="text-xl font-orbitron">Connection Error</h2>
           <p className="text-sm text-muted-foreground">
-            Unable to connect to agent management system
+            {error}
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Check console for detailed error information
           </p>
         </div>
       </div>
@@ -165,6 +204,10 @@ const AgentManagement = () => {
                     Live
                   </Badge>
                 )}
+                <Badge variant="outline" className="border-blue-500/50 text-blue-400">
+                  <Database className="w-3 h-3 mr-1" />
+                  {isLoading ? 'Loading...' : `${safeAgents.length} Agents`}
+                </Badge>
               </div>
             </div>
           </div>
@@ -203,10 +246,16 @@ const AgentManagement = () => {
             <Input
               placeholder="Search agents..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                console.log('AgentManagement: Search query changed:', e.target.value);
+                setSearchQuery(e.target.value);
+              }}
               className="max-w-xs"
             />
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <Select value={filterStatus} onValueChange={(value) => {
+              console.log('AgentManagement: Filter status changed:', value);
+              setFilterStatus(value);
+            }}>
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>
@@ -261,12 +310,18 @@ const AgentManagement = () => {
                   <h3 className="text-lg font-medium text-muted-foreground mb-2">
                     No agents found
                   </h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mb-4">
                     {searchQuery || filterStatus !== 'all' 
                       ? 'Try adjusting your search or filter criteria'
-                      : 'No agents are currently available'
+                      : 'No agents are currently available. Check backend connection.'
                     }
                   </p>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>Debug Info:</p>
+                    <p>Backend URL: {import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'}</p>
+                    <p>WebSocket Connected: {websocketService.isConnected() ? 'Yes' : 'No'}</p>
+                    <p>Error: {error || 'None'}</p>
+                  </div>
                 </div>
               )}
             </div>

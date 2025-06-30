@@ -12,40 +12,72 @@ class ApiClient {
   private token: string | null = null;
 
   constructor() {
-    this.baseURL = '/api';
+    // Use environment variable or default to localhost for development
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+    console.log('ApiClient: Initialized with baseURL:', this.baseURL);
   }
 
   setToken(token: string) {
     this.token = token;
+    console.log('ApiClient: Token set');
   }
 
-  async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  clearToken() {
+    this.token = null;
+    console.log('ApiClient: Token cleared');
+  }
+
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
+    console.log('ApiClient: Making request to:', url);
+    console.log('ApiClient: Request options:', options);
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
 
     if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+      headers.Authorization = `Bearer ${this.token}`;
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
+    try {
+      console.log('ApiClient: Sending fetch request...');
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      console.log('ApiClient: Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('ApiClient: Request failed with status:', response.status, 'Error:', errorText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('ApiClient: Parsed response data:', data);
+      return data;
+    } catch (error) {
+      console.error('ApiClient: Request error:', error);
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.error('ApiClient: Network error - backend might be down or CORS issue');
+        throw new Error('Network error: Unable to connect to the server. Please check if the backend is running.');
+      }
+      throw error;
     }
-
-    return response.json();
   }
 
   // Authentication
   async login(credentials: { username: string; password: string }): Promise<AuthResponse> {
-    return this.request('/auth/login', {
+    console.log('ApiClient: Login attempt for username:', credentials.username);
+    return this.request<AuthResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
@@ -58,8 +90,9 @@ class ApiClient {
     });
   }
 
-  async logout(): Promise<ApiResponse<null>> {
-    return this.request('/auth/logout', {
+  async logout(): Promise<void> {
+    console.log('ApiClient: Logout request');
+    return this.request<void>('/auth/logout', {
       method: 'POST',
     });
   }
@@ -133,8 +166,9 @@ class ApiClient {
   }
 
   // Agent Management
-  async getAgents(): Promise<{ agents: Agent[], total_agents: number, active_agents: number }> {
-    return this.request('/agents');
+  async getAgents(): Promise<{ agents: Agent[]; total_agents: number; active_agents: number }> {
+    console.log('ApiClient: Getting agents...');
+    return this.request<{ agents: Agent[]; total_agents: number; active_agents: number }>('/agents');
   }
 
   async getAgent(agentId: string): Promise<Agent> {
