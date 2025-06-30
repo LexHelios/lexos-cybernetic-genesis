@@ -4,6 +4,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './layout/Sidebar';
 import Header from './layout/Header';
 import ErrorBoundary from './ErrorBoundary';
+import AgentMonitoringButton from './monitoring/AgentMonitoringButton';
 
 const Layout = () => {
   return (
@@ -23,6 +24,9 @@ const Layout = () => {
           </main>
         </div>
       </div>
+      
+      {/* Floating Agent Monitoring Button */}
+      <AgentMonitoringButton />
     </div>
   );
 };
