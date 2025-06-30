@@ -39,8 +39,7 @@ const AccessControl: React.FC = () => {
   const [newRole, setNewRole] = useState({
     name: '',
     description: '',
-    permissions: [],
-    inherits: [],
+    permissions: []
   });
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,8 +73,7 @@ const AccessControl: React.FC = () => {
       await securityService.createRole({
         name: newRole.name,
         description: newRole.description,
-        permissions: newRole.permissions,
-        inherits: newRole.inherits
+        permissions: newRole.permissions
       });
       toast({
         title: 'Success',
@@ -83,7 +81,7 @@ const AccessControl: React.FC = () => {
       });
       fetchRoles();
       setIsDialogOpen(false);
-      setNewRole({ name: '', description: '', permissions: [], inherits: [] });
+      setNewRole({ name: '', description: '', permissions: [] });
     } catch (error) {
       console.error('Failed to create role:', error);
       toast({
@@ -94,7 +92,7 @@ const AccessControl: React.FC = () => {
     }
   };
 
-  const handleUpdateRole = async (roleId: string, updates: Partial<Role>) => {
+  const handleUpdateRole = async (roleId: number, updates: Partial<Role>) => {
     try {
       await securityService.updateRole(roleId, updates);
       toast({
@@ -113,7 +111,7 @@ const AccessControl: React.FC = () => {
     }
   };
 
-  const handleDeleteRole = async (roleId: string) => {
+  const handleDeleteRole = async (roleId: number) => {
     try {
       await securityService.deleteRole(roleId);
       toast({

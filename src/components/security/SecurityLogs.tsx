@@ -116,10 +116,10 @@ const SecurityLogs: React.FC = () => {
     if (!filters.search) return true;
     const searchLower = filters.search.toLowerCase();
     return (
-      log.type.toLowerCase().includes(searchLower) ||
+      log.event_type.toLowerCase().includes(searchLower) ||
       log.username?.toLowerCase().includes(searchLower) ||
-      log.ip?.toLowerCase().includes(searchLower) ||
-      log.userId?.toLowerCase().includes(searchLower)
+      log.ip_address?.toLowerCase().includes(searchLower) ||
+      log.user_id?.toString().includes(searchLower)
     );
   });
 
@@ -128,9 +128,9 @@ const SecurityLogs: React.FC = () => {
       ['Timestamp', 'Type', 'User', 'IP', 'Details'].join(','),
       ...filteredLogs.map(log => [
         new Date(log.timestamp).toISOString(),
-        log.type,
-        log.username || log.userId || '-',
-        log.ip || '-',
+        log.event_type,
+        log.username || log.user_id || '-',
+        log.ip_address || '-',
         JSON.stringify(log).replace(/,/g, ';')
       ].join(','))
     ].join('\n');
@@ -265,23 +265,23 @@ const SecurityLogs: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
-                          <span className={getEventColor(log.type)}>
-                            {getEventIcon(log.type)}
+                          <span className={getEventColor(log.event_type)}>
+                            {getEventIcon(log.event_type)}
                           </span>
-                          <Badge variant={getEventBadgeVariant(log.type)}>
-                            {formatEventType(log.type)}
+                          <Badge variant={getEventBadgeVariant(log.event_type)}>
+                            {formatEventType(log.event_type)}
                           </Badge>
                         </div>
                       </TableCell>
                       <TableCell>
-                        {log.username || log.userId || '-'}
+                        {log.username || log.user_id || '-'}
                       </TableCell>
                       <TableCell className="font-mono text-sm">
-                        {log.ip || '-'}
+                        {log.ip_address || '-'}
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-muted-foreground max-w-xs truncate">
-                          {log.reason || log.error || '-'}
+                          {log.message || '-'}
                         </div>
                       </TableCell>
                     </TableRow>

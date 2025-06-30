@@ -7,14 +7,24 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Alert, AlertDescription } from '../ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { ScrollArea } from '../ui/scroll-area';
-import { securityService, Session } from '../../services/security';
+import { securityService, SessionInfo } from '../../services/security';
 import { useToast } from '../../hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 
+// Mock session type for display
+interface DisplaySession {
+  id: string;
+  username: string;
+  role: string;
+  ip: string;
+  createdAt: string;
+  lastActivity: number;
+}
+
 const ActiveSessions: React.FC = () => {
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessions, setSessions] = useState<DisplaySession[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [selectedSession, setSelectedSession] = useState<DisplaySession | null>(null);
   const [sessionActivity, setSessionActivity] = useState<any[]>([]);
   const [showActivityDialog, setShowActivityDialog] = useState(false);
   const { toast } = useToast();
@@ -27,8 +37,17 @@ const ActiveSessions: React.FC = () => {
 
   const loadSessions = async () => {
     try {
-      const { sessions } = await securityService.getActiveSessions();
-      setSessions(sessions);
+      const sessions = await securityService.getActiveSessions();
+      // Transform SessionInfo to DisplaySession
+      const displaySessions: DisplaySession[] = sessions.map(session => ({
+        id: session.session_id,
+        username: `User ${session.user_id}`,
+        role: 'user',
+        ip: session.ip_address,
+        createdAt: session.created_at,
+        lastActivity: new Date(session.last_activity).getTime()
+      }));
+      setSessions(displaySessions);
     } catch (error) {
       console.error('Failed to load active sessions:', error);
       toast({
@@ -86,7 +105,7 @@ const ActiveSessions: React.FC = () => {
     }
   };
 
-  const getSessionStatus = (session: Session) => {
+  const getSessionStatus = (session: DisplaySession) => {
     const now = Date.now();
     const timeSinceActivity = now - session.lastActivity;
     
