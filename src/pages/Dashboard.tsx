@@ -48,7 +48,9 @@ const Dashboard = () => {
             <SystemOverview />
           </div>
           <div className="lg:col-span-1">
-            <VoiceCommandPanel />
+            <div className="holographic-panel p-1 rounded-lg">
+              <VoiceCommandPanel />
+            </div>
           </div>
         </div>
       </div>
