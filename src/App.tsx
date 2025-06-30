@@ -1,98 +1,250 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./hooks/useAuth";
-import LoginForm from "./components/auth/LoginForm";
-import Index from "./pages/Index";
-import ErrorBoundary from "./components/ErrorBoundary";
-import { useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/sonner';
+import { AuthProvider, useAuth } from '@/hooks/useAuth';
+import { ThemeProvider } from '@/components/theme-provider';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import LoginForm from '@/components/auth/LoginForm';
+import Sidebar from '@/components/layout/Sidebar';
+import Header from '@/components/layout/Header';
+import Dashboard from '@/pages/Dashboard';
+import Agents from '@/pages/Agents';
+import Tasks from '@/pages/Tasks';
+import Analytics from '@/pages/Analytics';
+import Models from '@/pages/Models';
+import Security from '@/pages/Security';
+import Settings from '@/pages/Settings';
+import Chat from '@/pages/Chat';
+import KnowledgeGraph from '@/pages/KnowledgeGraph';
+import Pipeline from '@/pages/Pipeline';
+import Communications from '@/pages/Communications';
+import ConsciousnessLab from '@/pages/ConsciousnessLab';
+import { websocketService } from '@/services/websocket';
+import { useEffect } from 'react';
 
+// Create a query client with simple configuration
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
       refetchOnWindowFocus: false,
-      staleTime: 1000 * 60 * 5, // 5 minutes
     },
   },
 });
 
-const AppContent = () => {
-  const { isAuthenticated, loading, user } = useAuth();
-  const [forceShowLogin, setForceShowLogin] = useState(false);
+// Loading component
+const LoadingScreen = () => (
+  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+    <div className="text-center">
+      <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mb-4"></div>
+      <h2 className="text-2xl font-bold text-white mb-2">Initializing NEXUS...</h2>
+      <p className="text-purple-300">Please wait while we load the system</p>
+    </div>
+  </div>
+);
 
-  console.log('AppContent render:', { isAuthenticated, loading, user: !!user });
+// Protected route wrapper
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
+};
 
-  // Add a timeout to force show login if loading takes too long
+// Main app layout
+const AppLayout = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
-    if (loading) {
-      const timeout = setTimeout(() => {
-        console.warn('Loading timeout reached, forcing login screen');
-        setForceShowLogin(true);
-      }, 10000); // 10 seconds timeout
-      
-      return () => clearTimeout(timeout);
-    }
-  }, [loading]);
+    // Connect to WebSocket when authenticated
+    console.log('App: Connecting to WebSocket...');
+    websocketService.connect();
+    
+    return () => {
+      console.log('App: Disconnecting WebSocket...');
+      websocketService.disconnect();
+    };
+  }, []);
 
-  if (loading && !forceShowLogin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <div className="space-y-2">
-            <h2 className="text-xl font-orbitron font-bold text-primary">
-              Initializing LEXOS Genesis
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Establishing neural network connections...
-            </p>
-            <div className="text-xs text-muted-foreground/70 space-y-1 mt-4">
-              <p>Backend: {import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'}</p>
-              <p>Status: Authenticating...</p>
-            </div>
-            <button 
-              onClick={() => setForceShowLogin(true)}
-              className="mt-4 px-4 py-2 text-xs bg-primary/20 hover:bg-primary/30 rounded border border-primary/40 text-primary"
-            >
-              Skip to Login
-            </button>
-          </div>
-        </div>
+  return (
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-900 p-6">
+          {children}
+        </main>
       </div>
-    );
-  }
+    </div>
+  );
+};
 
-  if (!isAuthenticated || forceShowLogin) {
-    console.log('AppContent: User not authenticated, showing login form');
-    return <LoginForm />;
+// Auth-aware app content
+const AppContent = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  console.log('AppContent: isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
+  
+  if (isLoading) {
+    return <LoadingScreen />;
   }
-
-  console.log('AppContent: User authenticated, showing main app');
+  
   return (
     <Routes>
-      <Route path="/*" element={<Index />} />
+      <Route 
+        path="/login" 
+        element={
+          isAuthenticated ? <Navigate to="/" replace /> : <LoginForm />
+        } 
+      />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Dashboard />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/agents"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Agents />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tasks"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Tasks />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Analytics />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/models"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Models />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/security"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Security />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Settings />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/chat"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Chat />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/knowledge"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <KnowledgeGraph />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pipeline"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Pipeline />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/communications"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Communications />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/consciousness"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <ConsciousnessLab />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 };
 
-const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+function App() {
+  console.log('App: Rendering main application');
+  
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
           <AuthProvider>
-            <AppContent />
+            <Router>
+              <AppContent />
+              <Toaster />
+            </Router>
           </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ErrorBoundary>
-);
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+}
 
 export default App;

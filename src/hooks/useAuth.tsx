@@ -1,196 +1,110 @@
 
-import { useState, useEffect, createContext, useContext } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { apiClient } from '../services/api';
 import { User } from '../types/api';
 
-interface AuthContextProps {
+interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  loading: boolean;
-  login: (credentials: { username: string; password: string }) => Promise<{ success: boolean; error?: string }>;
-  logout: () => Promise<void>;
-  register: (userData: Omit<User, 'user_id' | 'created_at' | 'last_login' | 'total_tasks' | 'workspace_size'>) => Promise<{ success: boolean; error?: string }>;
+  isLoading: boolean;
+  login: (username: string, password: string) => Promise<boolean>;
+  logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextProps>({
-  user: null,
-  isAuthenticated: false,
-  loading: true,
-  login: async () => ({ success: false, error: 'Not implemented' }),
-  logout: async () => { },
-  register: async () => ({ success: false, error: 'Not implemented' }),
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log('AuthProvider: Initializing authentication...');
-    initializeAuth();
+    const initializeAuth = async () => {
+      console.log('AuthProvider: Initializing authentication...');
+      
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          console.log('AuthProvider: Found existing token, verifying...');
+          apiClient.setToken(token);
+          
+          try {
+            const userData = await apiClient.getCurrentUser();
+            console.log('AuthProvider: Token verified, user loaded:', userData);
+            setUser(userData);
+          } catch (error) {
+            console.log('AuthProvider: Token verification failed:', error);
+            localStorage.removeItem('auth_token');
+            apiClient.clearToken();
+          }
+        } else {
+          console.log('AuthProvider: No existing token found');
+        }
+      } catch (error) {
+        console.error('AuthProvider: Error during initialization:', error);
+      } finally {
+        setIsLoading(false);
+        console.log('AuthProvider: Initialization complete');
+      }
+    };
+
+    // Add a small delay to ensure the backend is ready
+    setTimeout(initializeAuth, 1000);
   }, []);
 
-  const initializeAuth = async () => {
+  const login = async (username: string, password: string): Promise<boolean> => {
+    console.log('AuthProvider: Attempting login for:', username);
+    
     try {
-      console.log('AuthProvider: Starting auth initialization');
-      
-      // Set a timeout for the entire auth process
-      const authTimeout = setTimeout(() => {
-        console.warn('AuthProvider: Authentication timeout, proceeding as unauthenticated');
-        setLoading(false);
-        setIsAuthenticated(false);
-        setUser(null);
-      }, 8000); // 8 second timeout
-      
-      // Check for stored token
-      const storedToken = localStorage.getItem('auth_token');
-      console.log('AuthProvider: Stored token exists:', !!storedToken);
-      
-      if (storedToken) {
-        console.log('AuthProvider: Setting token and attempting to fetch user');
-        apiClient.setToken(storedToken);
-        
-        try {
-          await fetchUser();
-          clearTimeout(authTimeout);
-        } catch (error) {
-          console.warn('AuthProvider: Failed to fetch user with stored token, clearing token');
-          // Clear invalid token and continue as unauthenticated
-          localStorage.removeItem('auth_token');
-          apiClient.clearToken();
-          setIsAuthenticated(false);
-          setUser(null);
-          clearTimeout(authTimeout);
-        }
-      } else {
-        console.log('AuthProvider: No stored token, user not authenticated');
-        setIsAuthenticated(false);
-        setUser(null);
-        clearTimeout(authTimeout);
-      }
-    } catch (error) {
-      console.error('AuthProvider: Auth initialization failed:', error);
-      // Clear any stored data and continue as unauthenticated
-      localStorage.removeItem('auth_token');
-      apiClient.clearToken();
-      setIsAuthenticated(false);
-      setUser(null);
-    } finally {
-      console.log('AuthProvider: Auth initialization complete, setting loading to false');
-      setLoading(false);
-    }
-  };
-
-  const fetchUser = async () => {
-    try {
-      console.log('AuthProvider: Fetching current user...');
-      
-      // Add timeout for user fetch
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      const userData = await apiClient.getCurrentUser();
-      clearTimeout(timeoutId);
-      
-      console.log('AuthProvider: User fetched successfully:', userData);
-      setUser(userData);
-      setIsAuthenticated(true);
-    } catch (error) {
-      console.error('AuthProvider: Failed to fetch user:', error);
-      // Token might be invalid, clear it
-      localStorage.removeItem('auth_token');
-      apiClient.clearToken();
-      setIsAuthenticated(false);
-      setUser(null);
-      throw error;
-    }
-  };
-
-  const login = async (credentials: { username: string; password: string }) => {
-    try {
-      console.log('AuthProvider: Attempting login for:', credentials.username);
-      const response = await apiClient.login(credentials);
+      const response = await apiClient.login({ username, password });
       console.log('AuthProvider: Login response:', response);
       
-      if (response.success && response.token) {
-        apiClient.setToken(response.token);
+      if (response.success && response.token && response.user) {
         localStorage.setItem('auth_token', response.token);
+        apiClient.setToken(response.token);
         setUser(response.user);
-        setIsAuthenticated(true);
         console.log('AuthProvider: Login successful');
-        return { success: true };
+        return true;
+      } else {
+        console.log('AuthProvider: Login failed - invalid response');
+        return false;
       }
-      console.log('AuthProvider: Login failed - invalid response');
-      return { success: false, error: 'Login failed' };
     } catch (error) {
       console.error('AuthProvider: Login error:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Login failed' 
-      };
+      return false;
     }
   };
 
-  const register = async (userData: Omit<User, 'user_id' | 'created_at' | 'last_login' | 'total_tasks' | 'workspace_size'>) => {
-    try {
-      console.log('AuthProvider: Attempting registration for:', userData.username);
-      const response = await apiClient.register(userData);
-      console.log('AuthProvider: Registration response:', response);
-      
-      if (response.success && response.token) {
-        apiClient.setToken(response.token);
-        localStorage.setItem('auth_token', response.token);
-        setUser(response.user);
-        setIsAuthenticated(true);
-        console.log('AuthProvider: Registration successful');
-        return { success: true };
-      }
-      console.log('AuthProvider: Registration failed - invalid response');
-      return { success: false, error: 'Registration failed' };
-    } catch (error) {
-      console.error('AuthProvider: Registration error:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Registration failed' 
-      };
-    }
+  const logout = () => {
+    console.log('AuthProvider: Logging out...');
+    localStorage.removeItem('auth_token');
+    apiClient.clearToken();
+    setUser(null);
+    console.log('AuthProvider: Logout complete');
   };
 
-  const logout = async () => {
-    try {
-      console.log('AuthProvider: Logging out...');
-      await apiClient.logout();
-    } catch (error) {
-      console.error('AuthProvider: Logout API call failed:', error);
-    } finally {
-      // Always clear local state regardless of API call success
-      apiClient.clearToken();
-      localStorage.removeItem('auth_token');
-      setUser(null);
-      setIsAuthenticated(false);
-      console.log('AuthProvider: Logout complete');
-    }
-  };
-
-  const value: AuthContextProps = {
+  const value = {
     user,
-    isAuthenticated,
-    loading,
+    isAuthenticated: !!user,
+    isLoading,
     login,
     logout,
-    register,
   };
-
-  console.log('AuthProvider: Rendering with state:', { isAuthenticated, loading, user: !!user });
 
   return (
     <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  return useContext(AuthContext);
 };
