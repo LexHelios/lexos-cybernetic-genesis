@@ -2,14 +2,14 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { LoginForm } from '../components/auth/LoginForm';
+import LoginForm from '../components/auth/LoginForm';
 import { LoadingScreen } from '../components/effects/LoadingScreen';
 
 const Login = () => {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return <LoadingScreen isLoading={true} />;
   }
 
   if (isAuthenticated) {
