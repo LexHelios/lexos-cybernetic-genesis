@@ -68,33 +68,54 @@ export default function NotificationCenter() {
     fetchNotificationCount();
     fetchPreferences();
 
-    // Set up WebSocket listener for real-time notifications
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    const ws = new WebSocket(wsUrl);
-    
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'notification:new') {
-        setNotifications(prev => [data.data, ...prev]);
-        setUnreadCount(prev => prev + 1);
-        
-        // Show toast notification
-        toast({
-          title: data.data.title,
-          description: data.data.message,
-        });
-      } else if (data.type === 'notification:read') {
-        setNotifications(prev => 
-          prev.map(n => n.id === data.data.notificationId ? { ...n, read: true } : n)
-        );
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      }
-    };
+    // Set up WebSocket listener for real-time notifications with error handling
+    try {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      const ws = new WebSocket(wsUrl);
+      
+      ws.onopen = () => {
+        console.log('Notifications WebSocket connected');
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'notification:new') {
+            setNotifications(prev => [data.data, ...prev]);
+            setUnreadCount(prev => prev + 1);
+            
+            // Show toast notification
+            toast({
+              title: data.data.title,
+              description: data.data.message,
+            });
+          } else if (data.type === 'notification:read') {
+            setNotifications(prev => 
+              prev.map(n => n.id === data.data.notificationId ? { ...n, read: true } : n)
+            );
+            setUnreadCount(prev => Math.max(0, prev - 1));
+          }
+        } catch (error) {
+          console.error('Error parsing notification WebSocket message:', error);
+        }
+      };
 
-    return () => {
-      ws.close();
-    };
+      ws.onerror = (error) => {
+        console.error('Notifications WebSocket error:', error);
+      };
+
+      ws.onclose = () => {
+        console.log('Notifications WebSocket disconnected');
+      };
+
+      return () => {
+        ws.close();
+      };
+    } catch (error) {
+      console.error('Failed to create notifications WebSocket:', error);
+      return () => {}; // Return empty cleanup function
+    }
   }, []);
 
   const fetchNotifications = async () => {

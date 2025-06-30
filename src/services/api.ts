@@ -27,14 +27,15 @@ class ApiClient {
     console.log('ApiClient: Token cleared');
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  // Make request method public so it can be used by other services
+  async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     console.log('ApiClient: Making request to:', url);
     console.log('ApiClient: Request options:', options);
 
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     };
 
     if (this.token) {

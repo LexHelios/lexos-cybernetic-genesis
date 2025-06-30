@@ -7,12 +7,9 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "0.0.0.0",
-    port: 3000,
-    hmr: {
-      host: 'localhost',
-      port: 3000
-    },
+    host: "::",
+    port: 8080,
+    strictPort: true,
     proxy: {
       '/api': {
         target: 'http://localhost:9000',

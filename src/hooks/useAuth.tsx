@@ -27,35 +27,104 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchUser();
+    console.log('AuthProvider: Initializing authentication...');
+    initializeAuth();
   }, []);
 
-  const fetchUser = async () => {
+  const initializeAuth = async () => {
     try {
-      const user = await apiClient.getCurrentUser();
-      setUser(user);
-      setIsAuthenticated(true);
+      console.log('AuthProvider: Starting auth initialization');
+      
+      // Set a timeout for the entire auth process
+      const authTimeout = setTimeout(() => {
+        console.warn('AuthProvider: Authentication timeout, proceeding as unauthenticated');
+        setLoading(false);
+        setIsAuthenticated(false);
+        setUser(null);
+      }, 8000); // 8 second timeout
+      
+      // Check for stored token
+      const storedToken = localStorage.getItem('auth_token');
+      console.log('AuthProvider: Stored token exists:', !!storedToken);
+      
+      if (storedToken) {
+        console.log('AuthProvider: Setting token and attempting to fetch user');
+        apiClient.setToken(storedToken);
+        
+        try {
+          await fetchUser();
+          clearTimeout(authTimeout);
+        } catch (error) {
+          console.warn('AuthProvider: Failed to fetch user with stored token, clearing token');
+          // Clear invalid token and continue as unauthenticated
+          localStorage.removeItem('auth_token');
+          apiClient.clearToken();
+          setIsAuthenticated(false);
+          setUser(null);
+          clearTimeout(authTimeout);
+        }
+      } else {
+        console.log('AuthProvider: No stored token, user not authenticated');
+        setIsAuthenticated(false);
+        setUser(null);
+        clearTimeout(authTimeout);
+      }
     } catch (error) {
-      console.error('Failed to fetch user:', error);
+      console.error('AuthProvider: Auth initialization failed:', error);
+      // Clear any stored data and continue as unauthenticated
+      localStorage.removeItem('auth_token');
+      apiClient.clearToken();
       setIsAuthenticated(false);
       setUser(null);
     } finally {
+      console.log('AuthProvider: Auth initialization complete, setting loading to false');
       setLoading(false);
+    }
+  };
+
+  const fetchUser = async () => {
+    try {
+      console.log('AuthProvider: Fetching current user...');
+      
+      // Add timeout for user fetch
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const userData = await apiClient.getCurrentUser();
+      clearTimeout(timeoutId);
+      
+      console.log('AuthProvider: User fetched successfully:', userData);
+      setUser(userData);
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error('AuthProvider: Failed to fetch user:', error);
+      // Token might be invalid, clear it
+      localStorage.removeItem('auth_token');
+      apiClient.clearToken();
+      setIsAuthenticated(false);
+      setUser(null);
+      throw error;
     }
   };
 
   const login = async (credentials: { username: string; password: string }) => {
     try {
+      console.log('AuthProvider: Attempting login for:', credentials.username);
       const response = await apiClient.login(credentials);
-      if (response.success) {
+      console.log('AuthProvider: Login response:', response);
+      
+      if (response.success && response.token) {
         apiClient.setToken(response.token);
         localStorage.setItem('auth_token', response.token);
         setUser(response.user);
         setIsAuthenticated(true);
+        console.log('AuthProvider: Login successful');
         return { success: true };
       }
+      console.log('AuthProvider: Login failed - invalid response');
       return { success: false, error: 'Login failed' };
     } catch (error) {
+      console.error('AuthProvider: Login error:', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Login failed' 
@@ -65,16 +134,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (userData: Omit<User, 'user_id' | 'created_at' | 'last_login' | 'total_tasks' | 'workspace_size'>) => {
     try {
+      console.log('AuthProvider: Attempting registration for:', userData.username);
       const response = await apiClient.register(userData);
-      if (response.success) {
+      console.log('AuthProvider: Registration response:', response);
+      
+      if (response.success && response.token) {
         apiClient.setToken(response.token);
         localStorage.setItem('auth_token', response.token);
         setUser(response.user);
         setIsAuthenticated(true);
+        console.log('AuthProvider: Registration successful');
         return { success: true };
       }
+      console.log('AuthProvider: Registration failed - invalid response');
       return { success: false, error: 'Registration failed' };
     } catch (error) {
+      console.error('AuthProvider: Registration error:', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Registration failed' 
@@ -84,15 +159,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      console.log('AuthProvider: Logging out...');
       await apiClient.logout();
-      apiClient.setToken('');
+    } catch (error) {
+      console.error('AuthProvider: Logout API call failed:', error);
+    } finally {
+      // Always clear local state regardless of API call success
+      apiClient.clearToken();
       localStorage.removeItem('auth_token');
       setUser(null);
       setIsAuthenticated(false);
-    } catch (error) {
-      console.error('Logout failed:', error);
-    } finally {
-      window.location.href = '/login';
+      console.log('AuthProvider: Logout complete');
     }
   };
 
@@ -104,6 +181,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     register,
   };
+
+  console.log('AuthProvider: Rendering with state:', { isAuthenticated, loading, user: !!user });
 
   return (
     <AuthContext.Provider value={value}>

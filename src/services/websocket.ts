@@ -1,3 +1,4 @@
+
 class WebSocketService {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
@@ -14,13 +15,12 @@ class WebSocketService {
 
     this.isConnecting = true;
     
-    // Use relative WebSocket URL to work with proxy
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
+    // Use the proxy endpoint which will route to the backend
     const wsEndpoint = endpoint || '/ws/monitoring';
-    const wsUrl = `${protocol}//${host}${wsEndpoint}`;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}${wsEndpoint}`;
     
-    console.log('Connecting to WebSocket:', wsUrl);
+    console.log('WebSocket: Attempting to connect to:', wsUrl);
 
     try {
       this.ws = new WebSocket(wsUrl);
@@ -62,17 +62,20 @@ class WebSocketService {
         this.isConnecting = false;
         this.ws = null;
         
-        // Attempt to reconnect if it wasn't a clean close
+        // Only attempt to reconnect if it wasn't a clean close and we haven't exceeded max attempts
         if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
           this.reconnectAttempts++;
-          console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-          setTimeout(() => this.connect(), this.reconnectInterval);
+          console.log(`WebSocket: Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+          setTimeout(() => this.connect(endpoint), this.reconnectInterval);
+        } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+          console.warn('WebSocket: Max reconnection attempts reached, giving up');
         }
       };
 
       this.ws.onerror = (error) => {
         console.error('WebSocket error:', error);
         this.isConnecting = false;
+        // Don't attempt reconnection on error to avoid infinite loops
       };
 
     } catch (error) {
@@ -88,6 +91,7 @@ class WebSocketService {
     }
     this.subscribers.clear();
     this.reconnectAttempts = 0;
+    this.isConnecting = false;
   }
 
   subscribe(eventType: string, callback: (data: any) => void): () => void {
