@@ -6,7 +6,7 @@ import { VoiceCommandPanel } from '../components/voice/VoiceCommandPanel';
 
 const Dashboard = () => {
   return (
-    <div className="p-6 relative min-h-screen">
+    <div className="p-6 relative min-h-screen" style={{ pointerEvents: 'auto' }}>
       {/* Dynamic Background with LEX GPT Image */}
       <div 
         className="fixed inset-0 opacity-10 bg-gradient-to-br from-primary/10 to-accent/10"
@@ -14,11 +14,12 @@ const Dashboard = () => {
           backgroundImage: `url('/lovable-uploads/d40eaa37-72ac-45c5-bdd9-38ad66993627.png')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
+          backgroundRepeat: 'no-repeat',
+          pointerEvents: 'none'
         }}
       />
       
-      <div className="relative z-10">
+      <div className="relative z-10" style={{ pointerEvents: 'auto' }}>
         <div className="mb-8">
           <div className="flex items-center space-x-4 mb-4">
             <div 
