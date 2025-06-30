@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -38,9 +39,12 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, apiKeys, set
 
     try {
       setSaving(true);
-      const response = await apiClient.request('/api/keys', 'POST', {
-        name: newKey.name,
-        api_key: newKey.key
+      const response = await apiClient.request<{ id?: string; api_key: string }>('/api/keys', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: newKey.name,
+          api_key: newKey.key
+        })
       });
       
       setApiKeys(prev => [...prev, {

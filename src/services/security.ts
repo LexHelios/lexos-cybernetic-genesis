@@ -98,7 +98,7 @@ export const securityService = {
   // Security Metrics
   async getSecurityMetrics(): Promise<SecurityMetrics> {
     try {
-      const response = await apiClient.request<SecurityMetrics>('/security/metrics', 'GET'); // Fix: use request method
+      const response = await apiClient.request<SecurityMetrics>('/security/metrics');
       return response;
     } catch (error) {
       console.error('Failed to fetch security metrics:', error);
@@ -133,7 +133,7 @@ export const securityService = {
   // Session Management
   async getActiveSessions(): Promise<SessionInfo[]> {
     try {
-      const response = await apiClient.request<SessionInfo[]>('/security/sessions', 'GET'); // Fix: use request method
+      const response = await apiClient.request<SessionInfo[]>('/security/sessions');
       return response;
     } catch (error) {
       console.error('Failed to fetch active sessions:', error);
@@ -143,7 +143,7 @@ export const securityService = {
 
   async terminateSession(sessionId: string): Promise<void> {
     try {
-      await apiClient.request(`/security/sessions/${sessionId}`, 'DELETE'); // Fix: use request method
+      await apiClient.request(`/security/sessions/${sessionId}`, { method: 'DELETE' });
     } catch (error) {
       console.error('Failed to terminate session:', error);
       throw error;
@@ -152,7 +152,7 @@ export const securityService = {
 
   async getSessionActivity(sessionId: string): Promise<{ activity: any[] }> {
     try {
-      const response = await apiClient.request<{ activity: any[] }>(`/security/sessions/${sessionId}/activity`, 'GET'); // Fix: use request method
+      const response = await apiClient.request<{ activity: any[] }>(`/security/sessions/${sessionId}/activity`);
       return response;
     } catch (error) {
       console.error('Failed to fetch session activity:', error);
@@ -184,7 +184,7 @@ export const securityService = {
       
       const query = params.toString();
       const response = await apiClient.request<{ logs: SecurityLog[]; total: number }>(
-        `/security/logs${query ? `?${query}` : ''}`, 'GET' // Fix: use request method
+        `/security/logs${query ? `?${query}` : ''}`
       );
       return response;
     } catch (error) {
@@ -196,7 +196,7 @@ export const securityService = {
   // Security Policies
   async getSecurityPolicies(): Promise<{ policies: SecurityPolicy[] }> {
     try {
-      const response = await apiClient.request<{ policies: SecurityPolicy[] }>('/security/policies', 'GET'); // Fix: use request method
+      const response = await apiClient.request<{ policies: SecurityPolicy[] }>('/security/policies');
       return response;
     } catch (error) {
       console.error('Failed to fetch security policies:', error);
@@ -206,7 +206,10 @@ export const securityService = {
 
   async updateSecurityPolicy(policyId: string, updates: Partial<SecurityPolicy>): Promise<{ policy: SecurityPolicy }> {
     try {
-      const response = await apiClient.request<{ policy: SecurityPolicy }>(`/security/policies/${policyId}`, 'PUT', updates); // Fix: use request method
+      const response = await apiClient.request<{ policy: SecurityPolicy }>(`/security/policies/${policyId}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates)
+      });
       return response;
     } catch (error) {
       console.error('Failed to update security policy:', error);
@@ -217,7 +220,7 @@ export const securityService = {
   // Access Control
   async getAccessControlRules(): Promise<AccessControlRule[]> {
     try {
-      const response = await apiClient.request<AccessControlRule[]>('/security/access-control/rules', 'GET'); // Fix: use request method
+      const response = await apiClient.request<AccessControlRule[]>('/security/access-control/rules');
       return response;
     } catch (error) {
       console.error('Failed to fetch access control rules:', error);
@@ -227,7 +230,10 @@ export const securityService = {
 
   async createAccessControlRule(rule: Omit<AccessControlRule, 'id' | 'created_at'>): Promise<AccessControlRule> {
     try {
-      const response = await apiClient.request<AccessControlRule>('/security/access-control/rules', 'POST', rule); // Fix: use request method
+      const response = await apiClient.request<AccessControlRule>('/security/access-control/rules', {
+        method: 'POST',
+        body: JSON.stringify(rule)
+      });
       return response;
     } catch (error) {
       console.error('Failed to create access control rule:', error);
@@ -237,7 +243,10 @@ export const securityService = {
 
   async updateAccessControlRule(id: number, rule: Partial<AccessControlRule>): Promise<AccessControlRule> {
     try {
-      const response = await apiClient.request<AccessControlRule>(`/security/access-control/rules/${id}`, 'PUT', rule); // Fix: use request method
+      const response = await apiClient.request<AccessControlRule>(`/security/access-control/rules/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(rule)
+      });
       return response;
     } catch (error) {
       console.error('Failed to update access control rule:', error);
@@ -247,7 +256,7 @@ export const securityService = {
 
   async deleteAccessControlRule(id: number): Promise<void> {
     try {
-      await apiClient.request(`/security/access-control/rules/${id}`, 'DELETE'); // Fix: use request method
+      await apiClient.request(`/security/access-control/rules/${id}`, { method: 'DELETE' });
     } catch (error) {
       console.error('Failed to delete access control rule:', error);
       throw error;
@@ -257,7 +266,7 @@ export const securityService = {
   // Role Management
   async getRoles(): Promise<{ roles: Role[] }> {
     try {
-      const response = await apiClient.request<{ roles: Role[] }>('/security/roles', 'GET'); // Fix: use request method
+      const response = await apiClient.request<{ roles: Role[] }>('/security/roles');
       return response;
     } catch (error) {
       console.error('Failed to fetch roles:', error);
@@ -267,7 +276,10 @@ export const securityService = {
 
   async createRole(role: Omit<Role, 'id' | 'user_count' | 'createdAt' | 'updatedAt'>): Promise<Role> {
     try {
-      const response = await apiClient.request<Role>('/security/roles', 'POST', role); // Fix: use request method
+      const response = await apiClient.request<Role>('/security/roles', {
+        method: 'POST',
+        body: JSON.stringify(role)
+      });
       return response;
     } catch (error) {
       console.error('Failed to create role:', error);
@@ -277,7 +289,10 @@ export const securityService = {
 
   async updateRole(id: number, role: Partial<Role>): Promise<Role> {
     try {
-      const response = await apiClient.request<Role>(`/security/roles/${id}`, 'PUT', role); // Fix: use request method
+      const response = await apiClient.request<Role>(`/security/roles/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(role)
+      });
       return response;
     } catch (error) {
       console.error('Failed to update role:', error);
@@ -287,7 +302,7 @@ export const securityService = {
 
   async deleteRole(id: number): Promise<void> {
     try {
-      await apiClient.request(`/security/roles/${id}`, 'DELETE'); // Fix: use request method
+      await apiClient.request(`/security/roles/${id}`, { method: 'DELETE' });
     } catch (error) {
       console.error('Failed to delete role:', error);
       throw error;
@@ -307,9 +322,12 @@ export const securityService = {
 
   async checkAccess(resource: string, action: string): Promise<{ allowed: boolean; reason?: string }> {
     try {
-      const response = await apiClient.request<{ allowed: boolean; reason?: string }>('/security/access-control/check', 'POST', { // Fix: use request method
-        resource,
-        action
+      const response = await apiClient.request<{ allowed: boolean; reason?: string }>('/security/access-control/check', {
+        method: 'POST',
+        body: JSON.stringify({
+          resource,
+          action
+        })
       });
       return response;
     } catch (error) {
