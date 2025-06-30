@@ -96,41 +96,64 @@ export default function MessagingInterface() {
   useEffect(() => {
     fetchConversations();
     
-    // Set up WebSocket connection
-    const ws = new WebSocket(`ws://localhost:3001`);
-    wsRef.current = ws;
-    
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+    // Set up WebSocket connection with proper error handling
+    try {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
       
-      switch (data.type) {
-        case 'message:new':
-          if (data.data.conversationId === selectedConversation?.id) {
-            setMessages(prev => [...prev, data.data.message]);
-            scrollToBottom();
-          }
-          // Update conversation list
-          fetchConversations();
-          break;
+      ws.onopen = () => {
+        console.log('Messaging WebSocket connected');
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
           
-        case 'typing:status':
-          if (data.data.conversationId === selectedConversation?.id) {
-            if (data.data.isTyping) {
-              setTypingUsers(prev => [...prev, data.data.userId]);
-            } else {
-              setTypingUsers(prev => prev.filter(id => id !== data.data.userId));
-            }
+          switch (data.type) {
+            case 'message:new':
+              if (data.data.conversationId === selectedConversation?.id) {
+                setMessages(prev => [...prev, data.data.message]);
+                scrollToBottom();
+              }
+              // Update conversation list
+              fetchConversations();
+              break;
+              
+            case 'typing:status':
+              if (data.data.conversationId === selectedConversation?.id) {
+                if (data.data.isTyping) {
+                  setTypingUsers(prev => [...prev, data.data.userId]);
+                } else {
+                  setTypingUsers(prev => prev.filter(id => id !== data.data.userId));
+                }
+              }
+              break;
+              
+            case 'message:edited':
+            case 'message:deleted':
+              if (selectedConversation?.id) {
+                fetchMessages(selectedConversation.id);
+              }
+              break;
           }
-          break;
-          
-        case 'message:edited':
-        case 'message:deleted':
-          if (selectedConversation?.id) {
-            fetchMessages(selectedConversation.id);
-          }
-          break;
-      }
-    };
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('Messaging WebSocket error:', error);
+      };
+
+      ws.onclose = () => {
+        console.log('Messaging WebSocket disconnected');
+        wsRef.current = null;
+      };
+    } catch (error) {
+      console.error('Failed to create messaging WebSocket:', error);
+    }
 
     return () => {
       if (wsRef.current) {
