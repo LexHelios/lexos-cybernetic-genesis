@@ -1,6 +1,9 @@
 import express from 'express';
 import { analyticsService } from '../services/analyticsService.js';
-import { authenticate } from '../services/authService.js';
+import { AuthService } from '../services/authService.js';
+
+const authService = new AuthService();
+const authenticate = authService.authMiddleware();
 
 const router = express.Router();
 

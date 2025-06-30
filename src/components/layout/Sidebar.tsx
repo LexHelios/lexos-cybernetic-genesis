@@ -100,19 +100,19 @@ const Sidebar = () => {
               <div className="flex justify-between items-center">
                 <span className="text-sm">GPU Utilization</span>
                 <span className="text-sm text-matrix-green">
-                  {systemStatus?.hardware.gpu.utilization.toFixed(1) || '--'}%
+                  {systemStatus?.hardware?.gpu?.utilization?.toFixed(1) || '--'}%
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm">Active Agents</span>
                 <span className="text-sm text-cyber-pink">
-                  {systemStatus?.orchestrator.active_agents || '--'}
+                  {systemStatus?.orchestrator?.active_agents || '--'}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm">Active Tasks</span>
                 <span className="text-sm text-electric-blue">
-                  {systemStatus?.orchestrator.active_tasks || '--'}
+                  {systemStatus?.orchestrator?.active_tasks || '--'}
                 </span>
               </div>
               <div className="flex justify-between items-center">

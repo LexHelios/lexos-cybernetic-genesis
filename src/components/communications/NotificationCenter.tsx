@@ -69,9 +69,8 @@ export default function NotificationCenter() {
     fetchPreferences();
 
     // Set up WebSocket listener for real-time notifications
-    const wsUrl = window.location.hostname === 'localhost' 
-      ? 'ws://localhost:9000/ws' 
-      : `ws://${window.location.hostname}:9000/ws`;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
     const ws = new WebSocket(wsUrl);
     
     ws.onmessage = (event) => {
