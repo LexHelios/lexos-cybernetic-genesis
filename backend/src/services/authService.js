@@ -14,8 +14,9 @@ export class AuthService {
   }
 
   async initializeDefaultUsers() {
-    // Create default admin user
-    const adminPasswordHash = await bcrypt.hash('admin123', 10);
+    // Create default admin user - CHANGE PASSWORD IN PRODUCTION!
+    const adminPassword = process.env.ADMIN_PASSWORD || 'NEXUS_ADMIN_CHANGE_IMMEDIATELY';
+    const adminPasswordHash = await bcrypt.hash(adminPassword, 12);
     this.users.set('admin', {
       user_id: 'user-admin-001',
       username: 'admin',
@@ -25,14 +26,15 @@ export class AuthService {
       created_at: Date.now(),
       last_login: null,
       profile: {
-        display_name: 'System Administrator',
-        email: 'admin@lexos.ai',
+        display_name: 'Nexus Administrator',
+        email: process.env.ADMIN_EMAIL || 'admin@sharma-legacy.com',
         avatar_url: null
       }
     });
 
-    // Create default operator user
-    const operatorPasswordHash = await bcrypt.hash('operator123', 10);
+    // Create default operator user - CHANGE PASSWORD IN PRODUCTION!
+    const operatorPassword = process.env.OPERATOR_PASSWORD || 'NEXUS_OPERATOR_CHANGE_IMMEDIATELY';
+    const operatorPasswordHash = await bcrypt.hash(operatorPassword, 12);
     this.users.set('operator', {
       user_id: 'user-operator-001',
       username: 'operator',
@@ -43,7 +45,7 @@ export class AuthService {
       last_login: null,
       profile: {
         display_name: 'System Operator',
-        email: 'operator@lexos.ai',
+        email: process.env.OPERATOR_EMAIL || 'operator@sharma-legacy.com',
         avatar_url: null
       }
     });
@@ -359,6 +361,19 @@ export class AuthService {
       sessions: activeSessions,
       total: activeSessions.length
     };
+  }
+
+  getActiveSessions() {
+    const activeSessions = [];
+    const now = Date.now();
+
+    for (const session of this.sessions.values()) {
+      if (session.expires_at > now) {
+        activeSessions.push(session);
+      }
+    }
+
+    return activeSessions;
   }
 
   // Middleware to verify authentication

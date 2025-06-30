@@ -379,9 +379,14 @@ export class SecurityService extends EventEmitter {
   }
   
   async verifyMFAToken(userId, token, secret) {
-    // In a real implementation, this would verify TOTP tokens
-    // For now, simple validation
-    return token === '123456'; // Mock validation
+    // TODO: Implement proper TOTP verification
+    // This is a critical security feature that must be implemented before production
+    // For development only - NEVER use in production
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('MFA verification not implemented for production');
+    }
+    console.warn('WARNING: Using mock MFA validation - implement proper TOTP before production');
+    return token === '123456'; // Development only
   }
   
   logSecurityEvent(type, data) {

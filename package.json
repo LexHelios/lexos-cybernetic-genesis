@@ -1,14 +1,22 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "lexos-genesis",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0-nexus",
+  "description": "LexOS Genesis - Sovereign AI Intelligence System for the Sharma Legacy",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "build:prod": "vite build --mode production",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "lint:fix": "eslint . --fix",
+    "preview": "vite preview",
+    "start": "vite preview --port 3000",
+    "backend:dev": "node mock-backend.cjs",
+    "backend:prod": "cd backend && npm start",
+    "full:dev": "concurrently \"npm run backend:dev\" \"npm run dev\"",
+    "test": "echo \"Tests not implemented yet\" && exit 0"
   },
   "dependencies": {
     "@11labs/react": "^0.1.4",
@@ -77,6 +85,7 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^8.2.2",
     "eslint": "^9.9.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
