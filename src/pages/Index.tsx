@@ -2,7 +2,7 @@
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
-import { SmilePlus } from 'lucide-react';
+import { Smile } from 'lucide-react';
 
 const Index = () => {
   const { isAuthenticated, user } = useAuth();
@@ -19,7 +19,7 @@ const Index = () => {
             <h1 className="text-4xl font-orbitron font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
               Welcome to NEXUS Genesis
             </h1>
-            <SmilePlus className="w-8 h-8 text-yellow-400" />
+            <Smile className="w-8 h-8 text-yellow-400 animate-pulse" />
           </div>
           <p className="text-xl text-muted-foreground">
             Hello, {user?.name || user?.username || 'User'}
