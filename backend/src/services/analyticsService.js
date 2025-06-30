@@ -42,10 +42,11 @@ export class AnalyticsService extends EventEmitter {
         category TEXT NOT NULL,
         metric_name TEXT NOT NULL,
         value REAL NOT NULL,
-        metadata TEXT,
-        INDEX idx_timestamp (timestamp),
-        INDEX idx_category_metric (category, metric_name)
+        metadata TEXT
       );
+      
+      CREATE INDEX IF NOT EXISTS idx_metrics_timestamp ON metrics(timestamp);
+      CREATE INDEX IF NOT EXISTS idx_metrics_category_metric ON metrics(category, metric_name);
 
       -- Aggregated metrics table
       CREATE TABLE IF NOT EXISTS metrics_aggregated (
@@ -70,11 +71,12 @@ export class AnalyticsService extends EventEmitter {
         event_name TEXT NOT NULL,
         user_id TEXT,
         session_id TEXT,
-        properties TEXT,
-        INDEX idx_timestamp (timestamp),
-        INDEX idx_event_type (event_type),
-        INDEX idx_user_id (user_id)
+        properties TEXT
       );
+      
+      CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp);
+      CREATE INDEX IF NOT EXISTS idx_events_event_type ON events(event_type);
+      CREATE INDEX IF NOT EXISTS idx_events_user_id ON events(user_id);
 
       -- Agent performance table
       CREATE TABLE IF NOT EXISTS agent_performance (
@@ -86,10 +88,11 @@ export class AnalyticsService extends EventEmitter {
         execution_time INTEGER,
         success BOOLEAN,
         error_message TEXT,
-        resource_usage TEXT,
-        INDEX idx_timestamp (timestamp),
-        INDEX idx_agent_id (agent_id)
+        resource_usage TEXT
       );
+      
+      CREATE INDEX IF NOT EXISTS idx_agent_performance_timestamp ON agent_performance(timestamp);
+      CREATE INDEX IF NOT EXISTS idx_agent_performance_agent_id ON agent_performance(agent_id);
 
       -- Task analytics table
       CREATE TABLE IF NOT EXISTS task_analytics (
@@ -103,10 +106,11 @@ export class AnalyticsService extends EventEmitter {
         execution_time INTEGER,
         retry_count INTEGER DEFAULT 0,
         error_count INTEGER DEFAULT 0,
-        metadata TEXT,
-        INDEX idx_timestamp (timestamp),
-        INDEX idx_task_id (task_id)
+        metadata TEXT
       );
+      
+      CREATE INDEX IF NOT EXISTS idx_task_analytics_timestamp ON task_analytics(timestamp);
+      CREATE INDEX IF NOT EXISTS idx_task_analytics_task_id ON task_analytics(task_id);
 
       -- System health snapshots
       CREATE TABLE IF NOT EXISTS system_health (
@@ -119,9 +123,10 @@ export class AnalyticsService extends EventEmitter {
         network_io TEXT,
         active_connections INTEGER,
         error_rate REAL,
-        response_time_avg REAL,
-        INDEX idx_timestamp (timestamp)
+        response_time_avg REAL
       );
+      
+      CREATE INDEX IF NOT EXISTS idx_system_health_timestamp ON system_health(timestamp);
     `);
   }
 

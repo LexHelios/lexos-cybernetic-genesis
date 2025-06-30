@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Mic, Volume2, HelpCircle, Command } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -50,8 +50,60 @@ export function VoiceCommandPanel() {
     timestamp: Date;
   }>>([]);
   const [showHelp, setShowHelp] = useState(false);
+  const [wsStatus, setWsStatus] = useState<'connecting' | 'open' | 'closed' | 'error'>('closed');
+  const [wsError, setWsError] = useState<string | null>(null);
+  const [wsResponse, setWsResponse] = useState<string | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const clientId = useRef(`voice-${Date.now()}`);
   
   const { toast } = useToast();
+
+  // WebSocket connection logic
+  useEffect(() => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/${clientId.current}`;
+    setWsStatus('connecting');
+    setWsError(null);
+    const ws = new window.WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      setWsStatus('open');
+    };
+    ws.onclose = () => {
+      setWsStatus('closed');
+    };
+    ws.onerror = (e) => {
+      setWsStatus('error');
+      setWsError('WebSocket connection error');
+    };
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'response') {
+          setWsResponse(msg.original_message?.transcript || msg.original_message || '');
+          handleCommand({
+            transcript: msg.original_message?.transcript || '',
+            result: msg,
+            timestamp: new Date(),
+            success: true
+          });
+        }
+      } catch (err) {
+        setWsError('Error parsing WebSocket message');
+      }
+    };
+    return () => {
+      ws.close();
+    };
+  }, []);
+
+  // Send transcript over WebSocket
+  useEffect(() => {
+    if (wsRef.current && wsStatus === 'open' && transcript) {
+      wsRef.current.send(JSON.stringify({ type: 'voice_command', transcript }));
+    }
+  }, [transcript, wsStatus]);
 
   const handleCommand = (result: any) => {
     setCommandHistory(prev => [{
@@ -98,7 +150,14 @@ export function VoiceCommandPanel() {
             </CardTitle>
             <CardDescription>
               Control the system with voice commands
+              <span className="ml-2 text-xs">
+                {wsStatus === 'connecting' && 'Connecting...'}
+                {wsStatus === 'open' && 'Connected'}
+                {wsStatus === 'closed' && 'Disconnected'}
+                {wsStatus === 'error' && 'Error'}
+              </span>
             </CardDescription>
+            {wsError && <div className="text-xs text-red-500">{wsError}</div>}
           </div>
           <Button
             variant="outline"
@@ -125,6 +184,12 @@ export function VoiceCommandPanel() {
             <div className="text-center space-y-2">
               <p className="text-sm text-muted-foreground">Transcript:</p>
               <p className="font-medium">{transcript}</p>
+            </div>
+          )}
+          {wsResponse && (
+            <div className="text-center space-y-2">
+              <p className="text-sm text-muted-foreground">Response:</p>
+              <p className="font-medium">{wsResponse}</p>
             </div>
           )}
         </div>

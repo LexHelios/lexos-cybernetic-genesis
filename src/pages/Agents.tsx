@@ -185,7 +185,7 @@ const Agents = () => {
                 <div className="flex flex-wrap gap-1">
                   {agent.capabilities?.map((cap, idx) => (
                     <Badge key={idx} variant="secondary" className="text-xs">
-                      {cap}
+                      {typeof cap === 'string' ? cap : cap.name}
                     </Badge>
                   ))}
                 </div>

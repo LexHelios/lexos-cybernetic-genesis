@@ -47,6 +47,8 @@ const FloatingChat = () => {
   const [selectedModel, setSelectedModel] = useState('auto');
   const [lastUsedModel, setLastUsedModel] = useState<string | null>(null);
   const [performanceMode, setPerformanceMode] = useState<'fast' | 'balanced' | 'quality'>('balanced');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   
   const chatRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -137,6 +139,30 @@ const FloatingChat = () => {
   const handleSendMessage = async () => {
     if (!inputValue.trim() && selectedFiles.length === 0) return;
 
+    let uploadedFileInfos: { filename: string; path: string }[] = [];
+    if (selectedFiles.length > 0) {
+      setUploading(true);
+      setUploadError(null);
+      try {
+        for (const file of selectedFiles) {
+          const formData = new FormData();
+          formData.append('file', file);
+          const res = await fetch('/api/chat/upload', {
+            method: 'POST',
+            body: formData,
+          });
+          const data = await res.json();
+          if (!data.success) throw new Error(data.error || 'Upload failed');
+          uploadedFileInfos.push({ filename: data.filename, path: data.path });
+        }
+      } catch (err: any) {
+        setUploadError(err.message || 'File upload failed');
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
+    }
+
     const newMessage: ChatMessage = {
       id: Date.now().toString(),
       content: inputValue,
@@ -144,6 +170,8 @@ const FloatingChat = () => {
       timestamp: new Date(),
       files: selectedFiles.length > 0 ? [...selectedFiles] : undefined
     };
+    // Optionally, you can add uploadedFileInfos to the message for display
+    // newMessage.uploadedFiles = uploadedFileInfos;
 
     setMessages(prev => [...prev, newMessage]);
     const userInput = inputValue;
@@ -571,6 +599,14 @@ const FloatingChat = () => {
                 ))}
               </div>
             </div>
+          )}
+
+          {/* File upload error/progress */}
+          {uploading && (
+            <div className="p-2 text-xs text-blue-500">Uploading file(s)...</div>
+          )}
+          {uploadError && (
+            <div className="p-2 text-xs text-red-500">{uploadError}</div>
           )}
 
           {/* Input Area */}

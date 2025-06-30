@@ -349,6 +349,7 @@ def api_root():
 if __name__ == '__main__':
     # Check if running in production
     is_production = os.environ.get('FLASK_ENV') == 'production'
+    port = 5000
     
     # Show startup message
     print(f"""
@@ -369,4 +370,4 @@ if __name__ == '__main__':
     else:
         # Development mode with debug enabled
         logger.info("Starting in development mode")
-        socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+        socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)

@@ -455,11 +455,20 @@ class DatabaseService {
 
   // System Logging
   async logSystemEvent(eventType, severity, source, message, context = null) {
-    await this.db.run(
-      `INSERT INTO system_logs (event_type, severity, source, message, context) 
-       VALUES (?, ?, ?, ?, ?)`,
-      [eventType, severity, source, message, context ? JSON.stringify(context) : null]
-    );
+    if (!this.db) {
+      console.warn('Database not initialized, skipping log:', { eventType, severity, source, message });
+      return;
+    }
+    
+    try {
+      await this.db.run(
+        `INSERT INTO system_logs (event_type, severity, source, message, context) 
+         VALUES (?, ?, ?, ?, ?)`,
+        [eventType, severity, source, message, context ? JSON.stringify(context) : null]
+      );
+    } catch (error) {
+      console.error('Failed to log system event:', error);
+    }
   }
 
   async getSystemLogs(filters = {}, limit = 100) {

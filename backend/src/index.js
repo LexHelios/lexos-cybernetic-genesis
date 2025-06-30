@@ -23,6 +23,7 @@ import messagingService from './services/messagingService.js';
 import { analyticsService } from './services/analyticsService.js';
 import analyticsRoutes from './routes/analytics.js';
 import voiceRoutes from './routes/voice.js';
+import internetAgentsRoutes from './routes/internetAgents.js';
 import voiceWebSocketService from './services/voiceWebSocket.js';
 import llmOrchestrator from './services/llmOrchestrator.js';
 
@@ -1086,6 +1087,9 @@ app.use('/api/analytics', analyticsRoutes);
 
 // Voice routes
 app.use('/api/voice', voiceRoutes);
+
+// Internet Agents routes - NEXUS UNLEASHED ON THE WEB! 🌐🔥
+app.use('/api/internet-agents', authService.authMiddleware(), internetAgentsRoutes);
 
 // Notification endpoints
 app.get('/api/notifications', authService.authMiddleware(), async (req, res) => {

@@ -12,8 +12,8 @@ class ApiClient {
   private token: string | null = null;
 
   constructor() {
-    // Use environment variable or default to localhost for development
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+    // Use environment variable or default to current location for production
+    this.baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
     console.log('ApiClient: Initialized with baseURL:', this.baseURL);
   }
 

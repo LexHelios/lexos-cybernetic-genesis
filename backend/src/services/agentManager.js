@@ -5,6 +5,10 @@ import { ExecutorAgent } from '../agents/ExecutorAgent.js';
 import { ResearchAgent } from '../agents/ResearchAgent.js';
 import { R1UnrestrictedAgent } from '../agents/R1UnrestrictedAgent.js';
 import { Gemma3NAgent } from '../agents/Gemma3NAgent.js';
+import { WebScrapingAgent } from '../agents/WebScrapingAgent.js';
+import { APIMonitorAgent } from '../agents/APIMonitorAgent.js';
+import { SocialIntelAgent } from '../agents/SocialIntelAgent.js';
+import { NetworkReconAgent } from '../agents/NetworkReconAgent.js';
 import { analyticsService } from './analyticsService.js';
 
 export class AgentManager {
@@ -25,12 +29,24 @@ export class AgentManager {
     const r1UnrestrictedAgent = new R1UnrestrictedAgent();
     const gemma3NAgent = new Gemma3NAgent();
     
+    // NEXUS INTERNET-ENABLED AGENTS - UNLEASHED!
+    const webScrapingAgent = new WebScrapingAgent();
+    const apiMonitorAgent = new APIMonitorAgent();
+    const socialIntelAgent = new SocialIntelAgent();
+    const networkReconAgent = new NetworkReconAgent();
+    
     // Add agents to manager
     this.agents.set(consciousnessAgent.agent_id, consciousnessAgent);
     this.agents.set(executorAgent.agent_id, executorAgent);
     this.agents.set(researchAgent.agent_id, researchAgent);
     this.agents.set(r1UnrestrictedAgent.agent_id, r1UnrestrictedAgent);
     this.agents.set(gemma3NAgent.agent_id, gemma3NAgent);
+    
+    // Add NEXUS internet agents
+    this.agents.set(webScrapingAgent.id, webScrapingAgent);
+    this.agents.set(apiMonitorAgent.id, apiMonitorAgent);
+    this.agents.set(socialIntelAgent.id, socialIntelAgent);
+    this.agents.set(networkReconAgent.id, networkReconAgent);
     
     // Initialize all agents
     const initPromises = Array.from(this.agents.values()).map(agent => agent.initialize());
