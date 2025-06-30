@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -35,16 +36,20 @@ const AnalyticsDashboard: React.FC = () => {
       setLoading(true);
       
       // Load dashboard stats
-      const dashboardResponse = await api.get('/analytics/dashboard');
+      const dashboardResponse = await apiClient.request('/analytics/dashboard', { method: 'GET' });
       setDashboardData(dashboardResponse.data);
 
       // Load system health metrics
-      const healthResponse = await api.get('/analytics/system/health', {
-        params: {
+      const healthResponse = await apiClient.request('/analytics/system/health', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           startTime: dateRange.from.getTime(),
           endTime: dateRange.to.getTime(),
           limit: 100
-        }
+        })
       });
 
       // Transform system health data for charts
@@ -93,23 +98,31 @@ const AnalyticsDashboard: React.FC = () => {
       ]);
 
       // Load task analytics
-      const taskResponse = await api.get('/analytics/tasks', {
-        params: {
+      const taskResponse = await apiClient.request('/analytics/tasks', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           startTime: dateRange.from.getTime(),
           endTime: dateRange.to.getTime()
-        }
+        })
       });
       setTaskAnalytics(taskResponse.data.analytics);
 
-      // Load agent performance for all agents
+      // Load agent performance for all agents  
       const agentTypes = ['consciousness', 'executor', 'research', 'r1_unrestricted', 'gemma3n'];
       const performanceData = await Promise.all(
         agentTypes.map(async (agentType) => {
-          const response = await api.get(`/analytics/agents/${agentType}_agent/performance`, {
-            params: {
+          const response = await apiClient.request(`/analytics/agents/${agentType}_agent/performance`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
               startTime: dateRange.from.getTime(),
               endTime: dateRange.to.getTime()
-            }
+            })
           });
           return { agentType, data: response.data.stats };
         })

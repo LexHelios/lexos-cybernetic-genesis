@@ -29,6 +29,17 @@ const QueueMonitor: React.FC<QueueMonitorProps> = ({
   onResume,
   onClear
 }) => {
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'warning':
+        return <Badge variant="outline" className="border-yellow-500 text-yellow-600">Warning</Badge>;
+      case 'success':
+        return <Badge variant="outline" className="border-green-500 text-green-600">Success</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
   return (
     <Card className="border-electric-blue/30 bg-electric-blue/5">
       <CardHeader className="pb-3">

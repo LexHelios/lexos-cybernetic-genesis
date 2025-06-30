@@ -1,4 +1,12 @@
+
 import { AuthResponse, SystemStatus, Agent, Task, TaskSubmission, TaskResponse, User } from '../types/api';
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+}
 
 class ApiClient {
   private baseURL: string;
@@ -68,6 +76,42 @@ class ApiClient {
     return this.request('/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify({ token, newPassword }),
+    });
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse<null>> {
+    return this.request('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
+
+  async getCurrentUser(): Promise<User> {
+    return this.request('/auth/me');
+  }
+
+  async enable2FA(): Promise<{ qr_code: string; secret: string }> {
+    return this.request('/auth/2fa/enable', {
+      method: 'POST',
+    });
+  }
+
+  async verify2FA(token: string): Promise<{ success: boolean }> {
+    return this.request('/auth/2fa/verify', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  }
+
+  async generateApiKey(): Promise<{ api_key: string }> {
+    return this.request('/auth/api-key', {
+      method: 'POST',
+    });
+  }
+
+  async revokeApiKey(keyId: string): Promise<ApiResponse<null>> {
+    return this.request(`/auth/api-key/${keyId}`, {
+      method: 'DELETE',
     });
   }
 
@@ -144,6 +188,19 @@ class ApiClient {
     return this.request(`/tasks/${taskId}/cancel`, {
       method: 'POST',
     });
+  }
+
+  // Knowledge Graph
+  async getKnowledgeGraph(): Promise<any> {
+    return this.request('/knowledge/graph');
+  }
+
+  async getNodeSubgraph(nodeId: string): Promise<any> {
+    return this.request(`/knowledge/nodes/${nodeId}/subgraph`);
+  }
+
+  async searchKnowledgeGraph(query: string): Promise<any> {
+    return this.request(`/knowledge/search?q=${encodeURIComponent(query)}`);
   }
 
   // System Status

@@ -1,4 +1,3 @@
-
 // Core API Types for NEXUS Backend Integration
 export interface Agent {
   agent_id: string;
@@ -158,4 +157,14 @@ export interface TaskResponse {
   status: string;
   estimated_completion: number;
   queue_position: number;
+}
+
+export interface GraphNode {
+  id: string;
+  label: string;
+  type: string;
+  x?: number;
+  y?: number;
+  z?: number;
+  properties?: Record<string, any>;
 }

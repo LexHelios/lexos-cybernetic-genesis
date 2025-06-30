@@ -1,115 +1,116 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import { apiClient } from '../services/api';
 import { User } from '../types/api';
-import { toast } from '@/hooks/use-toast';
 
-interface AuthContextType {
+interface AuthContextProps {
   user: User | null;
   isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  loading: boolean;
+  login: (credentials: { username: string; password: string }) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
+  register: (userData: Omit<User, 'user_id' | 'created_at' | 'last_login' | 'total_tasks' | 'workspace_size'>) => Promise<{ success: boolean; error?: string }>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextProps>({
+  user: null,
+  isAuthenticated: false,
+  loading: true,
+  login: async () => ({ success: false, error: 'Not implemented' }),
+  logout: async () => { },
+  register: async () => ({ success: false, error: 'Not implemented' }),
+});
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔥 AuthProvider useEffect - NEXUS INITIALIZATION STARTING');
-    
-    const initializeAuth = async () => {
-      try {
-        console.log('🔍 Checking for existing user session...');
-        const currentUser = apiClient.getCurrentUser();
-        console.log('📊 getCurrentUser result:', currentUser);
-        
-        if (currentUser) {
-          console.log('✅ User found in storage:', currentUser.username);
-          setUser(currentUser);
-        } else {
-          console.log('❌ No stored user found - showing login form');
-        }
-      } catch (error) {
-        console.error('💀 Error getting current user:', error);
-      } finally {
-        console.log('🎯 Setting isLoading to false - NEXUS READY');
-        setIsLoading(false);
-      }
-    };
-
-    // Small timeout to ensure proper initialization
-    setTimeout(() => {
-      initializeAuth();
-    }, 100);
+    fetchUser();
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const fetchUser = async () => {
     try {
-      setIsLoading(true);
-      console.log('Attempting login for:', username);
-      
-      const response = await apiClient.login(username, password);
-      console.log('Login response:', response);
-      
-      if (response.success) {
-        setUser(response.user);
-        toast({
-          title: "Authentication Successful",
-          description: `Welcome back, ${response.user.full_name}!`,
-        });
-        return true;
-      }
-      return false;
+      const user = await apiClient.getCurrentUser();
+      setUser(user);
+      setIsAuthenticated(true);
     } catch (error) {
-      console.error('Login error:', error);
-      toast({
-        variant: "destructive",
-        title: "Authentication Failed",
-        description: error instanceof Error ? error.message : "Invalid credentials",
-      });
-      return false;
+      console.error('Failed to fetch user:', error);
+      setIsAuthenticated(false);
+      setUser(null);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const logout = () => {
-    apiClient.logout();
-    setUser(null);
-    toast({
-      title: "Logged Out",
-      description: "Successfully logged out of NEXUS system",
-    });
+  const login = async (credentials: { username: string; password: string }) => {
+    try {
+      const response = await apiClient.login(credentials);
+      if (response.success) {
+        apiClient.setToken(response.token);
+        localStorage.setItem('auth_token', response.token);
+        setUser(response.user);
+        setIsAuthenticated(true);
+        return { success: true };
+      }
+      return { success: false, error: 'Login failed' };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Login failed' 
+      };
+    }
   };
 
-  const contextValue = {
+  const register = async (userData: Omit<User, 'user_id' | 'created_at' | 'last_login' | 'total_tasks' | 'workspace_size'>) => {
+    try {
+      const response = await apiClient.register(userData);
+      if (response.success) {
+        apiClient.setToken(response.token);
+        localStorage.setItem('auth_token', response.token);
+        setUser(response.user);
+        setIsAuthenticated(true);
+        return { success: true };
+      }
+      return { success: false, error: 'Registration failed' };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Registration failed' 
+      };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await apiClient.logout();
+      apiClient.setToken('');
+      localStorage.removeItem('auth_token');
+      setUser(null);
+      setIsAuthenticated(false);
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      window.location.href = '/login';
+    }
+  };
+
+  const value: AuthContextProps = {
     user,
-    isAuthenticated: !!user,
-    isLoading,
+    isAuthenticated,
+    loading,
     login,
     logout,
+    register,
   };
 
-  console.log('🚀 AuthProvider rendering with:', {
-    user: user?.username || 'none',
-    isAuthenticated: !!user,
-    isLoading,
-  });
-
   return (
-    <AuthContext.Provider value={contextValue}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  return useContext(AuthContext);
 };

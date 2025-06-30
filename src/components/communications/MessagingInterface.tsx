@@ -276,7 +276,7 @@ export default function MessagingInterface() {
         body: JSON.stringify({
           type: newConversationType,
           participants: [
-            { id: user?.id?.toString() || '', type: 'user', role: 'member' },
+            { id: user?.user_id || '', type: 'user', role: 'member' },
             ...selectedParticipants,
           ],
           title: conversationTitle || undefined,
@@ -304,17 +304,17 @@ export default function MessagingInterface() {
 
   const getParticipantName = (participant: Participant) => {
     if (participant.type === 'user') {
-      return participant.id === user?.id?.toString() ? 'You' : participant.name || 'User';
+      return participant.id === user?.user_id ? 'You' : participant.name || 'User';
     }
-    const agent = agents.find(a => a.id === participant.id);
+    const agent = agents.find(a => a.agent_id === participant.id);
     return agent?.name || participant.name || 'Agent';
   };
 
   const getSenderName = (senderId: string, senderType: string) => {
     if (senderType === 'user') {
-      return senderId === user?.id?.toString() ? 'You' : 'User';
+      return senderId === user?.user_id ? 'You' : 'User';
     }
-    const agent = agents.find(a => a.id === senderId);
+    const agent = agents.find(a => a.agent_id === senderId);
     return agent?.name || 'Agent';
   };
 
@@ -468,7 +468,7 @@ export default function MessagingInterface() {
                         )}
                         <h4 className="font-medium text-sm">
                           {conversation.title || conversation.participants
-                            .filter(p => p.id !== user?.id?.toString())
+                            .filter(p => p.id !== user?.user_id)
                             .map(p => getParticipantName(p))
                             .join(', ')}
                         </h4>
@@ -505,7 +505,7 @@ export default function MessagingInterface() {
                 <div>
                   <h3 className="font-semibold">
                     {selectedConversation.title || selectedConversation.participants
-                      .filter(p => p.id !== user?.id?.toString())
+                      .filter(p => p.id !== user?.user_id)
                       .map(p => getParticipantName(p))
                       .join(', ')}
                   </h3>
@@ -545,17 +545,17 @@ export default function MessagingInterface() {
                   <div
                     key={message.id}
                     className={`flex ${
-                      message.senderId === user?.id?.toString() ? 'justify-end' : 'justify-start'
+                      message.senderId === user?.user_id ? 'justify-end' : 'justify-start'
                     }`}
                   >
                     <div
                       className={`max-w-[70%] rounded-lg p-3 ${
-                        message.senderId === user?.id?.toString()
+                        message.senderId === user?.user_id
                           ? 'bg-primary text-primary-foreground'
                           : 'bg-muted'
                       }`}
                     >
-                      {message.senderId !== user?.id?.toString() && (
+                      {message.senderId !== user?.user_id && (
                         <p className="text-xs font-medium mb-1 opacity-70">
                           {getSenderName(message.senderId, message.senderType)}
                         </p>

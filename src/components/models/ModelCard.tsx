@@ -1,142 +1,183 @@
 import React from 'react';
-import { Download, Trash2, Play, Square, Info, Cpu, HardDrive } from 'lucide-react';
-import { OllamaModel } from '../../services/ollama';
-import { ModelCatalogEntry } from '../../data/modelCatalog';
-import { formatBytes } from '../../utils/formatters';
+import { Bot, Play, Pause, Settings, Trash2, Activity, Zap, Clock, StopCircle } from 'lucide-react';
+import { Button } from '../ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Progress } from '../ui/progress';
+import { useToast } from '../ui/use-toast';
+import { Agent } from '../../types/api';
 
 interface ModelCardProps {
-  model: OllamaModel;
-  catalogEntry?: ModelCatalogEntry;
-  isRunning?: boolean;
-  onDelete: (name: string) => void;
-  onRun: (name: string) => void;
-  onStop: (name: string) => void;
-  onShowInfo: (name: string) => void;
+  model: Agent;
+  onStart?: (agentId: string) => void;
+  onStop?: (agentId: string) => void;
+  onConfigure?: (agentId: string) => void;
 }
 
-const ModelCard: React.FC<ModelCardProps> = ({
-  model,
-  catalogEntry,
-  isRunning,
-  onDelete,
-  onRun,
-  onStop,
-  onShowInfo
-}) => {
-  const modelInfo = React.useMemo(() => {
-    const parts = model.name.split(':');
-    const baseName = parts[0];
-    const tag = parts[1] || 'latest';
-    
-    // Extract size from tag
-    const sizeMatch = tag.match(/(\d+)b/i);
-    const size = sizeMatch ? sizeMatch[1] + 'B' : undefined;
-    
-    // Extract quantization
-    const quantMatch = tag.match(/q\d+_\d+/i);
-    const quantization = quantMatch ? quantMatch[0].toUpperCase() : 'FP16';
-    
-    return { baseName, tag, size, quantization };
-  }, [model.name]);
+const ModelCard: React.FC<ModelCardProps> = ({ model, onStart, onStop, onConfigure }) => {
+  const { toast } = useToast();
 
-  const displayName = catalogEntry?.displayName || modelInfo.baseName;
-  const description = catalogEntry?.description || `${modelInfo.baseName} model with ${modelInfo.tag} configuration`;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-500';
+      case 'busy':
+        return 'bg-blue-500';
+      case 'inactive':
+        return 'bg-yellow-500';
+      case 'error':
+        return 'bg-red-500';
+      default:
+        return 'bg-gray-500';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'ONLINE';
+      case 'busy':
+        return 'PROCESSING';
+      case 'inactive':
+        return 'OFFLINE';
+      case 'error':
+        return 'ERROR';
+      default:
+        return status.toUpperCase();
+    }
+  };
+
+  const formatUptime = (lastActivity: number) => {
+    const now = Date.now();
+    const diff = now - lastActivity;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) return `${days}d ${hours % 24}h`;
+    if (hours > 0) return `${hours}h`;
+    return 'Just now';
+  };
+
+  const calculatePerformance = () => {
+    if (model.total_tasks_completed === 0) return 0;
+    // Simple performance calculation based on response time and completion rate
+    const basePerformance = Math.max(0, 100 - (model.average_response_time * 10));
+    return Math.min(100, Math.max(0, basePerformance));
+  };
 
   return (
-    <div className="holographic-panel p-6 rounded-lg border border-cyber-pink/30 bg-cyber-pink/5 hover:border-cyber-pink/50 transition-all duration-300">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <h3 className="text-lg font-orbitron font-bold text-cyber-pink mb-1">
-            {displayName}
-          </h3>
-          <p className="text-sm text-muted-foreground mb-2">{model.name}</p>
-          <p className="text-sm text-gray-400 line-clamp-2">{description}</p>
+    <Card className="holographic-panel border-matrix-green/30 hover:border-matrix-green/50 transition-all duration-300">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-lg bg-matrix-green/20 flex items-center justify-center">
+              <Bot className="w-6 h-6 text-matrix-green" />
+            </div>
+            <div>
+              <CardTitle className="text-lg font-orbitron">{model.name}</CardTitle>
+              <CardDescription className="text-sm truncate max-w-48">
+                {model.description}
+              </CardDescription>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${getStatusColor(model.status)} animate-pulse`} />
+            <Badge variant="outline" className="border-matrix-green/50 text-xs">
+              {getStatusLabel(model.status)}
+            </Badge>
+          </div>
         </div>
-        <div className={`w-3 h-3 rounded-full ml-4 ${isRunning ? 'bg-matrix-green neural-pulse' : 'bg-gray-600'}`} />
-      </div>
-
-      <div className="space-y-3 mb-4">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-400">Size</span>
-          <span className="text-cyber-pink font-medium">{formatBytes(model.size)}</span>
+      </CardHeader>
+      
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Performance</span>
+            <span className="text-sm font-mono">{Math.round(calculatePerformance())}%</span>
+          </div>
+          <Progress value={calculatePerformance()} className="h-2" />
         </div>
         
-        {modelInfo.size && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-400">Parameters</span>
-            <span className="text-warning-orange">{modelInfo.size}</span>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="flex items-center space-x-2">
+            <Activity className="w-4 h-4 text-electric-blue" />
+            <span>{model.total_tasks_completed} tasks</span>
           </div>
-        )}
+          <div className="flex items-center space-x-2">
+            <Clock className="w-4 h-4 text-cyber-pink" />
+            <span>{formatUptime(model.last_activity)}</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Active:</span>
+            <span className="font-mono">{model.current_tasks}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Avg Response:</span>
+            <span className="font-mono">{model.average_response_time.toFixed(1)}s</span>
+          </div>
+        </div>
         
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-400">Quantization</span>
-          <span className="text-matrix-green">{modelInfo.quantization}</span>
-        </div>
-
-        {catalogEntry && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-400">VRAM Required</span>
-            <span className="text-warning-orange">{catalogEntry.requirements.minVRAM}</span>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-400">Modified</span>
-          <span className="text-gray-500">
-            {new Date(model.modified_at).toLocaleDateString()}
-          </span>
-        </div>
-      </div>
-
-      {catalogEntry?.tags && catalogEntry.tags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {catalogEntry.tags.slice(0, 3).map(tag => (
-            <span
-              key={tag}
-              className="px-2 py-1 text-xs rounded-full bg-cyber-pink/10 text-cyber-pink border border-cyber-pink/20"
-            >
-              {tag}
-            </span>
+        <div className="flex flex-wrap gap-1">
+          {model.capabilities?.slice(0, 3).map((capability, index) => (
+            <Badge key={index} variant="secondary" className="text-xs">
+              {capability.name}
+            </Badge>
           ))}
+          {model.capabilities?.length > 3 && (
+            <Badge variant="secondary" className="text-xs">
+              +{model.capabilities.length - 3} more
+            </Badge>
+          )}
         </div>
-      )}
-
-      <div className="flex items-center gap-2">
-        {isRunning ? (
-          <button
-            onClick={() => onStop(model.name)}
-            className="flex-1 px-3 py-2 rounded-lg bg-warning-orange/20 text-warning-orange hover:bg-warning-orange/30 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+      </CardContent>
+      
+      <CardFooter className="flex justify-between">
+        <div className="flex space-x-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-matrix-green/50 hover:bg-matrix-green/20"
+            onClick={() => {
+              onStart?.(model.agent_id);
+              toast({
+                title: "Model Start",
+                description: `Starting model ${model.name}`,
+              });
+            }}
+            disabled={model.status === 'error' || model.status === 'active'}
           >
-            <Stop className="w-4 h-4" />
+            <Play className="w-4 h-4 mr-1" />
+            Start
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-red-500/50 hover:bg-red-500/20"
+            onClick={() => onStop?.(model.agent_id)}
+          >
+            <StopCircle className="w-4 h-4 mr-1" />
             Stop
-          </button>
-        ) : (
-          <button
-            onClick={() => onRun(model.name)}
-            className="flex-1 px-3 py-2 rounded-lg bg-matrix-green/20 text-matrix-green hover:bg-matrix-green/30 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
-          >
-            <Play className="w-4 h-4" />
-            Run
-          </button>
-        )}
+          </Button>
+        </div>
         
-        <button
-          onClick={() => onShowInfo(model.name)}
-          className="p-2 rounded-lg bg-cyber-pink/10 text-cyber-pink hover:bg-cyber-pink/20 transition-colors"
-          title="Model Info"
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            onConfigure?.(model.agent_id);
+            toast({
+              title: "Model Configuration",
+              description: `Opening configuration for ${model.name}`,
+            });
+          }}
         >
-          <Info className="w-4 h-4" />
-        </button>
-        
-        <button
-          onClick={() => onDelete(model.name)}
-          className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
-          title="Delete Model"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
+          <Settings className="w-4 h-4" />
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 

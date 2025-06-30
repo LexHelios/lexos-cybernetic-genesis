@@ -1,3 +1,4 @@
+
 import { apiClient } from './api';
 
 export interface SecurityMetrics {
@@ -117,7 +118,7 @@ export interface SecurityReport {
 
 class SecurityService {
   async getSecurityMetrics(): Promise<SecurityMetrics> {
-    const response = await api.get('/security/metrics');
+    const response = await apiClient.request('/security/metrics', { method: 'GET' });
     return response.data;
   }
 
@@ -129,113 +130,146 @@ class SecurityService {
     userId?: string;
     limit?: number;
   }): Promise<{ logs: SecurityLog[] }> {
-    const response = await api.get('/security/logs', { params });
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+    const query = queryParams.toString();
+    const response = await apiClient.request(`/security/logs${query ? `?${query}` : ''}`, { method: 'GET' });
     return response.data;
   }
 
   async getSecurityPolicies(): Promise<{ policies: SecurityPolicy[] }> {
-    const response = await api.get('/security/policies');
+    const response = await apiClient.request('/security/policies', { method: 'GET' });
     return response.data;
   }
 
   async updateSecurityPolicy(policyId: string, updates: Partial<SecurityPolicy>): Promise<{ policy: SecurityPolicy }> {
-    const response = await api.put(`/security/policies/${policyId}`, updates);
+    const response = await apiClient.request(`/security/policies/${policyId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
     return response.data;
   }
 
   async getBlockedIPs(): Promise<{ blockedIPs: BlockedIP[] }> {
-    const response = await api.get('/security/blocked-ips');
+    const response = await apiClient.request('/security/blocked-ips', { method: 'GET' });
     return response.data;
   }
 
   async blockIP(ip: string, duration?: number, reason?: string): Promise<{ success: boolean; blockInfo: BlockedIP }> {
-    const response = await api.post('/security/block-ip', { ip, duration, reason });
+    const response = await apiClient.request('/security/block-ip', {
+      method: 'POST',
+      body: JSON.stringify({ ip, duration, reason }),
+    });
     return response.data;
   }
 
   async unblockIP(ip: string): Promise<{ success: boolean }> {
-    const response = await api.delete(`/security/block-ip/${ip}`);
+    const response = await apiClient.request(`/security/block-ip/${ip}`, { method: 'DELETE' });
     return response.data;
   }
 
   async setupMFA(): Promise<{ mfaSetup: MFASetup }> {
-    const response = await api.post('/security/mfa/setup');
+    const response = await apiClient.request('/security/mfa/setup', { method: 'POST' });
     return response.data;
   }
 
   async verifyMFA(token: string, secret: string): Promise<{ valid: boolean }> {
-    const response = await api.post('/security/mfa/verify', { token, secret });
+    const response = await apiClient.request('/security/mfa/verify', {
+      method: 'POST',
+      body: JSON.stringify({ token, secret }),
+    });
     return response.data;
   }
 
   async getSecurityReport(): Promise<{ report: SecurityReport }> {
-    const response = await api.get('/security/report');
+    const response = await apiClient.request('/security/report', { method: 'GET' });
     return response.data;
   }
 
   // Access Control methods
   async getRoles(): Promise<{ roles: Role[] }> {
-    const response = await api.get('/access/roles');
+    const response = await apiClient.request('/access/roles', { method: 'GET' });
     return response.data;
   }
 
   async createRole(roleData: Omit<Role, 'id' | 'createdAt' | 'updatedAt'>): Promise<{ role: Role }> {
-    const response = await api.post('/access/roles', roleData);
+    const response = await apiClient.request('/access/roles', {
+      method: 'POST',
+      body: JSON.stringify(roleData),
+    });
     return response.data;
   }
 
   async updateRole(roleId: string, updates: Partial<Role>): Promise<{ role: Role }> {
-    const response = await api.put(`/access/roles/${roleId}`, updates);
+    const response = await apiClient.request(`/access/roles/${roleId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
     return response.data;
   }
 
   async deleteRole(roleId: string): Promise<{ success: boolean }> {
-    const response = await api.delete(`/access/roles/${roleId}`);
+    const response = await apiClient.request(`/access/roles/${roleId}`, { method: 'DELETE' });
     return response.data;
   }
 
   async getAccessRules(): Promise<{ rules: AccessRule[] }> {
-    const response = await api.get('/access/rules');
+    const response = await apiClient.request('/access/rules', { method: 'GET' });
     return response.data;
   }
 
   async createAccessRule(ruleData: Omit<AccessRule, 'createdAt' | 'updatedAt'>): Promise<{ rule: AccessRule }> {
-    const response = await api.post('/access/rules', ruleData);
+    const response = await apiClient.request('/access/rules', {
+      method: 'POST',
+      body: JSON.stringify(ruleData),
+    });
     return response.data;
   }
 
   async updateAccessRule(ruleId: string, updates: Partial<AccessRule>): Promise<{ rule: AccessRule }> {
-    const response = await api.put(`/access/rules/${ruleId}`, updates);
+    const response = await apiClient.request(`/access/rules/${ruleId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
     return response.data;
   }
 
   async deleteAccessRule(ruleId: string): Promise<{ success: boolean }> {
-    const response = await api.delete(`/access/rules/${ruleId}`);
+    const response = await apiClient.request(`/access/rules/${ruleId}`, { method: 'DELETE' });
     return response.data;
   }
 
   async getActiveSessions(): Promise<{ sessions: Session[] }> {
-    const response = await api.get('/access/sessions');
+    const response = await apiClient.request('/access/sessions', { method: 'GET' });
     return response.data;
   }
 
   async getSessionActivity(sessionId: string): Promise<{ activity: any[] }> {
-    const response = await api.get(`/access/sessions/${sessionId}/activity`);
+    const response = await apiClient.request(`/access/sessions/${sessionId}/activity`, { method: 'GET' });
     return response.data;
   }
 
   async endSession(sessionId: string): Promise<{ success: boolean }> {
-    const response = await api.delete(`/access/sessions/${sessionId}`);
+    const response = await apiClient.request(`/access/sessions/${sessionId}`, { method: 'DELETE' });
     return response.data;
   }
 
   async getResources(): Promise<{ resources: Resource[] }> {
-    const response = await api.get('/access/resources');
+    const response = await apiClient.request('/access/resources', { method: 'GET' });
     return response.data;
   }
 
   async checkAccess(resource: string, action: string): Promise<{ allowed: boolean; reason: string }> {
-    const response = await api.post('/access/check', { resource, action });
+    const response = await apiClient.request('/access/check', {
+      method: 'POST',
+      body: JSON.stringify({ resource, action }),
+    });
     return response.data;
   }
 }
