@@ -98,7 +98,7 @@ const SystemAlerts = () => {
           ? { 
               ...alert, 
               acknowledged: true, 
-              acknowledgedBy: user.user_id,
+              acknowledgedBy: user.id, // Fix: use user.id instead of user.user_id
               acknowledgedAt: new Date().toISOString() 
             }
           : alert

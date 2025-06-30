@@ -1,20 +1,61 @@
-import React, { useEffect, useState } from 'react';
-import { Shield, Lock, Key, Settings, Check, X, Info } from 'lucide-react';
+
+import React, { useState, useEffect } from 'react';
+import { Shield, Lock, Settings, Save, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Switch } from '../ui/switch';
-import { Label } from '../ui/label';
-import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Switch } from '../ui/switch';
 import { Separator } from '../ui/separator';
+import { useToast } from '../ui/use-toast';
 import { securityService, SecurityPolicy } from '../../services/security';
-import { useToast } from '../../hooks/use-toast';
+
+// Define proper policy rule structure
+interface PolicyRule {
+  // Password policy
+  minLength?: number;
+  requireSpecialChars?: boolean;
+  requireNumbers?: boolean;
+  requireUppercase?: boolean;
+  maxAge?: number;
+  preventReuse?: boolean;
+  
+  // Access control
+  enforceRBAC?: boolean;
+  sessionTimeout?: number;
+  concurrentSessions?: number;
+  requireMFA?: boolean;
+  
+  // Network security
+  enableFirewall?: boolean;
+  enableDDoSProtection?: boolean;
+  enableIPWhitelisting?: boolean;
+  allowedPorts?: string;
+}
 
 const SecurityPolicies: React.FC = () => {
   const [policies, setPolicies] = useState<SecurityPolicy[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+
+  // Default policy rules
+  const [policyRules, setPolicyRules] = useState<PolicyRule>({
+    minLength: 8,
+    requireSpecialChars: true,
+    requireNumbers: true,
+    requireUppercase: true,
+    maxAge: 90,
+    preventReuse: true,
+    enforceRBAC: true,
+    sessionTimeout: 30,
+    concurrentSessions: 3,
+    requireMFA: false,
+    enableFirewall: true,
+    enableDDoSProtection: true,
+    enableIPWhitelisting: false,
+    allowedPorts: '80,443,22'
+  });
 
   useEffect(() => {
     loadPolicies();
@@ -24,6 +65,11 @@ const SecurityPolicies: React.FC = () => {
     try {
       const { policies } = await securityService.getSecurityPolicies();
       setPolicies(policies);
+      
+      // Load policy rules from the first policy if available
+      if (policies.length > 0 && policies[0].rules && policies[0].rules.length > 0) {
+        setPolicyRules(prev => ({ ...prev, ...policies[0].rules[0] }));
+      }
     } catch (error) {
       console.error('Failed to load security policies:', error);
       toast({
@@ -36,305 +82,245 @@ const SecurityPolicies: React.FC = () => {
     }
   };
 
-  const updatePolicy = async (policyId: string, updates: Partial<SecurityPolicy>) => {
+  const updatePolicyRule = (key: keyof PolicyRule, value: any) => {
+    setPolicyRules(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const savePolicies = async () => {
     try {
-      setSaving(policyId);
-      const { policy } = await securityService.updateSecurityPolicy(policyId, updates);
-      setPolicies(policies.map(p => p.id === policyId ? policy : p));
+      setSaving(true);
+      
+      // Update the first policy or create a new one
+      if (policies.length > 0) {
+        const updatedPolicy = {
+          ...policies[0],
+          rules: [policyRules],
+          updatedAt: new Date().toISOString()
+        };
+        
+        await securityService.updateSecurityPolicy(policies[0].id, updatedPolicy);
+      }
+      
       toast({
         title: 'Success',
-        description: 'Security policy updated successfully'
+        description: 'Security policies updated successfully'
       });
+      
+      loadPolicies();
     } catch (error) {
-      console.error('Failed to update policy:', error);
+      console.error('Failed to save security policies:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update security policy',
+        description: 'Failed to save security policies',
         variant: 'destructive'
       });
     } finally {
-      setSaving(null);
+      setSaving(false);
     }
-  };
-
-  const updatePolicyRule = (policyId: string, rulePath: string, value: any) => {
-    const policy = policies.find(p => p.id === policyId);
-    if (!policy) return;
-
-    const updatedRules = { ...policy.rules };
-    const keys = rulePath.split('.');
-    let current: any = updatedRules;
-    
-    for (let i = 0; i < keys.length - 1; i++) {
-      current = current[keys[i]];
-    }
-    
-    current[keys[keys.length - 1]] = value;
-    
-    updatePolicy(policyId, { rules: updatedRules });
   };
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        {[1, 2, 3].map((i) => (
-          <Card key={i} className="animate-pulse">
-            <CardHeader className="h-20 bg-muted" />
-            <CardContent className="h-32 bg-muted mt-2" />
-          </Card>
-        ))}
-      </div>
+      <Card>
+        <CardContent className="flex items-center justify-center py-8">
+          <RefreshCw className="w-6 h-6 animate-spin text-primary" />
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-6">
-      <Alert>
-        <Info className="h-4 w-4" />
-        <AlertTitle>Security Policies</AlertTitle>
-        <AlertDescription>
-          Configure security policies to protect your system. Changes take effect immediately.
-        </AlertDescription>
-      </Alert>
-
-      {policies.map((policy) => (
-        <Card key={policy.id} className="border-primary/30 bg-primary/5">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Shield className="w-5 h-5 text-primary" />
-                <div>
-                  <CardTitle>{policy.name}</CardTitle>
-                  <CardDescription>Policy ID: {policy.id}</CardDescription>
-                </div>
+      <Card className="border-warning-orange/30 bg-warning-orange/5">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center space-x-2">
+                <Shield className="w-5 h-5 text-warning-orange" />
+                <span>Security Policies</span>
+              </CardTitle>
+              <CardDescription>Configure system-wide security policies and rules</CardDescription>
+            </div>
+            <Button onClick={savePolicies} disabled={saving}>
+              <Save className="w-4 h-4 mr-2" />
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Password Policy */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Lock className="w-4 h-4 text-primary" />
+              <h3 className="text-lg font-semibold">Password Policy</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="min-length">Minimum Length</Label>
+                <Input
+                  id="min-length"
+                  type="number"
+                  value={policyRules.minLength || 8}
+                  onChange={(e) => updatePolicyRule('minLength', parseInt(e.target.value))}
+                />
               </div>
-              <Switch
-                checked={policy.enabled}
-                onCheckedChange={(checked) => updatePolicy(policy.id, { enabled: checked })}
-                disabled={saving === policy.id}
+              
+              <div className="space-y-2">
+                <Label htmlFor="max-age">Password Age (days)</Label>
+                <Input
+                  id="max-age"
+                  type="number"
+                  value={policyRules.maxAge || 90}
+                  onChange={(e) => updatePolicyRule('maxAge', parseInt(e.target.value))}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="require-special">Require Special Characters</Label>
+                <Switch
+                  id="require-special"
+                  checked={policyRules.requireSpecialChars || false}
+                  onCheckedChange={(checked) => updatePolicyRule('requireSpecialChars', checked)}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <Label htmlFor="require-numbers">Require Numbers</Label>
+                <Switch
+                  id="require-numbers"
+                  checked={policyRules.requireNumbers || false}
+                  onCheckedChange={(checked) => updatePolicyRule('requireNumbers', checked)}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <Label htmlFor="require-uppercase">Require Uppercase Letters</Label>
+                <Switch
+                  id="require-uppercase"
+                  checked={policyRules.requireUppercase || false}
+                  onCheckedChange={(checked) => updatePolicyRule('requireUppercase', checked)}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <Label htmlFor="prevent-reuse">Prevent Password Reuse</Label>
+                <Switch
+                  id="prevent-reuse"
+                  checked={policyRules.preventReuse || false}
+                  onCheckedChange={(checked) => updatePolicyRule('preventReuse', checked)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Access Control Policy */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Settings className="w-4 h-4 text-primary" />
+              <h3 className="text-lg font-semibold">Access Control</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="session-timeout">Session Timeout (minutes)</Label>
+                <Input
+                  id="session-timeout"
+                  type="number"
+                  value={policyRules.sessionTimeout || 30}
+                  onChange={(e) => updatePolicyRule('sessionTimeout', parseInt(e.target.value))}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="concurrent-sessions">Max Concurrent Sessions</Label>
+                <Input
+                  id="concurrent-sessions"
+                  type="number"
+                  value={policyRules.concurrentSessions || 3}
+                  onChange={(e) => updatePolicyRule('concurrentSessions', parseInt(e.target.value))}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="enforce-rbac">Enforce Role-Based Access Control</Label>
+                <Switch
+                  id="enforce-rbac"
+                  checked={policyRules.enforceRBAC || false}
+                  onCheckedChange={(checked) => updatePolicyRule('enforceRBAC', checked)}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <Label htmlFor="require-mfa">Require Multi-Factor Authentication</Label>
+                <Switch
+                  id="require-mfa"
+                  checked={policyRules.requireMFA || false}
+                  onCheckedChange={(checked) => updatePolicyRule('requireMFA', checked)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Network Security Policy */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Shield className="w-4 h-4 text-primary" />
+              <h3 className="text-lg font-semibold">Network Security</h3>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="enable-firewall">Enable Firewall Protection</Label>
+                <Switch
+                  id="enable-firewall"
+                  checked={policyRules.enableFirewall || false}
+                  onCheckedChange={(checked) => updatePolicyRule('enableFirewall', checked)}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <Label htmlFor="enable-ddos">Enable DDoS Protection</Label>
+                <Switch
+                  id="enable-ddos"
+                  checked={policyRules.enableDDoSProtection || false}
+                  onCheckedChange={(checked) => updatePolicyRule('enableDDoSProtection', checked)}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <Label htmlFor="enable-whitelist">Enable IP Whitelisting</Label>
+                <Switch
+                  id="enable-whitelist"
+                  checked={policyRules.enableIPWhitelisting || false}
+                  onCheckedChange={(checked) => updatePolicyRule('enableIPWhitelisting', checked)}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="allowed-ports">Allowed Ports (comma-separated)</Label>
+              <Input
+                id="allowed-ports"
+                value={policyRules.allowedPorts || ''}
+                onChange={(e) => updatePolicyRule('allowedPorts', e.target.value)}
+                placeholder="80,443,22"
               />
             </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {policy.id === 'password_policy' && (
-              <>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor={`${policy.id}-minLength`}>Minimum Password Length</Label>
-                    <Input
-                      id={`${policy.id}-minLength`}
-                      type="number"
-                      value={policy.rules.minLength}
-                      onChange={(e) => updatePolicyRule(policy.id, 'minLength', parseInt(e.target.value))}
-                      className="w-20"
-                      min="6"
-                      max="32"
-                      disabled={!policy.enabled || saving === policy.id}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor={`${policy.id}-requireSpecialChars`}>Require Special Characters</Label>
-                    <Switch
-                      id={`${policy.id}-requireSpecialChars`}
-                      checked={policy.rules.requireSpecialChars}
-                      onCheckedChange={(checked) => updatePolicyRule(policy.id, 'requireSpecialChars', checked)}
-                      disabled={!policy.enabled || saving === policy.id}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor={`${policy.id}-requireNumbers`}>Require Numbers</Label>
-                    <Switch
-                      id={`${policy.id}-requireNumbers`}
-                      checked={policy.rules.requireNumbers}
-                      onCheckedChange={(checked) => updatePolicyRule(policy.id, 'requireNumbers', checked)}
-                      disabled={!policy.enabled || saving === policy.id}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor={`${policy.id}-requireUppercase`}>Require Uppercase Letters</Label>
-                    <Switch
-                      id={`${policy.id}-requireUppercase`}
-                      checked={policy.rules.requireUppercase}
-                      onCheckedChange={(checked) => updatePolicyRule(policy.id, 'requireUppercase', checked)}
-                      disabled={!policy.enabled || saving === policy.id}
-                    />
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor={`${policy.id}-maxAge`}>Password Max Age (days)</Label>
-                    <Input
-                      id={`${policy.id}-maxAge`}
-                      type="number"
-                      value={policy.rules.maxAge}
-                      onChange={(e) => updatePolicyRule(policy.id, 'maxAge', parseInt(e.target.value))}
-                      className="w-20"
-                      min="0"
-                      max="365"
-                      disabled={!policy.enabled || saving === policy.id}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor={`${policy.id}-preventReuse`}>Prevent Password Reuse (last N passwords)</Label>
-                    <Input
-                      id={`${policy.id}-preventReuse`}
-                      type="number"
-                      value={policy.rules.preventReuse}
-                      onChange={(e) => updatePolicyRule(policy.id, 'preventReuse', parseInt(e.target.value))}
-                      className="w-20"
-                      min="0"
-                      max="24"
-                      disabled={!policy.enabled || saving === policy.id}
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-            
-            {policy.id === 'access_control' && (
-              <>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor={`${policy.id}-enforceRBAC`}>Enforce Role-Based Access Control</Label>
-                    <Switch
-                      id={`${policy.id}-enforceRBAC`}
-                      checked={policy.rules.enforceRBAC}
-                      onCheckedChange={(checked) => updatePolicyRule(policy.id, 'enforceRBAC', checked)}
-                      disabled={!policy.enabled || saving === policy.id}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor={`${policy.id}-sessionTimeout`}>Session Timeout (minutes)</Label>
-                    <Input
-                      id={`${policy.id}-sessionTimeout`}
-                      type="number"
-                      value={policy.rules.sessionTimeout}
-                      onChange={(e) => updatePolicyRule(policy.id, 'sessionTimeout', parseInt(e.target.value))}
-                      className="w-20"
-                      min="5"
-                      max="1440"
-                      disabled={!policy.enabled || saving === policy.id}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor={`${policy.id}-concurrentSessions`}>Max Concurrent Sessions</Label>
-                    <Input
-                      id={`${policy.id}-concurrentSessions`}
-                      type="number"
-                      value={policy.rules.concurrentSessions}
-                      onChange={(e) => updatePolicyRule(policy.id, 'concurrentSessions', parseInt(e.target.value))}
-                      className="w-20"
-                      min="1"
-                      max="10"
-                      disabled={!policy.enabled || saving === policy.id}
-                    />
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="space-y-2">
-                    <Label>Roles Requiring MFA</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {policy.rules.requireMFA?.map((role: string) => (
-                        <div key={role} className="flex items-center space-x-1 bg-muted px-2 py-1 rounded-md">
-                          <span className="text-sm">{role}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-4 w-4 p-0"
-                            onClick={() => {
-                              const updated = policy.rules.requireMFA.filter((r: string) => r !== role);
-                              updatePolicyRule(policy.id, 'requireMFA', updated);
-                            }}
-                            disabled={!policy.enabled || saving === policy.id}
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-            
-            {policy.id === 'network_security' && (
-              <>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor={`${policy.id}-enableFirewall`}>Enable Firewall</Label>
-                    <Switch
-                      id={`${policy.id}-enableFirewall`}
-                      checked={policy.rules.enableFirewall}
-                      onCheckedChange={(checked) => updatePolicyRule(policy.id, 'enableFirewall', checked)}
-                      disabled={!policy.enabled || saving === policy.id}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor={`${policy.id}-enableDDoSProtection`}>Enable DDoS Protection</Label>
-                    <Switch
-                      id={`${policy.id}-enableDDoSProtection`}
-                      checked={policy.rules.enableDDoSProtection}
-                      onCheckedChange={(checked) => updatePolicyRule(policy.id, 'enableDDoSProtection', checked)}
-                      disabled={!policy.enabled || saving === policy.id}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor={`${policy.id}-enableIPWhitelisting`}>Enable IP Whitelisting</Label>
-                    <Switch
-                      id={`${policy.id}-enableIPWhitelisting`}
-                      checked={policy.rules.enableIPWhitelisting}
-                      onCheckedChange={(checked) => updatePolicyRule(policy.id, 'enableIPWhitelisting', checked)}
-                      disabled={!policy.enabled || saving === policy.id}
-                    />
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="space-y-2">
-                    <Label>Allowed Ports</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {policy.rules.allowedPorts?.map((port: number) => (
-                        <div key={port} className="flex items-center space-x-1 bg-muted px-2 py-1 rounded-md">
-                          <span className="text-sm font-mono">{port}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-4 w-4 p-0"
-                            onClick={() => {
-                              const updated = policy.rules.allowedPorts.filter((p: number) => p !== port);
-                              updatePolicyRule(policy.id, 'allowedPorts', updated);
-                            }}
-                            disabled={!policy.enabled || saving === policy.id}
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-            
-            {saving === policy.id && (
-              <div className="flex items-center justify-center py-2 text-sm text-muted-foreground">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
-                Saving changes...
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

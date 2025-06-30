@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from './use-toast';
-import { securityService, SecurityMetrics, SecurityPolicy, Role, AccessRule, Session } from '../services/security';
+import { securityService, SecurityMetrics, SecurityPolicy, Role, AccessControlRule, SessionInfo } from '../services/security';
+
+// Create AccessRule type alias
+export type AccessRule = AccessControlRule;
 
 export const useSecurityMetrics = () => {
   const [metrics, setMetrics] = useState<SecurityMetrics | null>(null);
@@ -140,7 +143,7 @@ export const useAccessControl = () => {
 };
 
 export const useActiveSessions = () => {
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessions, setSessions] = useState<SessionInfo[]>([]); // Fix: use SessionInfo[] directly
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -148,8 +151,8 @@ export const useActiveSessions = () => {
   const loadSessions = useCallback(async () => {
     try {
       setLoading(true);
-      const { sessions } = await securityService.getActiveSessions();
-      setSessions(sessions);
+      const sessionData = await securityService.getActiveSessions(); // Fix: direct assignment
+      setSessions(sessionData);
       setError(null);
     } catch (err) {
       const errorMessage = 'Failed to load active sessions';

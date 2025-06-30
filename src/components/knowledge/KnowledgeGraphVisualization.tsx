@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ForceGraph3D } from 'react-force-graph';
+import { ForceGraph3D } from 'react-force-graph-3d';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -12,6 +12,9 @@ interface GraphNode {
   label: string;
   color: string;
   size: number;
+  x?: number;
+  y?: number;
+  z?: number;
 }
 
 interface GraphEdge {
