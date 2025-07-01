@@ -18,21 +18,8 @@ class WebSocketService {
   private isConnecting = false;
 
   private getWebSocketUrl(): string {
-    const isDev = import.meta.env.DEV;
-    const isLocalhost = window.location.hostname === 'localhost';
-    
-    if (isDev && isLocalhost) {
-      // Connect directly to backend WebSocket
-      return 'ws://localhost:9000/ws/monitoring';
-    } else if (isDev) {
-      // Use the current host with WebSocket protocol
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      return `${protocol}//${window.location.host}/ws/monitoring`;
-    } else {
-      // Production WebSocket URL
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      return `${protocol}//${window.location.host}/ws/monitoring`;
-    }
+    // Always use localhost:9000 for development
+    return 'ws://localhost:9000/ws/monitoring';
   }
 
   constructor() {

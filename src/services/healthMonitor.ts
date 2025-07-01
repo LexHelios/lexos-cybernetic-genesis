@@ -8,14 +8,8 @@ class HealthMonitor {
   private isMonitoring = false;
 
   private getBackendUrl() {
-    const isDev = import.meta.env.DEV;
-    const isLocalhost = window.location.hostname === 'localhost';
-    
-    if (isDev && isLocalhost) {
-      return 'http://localhost:9000';
-    } else {
-      return import.meta.env.VITE_API_BASE_URL || '';
-    }
+    // Always use localhost:9000 for development
+    return 'http://localhost:9000';
   }
 
   start() {

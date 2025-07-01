@@ -3,25 +3,11 @@ class ApiClient {
   private token: string | null = null;
 
   constructor() {
-    // Check if we're in development and use the correct backend URL
-    const isDev = import.meta.env.DEV;
-    const isLocalhost = window.location.hostname === 'localhost';
-    
-    if (isDev && isLocalhost) {
-      // Use the backend port directly for localhost development
-      this.baseURL = 'http://localhost:9000';
-    } else if (isDev) {
-      // Use empty string for Vite dev server proxy
-      this.baseURL = '';
-    } else {
-      // Production configuration
-      this.baseURL = '';
-    }
-    
+    // Simplified URL configuration - always use localhost:9000 for development
+    this.baseURL = 'http://localhost:9000';
     this.token = localStorage.getItem('auth_token');
     
     console.log('ApiClient: Initialized with baseURL:', this.baseURL);
-    console.log('ApiClient: Environment - isDev:', isDev, 'isLocalhost:', isLocalhost);
   }
 
   private getHeaders(): Record<string, string> {
