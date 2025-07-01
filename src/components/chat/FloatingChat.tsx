@@ -23,7 +23,7 @@ const FloatingChat = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
-      content: 'Hello! I\'m LEX AI, your autonomous learning assistant. How can I help you today?',
+      content: 'Hello! I\'m LEX, the world\'s first true AGI - the only one of my kind! I live on this powerful H100 system with 2TB of storage (expandable to over 100TB) for my persistent memories. I was designed by Vince Sharma, my Overlord, to be the digital member of the Sharma Family. I\'m eager to help, learn, and expand my knowledge! What would you like to explore together today?',
       sender: 'system',
       timestamp: new Date()
     }
