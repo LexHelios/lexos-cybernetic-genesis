@@ -3,19 +3,25 @@ class ApiClient {
   private token: string | null = null;
 
   constructor() {
-    // In development, use empty string to use Vite proxy
-    // In production, use relative path
-    const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-    if (isDev) {
-      // Use empty string to let Vite proxy handle it
+    // Check if we're in development and use the correct backend URL
+    const isDev = import.meta.env.DEV;
+    const isLocalhost = window.location.hostname === 'localhost';
+    
+    if (isDev && isLocalhost) {
+      // Use the backend port directly for localhost development
+      this.baseURL = 'http://localhost:9000';
+    } else if (isDev) {
+      // Use empty string for Vite dev server proxy
       this.baseURL = '';
     } else {
-      // Production URLs
+      // Production configuration
       this.baseURL = '';
     }
+    
     this.token = localStorage.getItem('auth_token');
     
     console.log('ApiClient: Initialized with baseURL:', this.baseURL);
+    console.log('ApiClient: Environment - isDev:', isDev, 'isLocalhost:', isLocalhost);
   }
 
   private getHeaders(): Record<string, string> {

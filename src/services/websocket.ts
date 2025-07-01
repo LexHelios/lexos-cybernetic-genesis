@@ -1,12 +1,39 @@
+import { toast } from 'sonner';
+
+interface WebSocketMessage {
+  type: string;
+  data: any;
+  timestamp?: number;
+}
+
+type EventCallback = (data: any) => void;
 
 class WebSocketService {
   private ws: WebSocket | null = null;
-  private subscribers: Map<string, Set<(data: any) => void>> = new Map();
+  private subscribers = new Map<string, EventCallback[]>();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
-  private reconnectDelay = 5000; // 5 seconds
-  private reconnectTimer: NodeJS.Timeout | null = null;
+  private reconnectDelay = 3000;
+  private reconnectTimeoutId: NodeJS.Timeout | null = null;
   private isConnecting = false;
+
+  private getWebSocketUrl(): string {
+    const isDev = import.meta.env.DEV;
+    const isLocalhost = window.location.hostname === 'localhost';
+    
+    if (isDev && isLocalhost) {
+      // Connect directly to backend WebSocket
+      return 'ws://localhost:9000/ws/monitoring';
+    } else if (isDev) {
+      // Use the current host with WebSocket protocol
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${protocol}//${window.location.host}/ws/monitoring`;
+    } else {
+      // Production WebSocket URL
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${protocol}//${window.location.host}/ws/monitoring`;
+    }
+  }
 
   constructor() {
     this.connect();
@@ -19,10 +46,7 @@ class WebSocketService {
 
     this.isConnecting = true;
     
-    // Use the correct WebSocket URL - check if we're on HTTPS or HTTP
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = import.meta.env.VITE_WS_HOST || 'localhost:9000';
-    const wsUrl = `${protocol}//${host}/ws/monitoring`;
+    const wsUrl = this.getWebSocketUrl();
     
     console.log('WebSocket: Attempting to connect to:', wsUrl);
 
@@ -86,22 +110,22 @@ class WebSocketService {
   }
 
   private scheduleReconnect() {
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
     }
 
     this.reconnectAttempts++;
     console.log(`WebSocket: Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
     
-    this.reconnectTimer = setTimeout(() => {
+    this.reconnectTimeoutId = setTimeout(() => {
       this.connect();
     }, this.reconnectDelay);
   }
 
   disconnect() {
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = null;
     }
 
     if (this.ws) {
@@ -118,20 +142,23 @@ class WebSocketService {
     }
   }
 
-  subscribe(eventType: string, callback: (data: any) => void) {
+  subscribe(eventType: string, callback: EventCallback) {
     if (!this.subscribers.has(eventType)) {
-      this.subscribers.set(eventType, new Set());
+      this.subscribers.set(eventType, []);
     }
     
-    this.subscribers.get(eventType)!.add(callback);
+    this.subscribers.get(eventType)!.push(callback);
     console.log(`Subscribed to WebSocket event: ${eventType}`);
     
     return () => {
       const callbacks = this.subscribers.get(eventType);
       if (callbacks) {
-        callbacks.delete(callback);
-        if (callbacks.size === 0) {
-          this.subscribers.delete(eventType);
+        const index = callbacks.indexOf(callback);
+        if (index !== -1) {
+          callbacks.splice(index, 1);
+          if (callbacks.length === 0) {
+            this.subscribers.delete(eventType);
+          }
         }
       }
     };
