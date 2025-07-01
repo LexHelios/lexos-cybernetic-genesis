@@ -301,9 +301,6 @@ class DatabaseService {
       JSON.stringify(agentData.metadata || {})
     );
 
-<<<<<<< HEAD
-    this.logSystemEvent(
-=======
     // Initialize agent memory system
     await this.initializeAgentMemory(agent_id, {
       name,
@@ -314,7 +311,6 @@ class DatabaseService {
     });
 
     await this.logSystemEvent(
->>>>>>> 333f6a067224197b9ca7616f43408f16006b540e
       'agent',
       'info',
       'DatabaseService',
