@@ -53,6 +53,12 @@ router.post('/completions', async (req, res) => {
       max_tokens: max_tokens || 1000
     });
     
+    // Clean up response by removing thinking tags if present
+    if (result.response) {
+      // Remove <think> tags and their content
+      result.response = result.response.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    }
+    
     // Log the interaction
     await database.logSystemEvent(
       'chat',
