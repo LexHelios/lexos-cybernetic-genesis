@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -12,6 +11,10 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// Routes
+const configurationRoutes = require('./routes/configuration');
+app.use('/api/configuration', configurationRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

@@ -1,55 +1,113 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Shield, Eye, Clock, Lock } from 'lucide-react';
-
-interface SecuritySetting {
-  id: string;
-  name: string;
-  description: string;
-  enabled: boolean;
-}
+import { useToast } from '@/hooks/use-toast';
+import { configurationService, SecuritySetting } from '@/services/configurationService';
 
 const SecuritySettings: React.FC = () => {
-  const [settings, setSettings] = useState<SecuritySetting[]>([
-    {
-      id: 'content_filtering',
-      name: 'Content Filtering',
-      description: 'Filter inappropriate content for child accounts',
-      enabled: true
-    },
-    {
-      id: 'session_timeout',
-      name: 'Session Timeout',
-      description: 'Automatically log out users after inactivity',
-      enabled: true
-    },
-    {
-      id: 'audit_logging',
-      name: 'Audit Logging',
-      description: 'Log all user activities for security monitoring',
-      enabled: true
-    },
-    {
-      id: 'mfa_required',
-      name: 'Multi-Factor Authentication',
-      description: 'Require MFA for admin accounts',
-      enabled: false
-    }
-  ]);
+  const [settings, setSettings] = useState<SecuritySetting[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  const toggleSetting = (settingId: string) => {
-    setSettings(prev => prev.map(setting => 
-      setting.id === settingId 
-        ? { ...setting, enabled: !setting.enabled }
-        : setting
-    ));
+  useEffect(() => {
+    loadSecuritySettings();
+  }, []);
+
+  const loadSecuritySettings = async () => {
+    try {
+      const config = await configurationService.loadConfiguration();
+      setSettings(config.securitySettings);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load security settings",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleSetting = async (settingId: string, enabled: boolean) => {
+    try {
+      const success = await configurationService.updateSecuritySetting(settingId, enabled);
+      
+      if (success) {
+        setSettings(prev => prev.map(setting => 
+          setting.id === settingId 
+            ? { ...setting, enabled }
+            : setting
+        ));
+        
+        toast({
+          title: "Success",
+          description: `${settings.find(s => s.id === settingId)?.name} ${enabled ? 'enabled' : 'disabled'}`
+        });
+      } else {
+        throw new Error('Failed to update setting');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update security setting",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateSettingValue = async (settingId: string, value: any) => {
+    try {
+      const setting = settings.find(s => s.id === settingId);
+      if (!setting) return;
+      
+      const success = await configurationService.updateSecuritySetting(settingId, setting.enabled, value);
+      
+      if (success) {
+        setSettings(prev => prev.map(s => 
+          s.id === settingId 
+            ? { ...s, value }
+            : s
+        ));
+        
+        toast({
+          title: "Success",
+          description: "Setting updated successfully"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update setting value",
+        variant: "destructive"
+      });
+    }
   };
 
   const securityScore = Math.round((settings.filter(s => s.enabled).length / settings.length) * 100);
+
+  const getIconForSetting = (settingId: string) => {
+    switch (settingId) {
+      case 'content_filtering':
+        return <Eye className="w-4 h-4" />;
+      case 'session_timeout':
+        return <Clock className="w-4 h-4" />;
+      case 'audit_logging':
+        return <Shield className="w-4 h-4" />;
+      case 'mfa_required':
+        return <Lock className="w-4 h-4" />;
+      default:
+        return <Shield className="w-4 h-4" />;
+    }
+  };
+
+  if (loading) {
+    return <div className="flex justify-center p-8">Loading security settings...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -66,7 +124,7 @@ const SecuritySettings: React.FC = () => {
             </div>
             <div className="text-2xl font-bold text-primary">{securityScore}%</div>
             <Badge variant={securityScore >= 80 ? 'default' : 'secondary'}>
-              {securityScore >= 80 ? 'Strong' : 'Moderate'}
+              {securityScore >= 80 ? 'Strong' : securityScore >= 60 ? 'Good' : 'Moderate'}
             </Badge>
           </CardContent>
         </Card>
@@ -79,10 +137,7 @@ const SecuritySettings: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`p-2 rounded-lg ${setting.enabled ? 'bg-green-500/20' : 'bg-gray-500/20'}`}>
-                    {setting.id === 'content_filtering' && <Eye className="w-4 h-4" />}
-                    {setting.id === 'session_timeout' && <Clock className="w-4 h-4" />}
-                    {setting.id === 'audit_logging' && <Shield className="w-4 h-4" />}
-                    {setting.id === 'mfa_required' && <Lock className="w-4 h-4" />}
+                    {getIconForSetting(setting.id)}
                   </div>
                   <div>
                     <CardTitle className="text-lg">{setting.name}</CardTitle>
@@ -94,19 +149,78 @@ const SecuritySettings: React.FC = () => {
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label htmlFor={setting.id}>Enable {setting.name}</Label>
                 <Switch
                   id={setting.id}
                   checked={setting.enabled}
-                  onCheckedChange={() => toggleSetting(setting.id)}
+                  onCheckedChange={(enabled) => toggleSetting(setting.id, enabled)}
                 />
+              </div>
+              
+              {/* Special handling for session timeout setting */}
+              {setting.id === 'session_timeout' && setting.enabled && (
+                <div className="space-y-2">
+                  <Label htmlFor="timeout-value">Timeout (minutes)</Label>
+                  <Input
+                    id="timeout-value"
+                    type="number"
+                    min="5"
+                    max="1440"
+                    value={setting.value || 30}
+                    onChange={(e) => updateSettingValue(setting.id, parseInt(e.target.value))}
+                    className="w-24"
+                  />
+                </div>
+              )}
+
+              {/* Show current status */}
+              <div className="text-xs text-muted-foreground">
+                Status: {setting.enabled ? (
+                  <span className="text-green-400">Active and protecting your system</span>
+                ) : (
+                  <span className="text-yellow-400">Disabled - consider enabling for better security</span>
+                )}
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {/* Security Recommendations */}
+      <Card className="holographic-panel">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="w-5 h-5" />
+            Security Recommendations
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {securityScore < 80 && (
+              <p className="text-yellow-400 text-sm">
+                • Consider enabling more security features to improve your security score
+              </p>
+            )}
+            {!settings.find(s => s.id === 'mfa_required')?.enabled && (
+              <p className="text-yellow-400 text-sm">
+                • Enable Multi-Factor Authentication for admin accounts for enhanced security
+              </p>
+            )}
+            {!settings.find(s => s.id === 'audit_logging')?.enabled && (
+              <p className="text-yellow-400 text-sm">
+                • Enable audit logging to track all system activities
+              </p>
+            )}
+            {securityScore === 100 && (
+              <p className="text-green-400 text-sm">
+                ✓ Excellent! All security features are enabled and protecting your system
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
