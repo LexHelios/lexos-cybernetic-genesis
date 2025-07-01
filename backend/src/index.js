@@ -64,6 +64,8 @@ const corsOptions = {
       'https://www.lexcommand.ai',
       'http://lexcommand.ai',
       'http://www.lexcommand.ai',
+      'http://147.185.40.39:20004',
+      'http://192.168.122.27',
       process.env.FRONTEND_URL
     ].filter(Boolean);
     

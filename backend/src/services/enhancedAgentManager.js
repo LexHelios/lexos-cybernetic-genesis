@@ -129,9 +129,13 @@ class EnhancedAgentManager {
     }
     
     // Execute on the selected agent
-    const targetAgent = this.agents.get(routing.routedTo);
+    const targetAgentId = routing.routedTo || routing.result?.routedTo;
+    const targetAgent = this.agents.get(targetAgentId);
     if (!targetAgent) {
-      throw new Error(`Target agent ${routing.routedTo} not found`);
+      // Log available agents for debugging
+      console.log('Available agents:', Array.from(this.agents.keys()));
+      console.log('Routing result:', routing);
+      throw new Error(`Target agent ${targetAgentId} not found`);
     }
     
     // Execute the task

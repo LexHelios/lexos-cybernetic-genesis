@@ -52,7 +52,7 @@ const SimpleChatInterface = () => {
 
     // Call backend API
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch('/api/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

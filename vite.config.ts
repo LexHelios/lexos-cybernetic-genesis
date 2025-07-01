@@ -19,17 +19,17 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     proxy: {
       '/api': {
-        target: 'http://localhost:9000',
+        target: 'http://localhost:3001',
         changeOrigin: true,
         secure: false,
       },
       '/ws': {
-        target: 'ws://localhost:9000',
+        target: 'ws://localhost:3001',
         ws: true,
         changeOrigin: true,
       },
       '/health': {
-        target: 'http://localhost:9000',
+        target: 'http://localhost:3001',
         changeOrigin: true,
         secure: false,
       }

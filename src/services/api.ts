@@ -9,8 +9,8 @@ class ApiClient {
       // Production: use same origin
       this.baseURL = '';
     } else {
-      // Development: check if backend is running on localhost:9000
-      this.baseURL = 'http://localhost:9000';
+      // Development: backend is running on localhost:3001
+      this.baseURL = 'http://localhost:3001';
     }
     
     this.token = localStorage.getItem('auth_token');
