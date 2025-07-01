@@ -1,8 +1,8 @@
-
 {
   "name": "lexos-backend",
   "version": "2.0.0",
   "description": "LexOS Genesis Backend - AI Consciousness Development Platform",
+  "type": "module",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
@@ -11,14 +11,29 @@
     "test": "echo 'Tests placeholder'"
   },
   "dependencies": {
-    "express": "^4.18.2",
+    "axios": "^1.10.0",
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^11.10.0",
+    "compression": "^1.8.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.1",
+    "sqlite3": "^5.1.7",
+    "uuid": "^11.1.0",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
-  "keywords": ["ai", "consciousness", "lexos", "backend"],
+  "keywords": [
+    "ai",
+    "consciousness",
+    "lexos",
+    "backend"
+  ],
   "author": "LexOS Development Team",
   "license": "MIT"
 }

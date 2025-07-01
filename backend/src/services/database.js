@@ -301,9 +301,6 @@ class DatabaseService {
       JSON.stringify(agentData.metadata || {})
     );
 
-<<<<<<< HEAD
-    this.logSystemEvent(
-=======
     // Initialize agent memory system
     await this.initializeAgentMemory(agent_id, {
       name,
@@ -313,13 +310,13 @@ class DatabaseService {
       capabilities
     });
 
-    await this.logSystemEvent(
->>>>>>> 333f6a067224197b9ca7616f43408f16006b540e
-      'agent',
-      'info',
-      'DatabaseService',
-      `New agent created with memory system: ${name} (${agent_id})`
-    );
+    // TODO: Implement logSystemEvent method
+    // this.logSystemEvent(
+    //   'agent',
+    //   'info',
+    //   'DatabaseService',
+    //   `New agent created with memory system: ${name} (${agent_id})`
+    // );
 
     return result.lastID;
   }

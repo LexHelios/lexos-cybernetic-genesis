@@ -1,0 +1,248 @@
+{
+  "agents": {
+    "orchestrator": {
+      "id": "orchestrator",
+      "name": "Orchestrator Agent",
+      "purpose": "Task classification & routing",
+      "primary_model": "mistral:7b-instruct",
+      "secondary_model": "llama3:latest",
+      "fallback_api": null,
+      "framework": "LangChain + Ray Serve",
+      "capabilities": ["task_routing", "classification", "delegation"],
+      "priority": 100
+    },
+    "reasoning": {
+      "id": "reasoning",
+      "name": "Reasoning Agent",
+      "purpose": "Deep, multi-step logic & analysis",
+      "primary_model": "deepseek-r1:latest",
+      "secondary_model": "r1-unrestricted:latest",
+      "fallback_api": "claude-opus-4",
+      "framework": "FastAPI/Triton",
+      "capabilities": ["deep_reasoning", "multi_step_logic", "complex_analysis", "chain_of_thought"],
+      "priority": 95
+    },
+    "code": {
+      "id": "code",
+      "name": "Code Agent",
+      "purpose": "Code generation, debugging, refactoring",
+      "primary_model": "qwen2.5-coder:7b",
+      "secondary_model": "deepseek-r1:latest",
+      "fallback_api": "gpt-4.1",
+      "framework": "VSCode Copilot + Triton API",
+      "capabilities": ["code_generation", "debugging", "refactoring", "code_review", "optimization"],
+      "priority": 90
+    },
+    "chat": {
+      "id": "chat",
+      "name": "Chat Agent",
+      "purpose": "Natural two-way conversation",
+      "primary_model": "mistral:7b",
+      "secondary_model": "llama3:latest",
+      "fallback_api": "gpt-4o",
+      "framework": "LangChain Chat",
+      "capabilities": ["conversation", "dialogue", "context_management", "personality"],
+      "priority": 85
+    },
+    "creative_writing": {
+      "id": "creative_writing",
+      "name": "Creative Writing Agent",
+      "purpose": "Storytelling, ideation, poetry",
+      "primary_model": "llama3.3:70b",
+      "secondary_model": "deepseek-r1:latest",
+      "fallback_api": "gemini-2.5-pro",
+      "framework": "FastAPI + Triton",
+      "capabilities": ["storytelling", "poetry", "creative_ideation", "narrative_construction"],
+      "priority": 80
+    },
+    "ocr_cv": {
+      "id": "ocr_cv",
+      "name": "OCR/CV Agent",
+      "purpose": "License plates, document OCR",
+      "primary_model": "external:yolov8n",
+      "secondary_model": "external:paddleocr",
+      "fallback_api": null,
+      "framework": "OpenCV + Triton",
+      "capabilities": ["ocr", "document_processing", "license_plate_recognition", "text_extraction"],
+      "priority": 75,
+      "requires_external": true
+    },
+    "speech_to_text": {
+      "id": "speech_to_text",
+      "name": "Speech-to-Text Agent",
+      "purpose": "Real-time transcription",
+      "primary_model": "external:whisper-large-v3",
+      "secondary_model": "external:parakeet-tdt",
+      "fallback_api": null,
+      "framework": "Triton ASR pipeline",
+      "capabilities": ["transcription", "real_time_stt", "audio_to_text"],
+      "priority": 70,
+      "requires_external": true
+    },
+    "text_to_speech": {
+      "id": "text_to_speech",
+      "name": "Text-to-Speech Agent",
+      "purpose": "Lifelike voice synthesis",
+      "primary_model": "external:dia-1.6b",
+      "secondary_model": "external:chatterbox",
+      "fallback_api": null,
+      "framework": "Triton TTS pipeline",
+      "capabilities": ["voice_synthesis", "tts", "audio_generation"],
+      "priority": 65,
+      "requires_external": true
+    },
+    "audio_processing": {
+      "id": "audio_processing",
+      "name": "Audio Processing Agent",
+      "purpose": "Audio analysis, filtering, classification",
+      "primary_model": "external:speechbrain",
+      "secondary_model": "external:wav2vec2",
+      "fallback_api": null,
+      "framework": "Triton/PyTorch",
+      "capabilities": ["audio_analysis", "filtering", "classification", "enhancement"],
+      "priority": 60,
+      "requires_external": true
+    },
+    "adult_content": {
+      "id": "adult_content",
+      "name": "Adult Content Agent",
+      "purpose": "Unrestricted adult content generation",
+      "primary_model": "r1-unrestricted:latest",
+      "secondary_model": "gemma3n-unrestricted:latest",
+      "fallback_api": null,
+      "framework": "LangChain + Triton",
+      "capabilities": ["unrestricted_generation", "adult_content", "no_filters"],
+      "priority": 55,
+      "restricted": true
+    },
+    "web_design": {
+      "id": "web_design",
+      "name": "Web-Design Agent",
+      "purpose": "UI/UX mockups, HTML/CSS generation",
+      "primary_model": "qwen2.5-coder:7b",
+      "secondary_model": "deepseek-r1:latest",
+      "fallback_api": null,
+      "framework": "Figma-API + Code Llama",
+      "capabilities": ["ui_design", "html_generation", "css_generation", "mockup_creation"],
+      "priority": 50
+    },
+    "web_scraper": {
+      "id": "web_scraper",
+      "name": "Web-Scraper Agent",
+      "purpose": "Data extraction & parsing",
+      "primary_model": "deepseek-r1:latest",
+      "secondary_model": "mistral:7b",
+      "fallback_api": null,
+      "framework": "BeautifulSoup + Selenium",
+      "capabilities": ["web_scraping", "data_extraction", "html_parsing", "automation"],
+      "priority": 45
+    },
+    "network_opt": {
+      "id": "network_opt",
+      "name": "Network Opt Agent",
+      "purpose": "Network config & performance tuning",
+      "primary_model": "llama3:latest",
+      "secondary_model": "mistral:7b",
+      "fallback_api": "gpt-4.1",
+      "framework": "Custom Python + Triton",
+      "capabilities": ["network_optimization", "config_generation", "performance_tuning"],
+      "priority": 40
+    },
+    "agent_creator": {
+      "id": "agent_creator",
+      "name": "Agent-Creator Agent",
+      "purpose": "Spins up new agents & pipelines",
+      "primary_model": "mistral:7b",
+      "secondary_model": "phi3:mini",
+      "fallback_api": null,
+      "framework": "Ray + LangChain",
+      "capabilities": ["agent_generation", "pipeline_creation", "dynamic_configuration"],
+      "priority": 35
+    },
+    "orchestration": {
+      "id": "orchestration",
+      "name": "Orchestration Agent",
+      "purpose": "Schedules, monitors & self-heals services",
+      "primary_model": "phi3:mini",
+      "secondary_model": "mistral:7b",
+      "fallback_api": null,
+      "framework": "Kubernetes + Ray + Triton",
+      "capabilities": ["scheduling", "monitoring", "self_healing", "service_management"],
+      "priority": 30
+    },
+    "full_stack_builder": {
+      "id": "full_stack_builder",
+      "name": "Full-Stack Builder Agent",
+      "purpose": "End-to-end app scaffolding & deployment",
+      "primary_model": "qwen2.5-coder:7b",
+      "secondary_model": "llama3:latest",
+      "fallback_api": "gpt-4.1",
+      "framework": "Cookiecutter + Docker + Terraform",
+      "capabilities": ["app_scaffolding", "deployment", "full_stack_development", "infrastructure"],
+      "priority": 25
+    }
+  },
+  "model_mappings": {
+    "available_models": {
+      "deepseek-r1:latest": {
+        "capabilities": ["reasoning", "analysis", "code", "web_scraping"],
+        "context_length": 32768,
+        "speed": "medium"
+      },
+      "r1-unrestricted:latest": {
+        "capabilities": ["unrestricted", "reasoning", "adult_content"],
+        "context_length": 128000,
+        "speed": "medium"
+      },
+      "gemma3n-unrestricted:latest": {
+        "capabilities": ["technical", "unrestricted", "scientific"],
+        "context_length": 32000,
+        "speed": "medium"
+      },
+      "llama3.3:70b": {
+        "capabilities": ["creative", "long_form", "detailed"],
+        "context_length": 128000,
+        "speed": "slow"
+      },
+      "qwen2.5-coder:7b": {
+        "capabilities": ["code", "technical", "web_design"],
+        "context_length": 32768,
+        "speed": "fast"
+      },
+      "mistral:7b": {
+        "capabilities": ["general", "chat", "routing"],
+        "context_length": 32768,
+        "speed": "fast"
+      },
+      "mistral:7b-instruct": {
+        "capabilities": ["instruction", "routing", "orchestration"],
+        "context_length": 32768,
+        "speed": "fast"
+      },
+      "phi3:mini": {
+        "capabilities": ["routing", "simple", "fast"],
+        "context_length": 4096,
+        "speed": "very_fast"
+      },
+      "llama3:latest": {
+        "capabilities": ["general", "chat", "balanced"],
+        "context_length": 8192,
+        "speed": "fast"
+      }
+    }
+  },
+  "routing_rules": {
+    "task_patterns": {
+      "reasoning": ["analyze", "reason", "explain", "logic", "solve", "deduce", "prove"],
+      "code": ["code", "program", "debug", "refactor", "implement", "function", "class"],
+      "creative": ["write", "story", "poem", "creative", "narrative", "fiction"],
+      "chat": ["chat", "talk", "converse", "discuss", "hello", "hi"],
+      "web_scraping": ["scrape", "extract", "parse", "website", "crawl"],
+      "web_design": ["design", "ui", "ux", "html", "css", "mockup"],
+      "network": ["network", "config", "optimize", "performance", "tune"],
+      "adult": ["adult", "explicit", "nsfw", "unrestricted"],
+      "orchestration": ["schedule", "monitor", "deploy", "manage", "orchestrate"],
+      "full_stack": ["build", "scaffold", "create app", "full stack", "deploy app"]
+    }
+  }
+}

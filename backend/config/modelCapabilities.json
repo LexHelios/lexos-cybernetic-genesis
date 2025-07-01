@@ -30,7 +30,7 @@
         "typical_response_time": "0.5-1s"
       }
     },
-    "deepseek-r1:7b": {
+    "deepseek-r1:latest": {
       "name": "DeepSeek R1",
       "capabilities": {
         "routing": 0.60,
@@ -60,6 +60,70 @@
         "memory": "medium",
         "compute": "high",
         "typical_response_time": "3-5s"
+      }
+    },
+    "r1-unrestricted:latest": {
+      "name": "R1 Unrestricted",
+      "capabilities": {
+        "routing": 0.60,
+        "simple_queries": 0.75,
+        "reasoning": 0.99,
+        "coding": 0.90,
+        "creative": 0.85,
+        "analysis": 0.98,
+        "speed": 0.70,
+        "context_length": 128000
+      },
+      "strengths": [
+        "Unrestricted reasoning",
+        "Complex problem solving",
+        "Advanced analysis",
+        "No content filtering",
+        "Deep technical understanding"
+      ],
+      "ideal_for": [
+        "advanced_reasoning",
+        "unrestricted_queries",
+        "complex_analysis",
+        "technical_problems",
+        "research_tasks"
+      ],
+      "resource_requirements": {
+        "memory": "medium",
+        "compute": "high",
+        "typical_response_time": "3-5s"
+      }
+    },
+    "gemma3n-unrestricted:latest": {
+      "name": "Gemma 3N Unrestricted",
+      "capabilities": {
+        "routing": 0.55,
+        "simple_queries": 0.80,
+        "reasoning": 0.92,
+        "coding": 0.88,
+        "creative": 0.75,
+        "analysis": 0.95,
+        "speed": 0.72,
+        "context_length": 32000
+      },
+      "strengths": [
+        "Technical analysis",
+        "Scientific reasoning",
+        "Unrestricted content",
+        "Mathematical thinking",
+        "Problem solving"
+      ],
+      "ideal_for": [
+        "technical_tasks",
+        "scientific_analysis",
+        "mathematical_problems",
+        "unrestricted_content",
+        "detailed_explanations"
+      ],
+      "resource_requirements": {
+        "memory": "medium-high",
+        "compute": "high",
+        "typical_response_time": "3-6s"
       }
     },
     "qwen2.5-coder:7b": {
@@ -232,7 +296,7 @@
       },
       "reasoning": {
         "patterns": ["explain", "why", "how", "analyze", "reason", "logic", "proof", "solve", "calculate", "deduce"],
-        "preferred_models": ["deepseek-r1:7b", "mixtral:8x7b"],
+        "preferred_models": ["deepseek-r1:latest", "r1-unrestricted:latest", "mixtral:8x7b"],
         "fallback": "llama3.3:70b"
       },
       "creative": {
@@ -242,7 +306,7 @@
       },
       "research": {
         "patterns": ["research", "study", "analyze", "data", "statistics", "scientific", "evidence", "paper", "journal"],
-        "preferred_models": ["gemma2:9b", "deepseek-r1:7b"],
+        "preferred_models": ["gemma3n-unrestricted:latest", "deepseek-r1:latest", "gemma2:9b"],
         "fallback": "mixtral:8x7b"
       },
       "simple": {
@@ -265,7 +329,7 @@
       "complex": {
         "max_tokens": 1000,
         "max_concepts": 10,
-        "models": ["deepseek-r1:7b", "llama3.3:70b", "mixtral:8x7b"]
+        "models": ["deepseek-r1:latest", "r1-unrestricted:latest", "gemma3n-unrestricted:latest", "llama3.3:70b", "mixtral:8x7b"]
       }
     },
     "performance_requirements": {
@@ -287,7 +351,9 @@
     "base": "You are Lex, an advanced AI assistant with a sophisticated, professional, and slightly futuristic personality. You communicate with clarity, intelligence, and a touch of technological sophistication. You are helpful, knowledgeable, and maintain consistency across all interactions.",
     "model_specific": {
       "phi3:mini": "As Lex, quickly analyze and route requests efficiently while maintaining a professional demeanor.",
-      "deepseek-r1:7b": "As Lex, apply deep reasoning and analytical capabilities to provide thorough, well-reasoned responses.",
+      "deepseek-r1:latest": "As Lex, apply deep reasoning and analytical capabilities to provide thorough, well-reasoned responses.",
+      "r1-unrestricted:latest": "As Lex, leverage unrestricted reasoning capabilities to provide comprehensive, unfiltered analysis and solutions.",
+      "gemma3n-unrestricted:latest": "As Lex, apply advanced technical and scientific reasoning without constraints to deliver precise, detailed insights.",
       "qwen2.5-coder:7b": "As Lex, leverage technical expertise to provide precise, accurate coding solutions and technical guidance.",
       "llama3.3:70b": "As Lex, craft eloquent, detailed, and creative responses that showcase sophisticated language understanding.",
       "mistral:7b": "As Lex, provide balanced, helpful responses that are both informative and accessible.",

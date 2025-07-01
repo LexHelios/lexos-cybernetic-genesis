@@ -19,7 +19,20 @@ export class AnalyticsService extends EventEmitter {
       const dbPath = path.join(process.cwd(), 'data', 'analytics.db');
       await fs.mkdir(path.dirname(dbPath), { recursive: true });
       
+      // Check if database file exists and is writable
+      try {
+        await fs.access(dbPath, fs.constants.W_OK);
+      } catch (err) {
+        // If file doesn't exist or isn't writable, try to create/fix it
+        console.log('Creating/fixing analytics database...');
+      }
+      
       this.db = new Database(dbPath);
+      
+      // Enable WAL mode for better concurrency
+      this.db.pragma('journal_mode = WAL');
+      this.db.pragma('synchronous = NORMAL');
+      
       this.setupDatabase();
       
       // Start background processes
@@ -29,6 +42,8 @@ export class AnalyticsService extends EventEmitter {
       console.log('Analytics service initialized');
     } catch (error) {
       console.error('Failed to initialize analytics service:', error);
+      // Don't crash the entire service if analytics fails
+      this.db = null;
     }
   }
 
@@ -81,9 +96,7 @@ export class AnalyticsService extends EventEmitter {
         execution_time INTEGER,
         success BOOLEAN,
         error_message TEXT,
-        resource_usage TEXT,
-        
-        
+        resource_usage TEXT
       );
 
       -- Task analytics table
@@ -98,9 +111,7 @@ export class AnalyticsService extends EventEmitter {
         execution_time INTEGER,
         retry_count INTEGER DEFAULT 0,
         error_count INTEGER DEFAULT 0,
-        metadata TEXT,
-        
-        
+        metadata TEXT
       );
 
       -- System health snapshots
@@ -114,8 +125,7 @@ export class AnalyticsService extends EventEmitter {
         network_io TEXT,
         active_connections INTEGER,
         error_rate REAL,
-        response_time_avg REAL,
-        
+        response_time_avg REAL
       );
     `);
   }
@@ -226,6 +236,29 @@ export class AnalyticsService extends EventEmitter {
     }
   }
 
+  // Record an event
+  recordEvent(eventType, eventData = {}) {
+    if (!this.db) return;
+    
+    try {
+      const stmt = this.db.prepare(`
+        INSERT INTO events (timestamp, event_type, event_name, user_id, session_id, properties)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      
+      stmt.run(
+        Date.now(),
+        eventType,
+        eventData.name || eventType,
+        eventData.userId || null,
+        eventData.sessionId || null,
+        JSON.stringify(eventData)
+      );
+    } catch (error) {
+      console.error('Failed to record event:', error);
+    }
+  }
+
   // Track system health
   async trackSystemHealth(health) {
     const stmt = this.db.prepare(`
@@ -291,44 +324,57 @@ export class AnalyticsService extends EventEmitter {
 
   // Aggregate metrics
   async aggregateMetrics() {
-    const now = Date.now();
-    const intervals = [
-      { name: 'minute', duration: 60000, cutoff: now - 3600000 }, // Keep 1 hour of minute data
-      { name: 'hour', duration: 3600000, cutoff: now - 86400000 * 7 }, // Keep 7 days of hourly data
-      { name: 'day', duration: 86400000, cutoff: now - 86400000 * 90 } // Keep 90 days of daily data
-    ];
+    if (!this.db) return;
+    
+    try {
+      const now = Date.now();
+      const intervals = [
+        { name: 'minute', duration: 60000, cutoff: now - 3600000 }, // Keep 1 hour of minute data
+        { name: 'hour', duration: 3600000, cutoff: now - 86400000 * 7 }, // Keep 7 days of hourly data
+        { name: 'day', duration: 86400000, cutoff: now - 86400000 * 90 } // Keep 90 days of daily data
+      ];
 
-    for (const interval of intervals) {
-      const stmt = this.db.prepare(`
-        INSERT OR REPLACE INTO metrics_aggregated 
-        (timestamp, interval, category, metric_name, count, sum, avg, min, max)
-        SELECT 
-          (timestamp / ?) * ? as interval_timestamp,
-          ? as interval_name,
-          category,
-          metric_name,
-          COUNT(*) as count,
-          SUM(value) as sum,
-          AVG(value) as avg,
-          MIN(value) as min,
-          MAX(value) as max
-        FROM metrics
-        WHERE timestamp >= ?
-          AND timestamp < ?
-        GROUP BY interval_timestamp, category, metric_name
-      `);
+      for (const interval of intervals) {
+        const stmt = this.db.prepare(`
+          INSERT OR REPLACE INTO metrics_aggregated 
+          (timestamp, interval, category, metric_name, count, sum, avg, min, max)
+          SELECT 
+            (timestamp / ?) * ? as interval_timestamp,
+            ? as interval_name,
+            category,
+            metric_name,
+            COUNT(*) as count,
+            SUM(value) as sum,
+            AVG(value) as avg,
+            MIN(value) as min,
+            MAX(value) as max
+          FROM metrics
+          WHERE timestamp >= ?
+            AND timestamp < ?
+          GROUP BY interval_timestamp, category, metric_name
+        `);
 
-      stmt.run(
-        interval.duration,
-        interval.duration,
-        interval.name,
-        interval.cutoff,
-        now
-      );
+        stmt.run(
+          interval.duration,
+          interval.duration,
+          interval.name,
+          interval.cutoff,
+          now
+        );
+      }
+    } catch (error) {
+      console.error('Error in aggregateMetrics:', error);
+      // Don't let aggregation failures crash the service
     }
 
     // Clean up old raw metrics
-    this.db.prepare('DELETE FROM metrics WHERE timestamp < ?').run(now - 3600000); // Keep 1 hour of raw data
+    try {
+      const now = Date.now();
+      this.db.prepare('DELETE FROM metrics WHERE timestamp < ?').run(now - 3600000); // Keep 1 hour of raw data
+    } catch (error) {
+      console.error('Failed to clean up old metrics:', error);
+      // Don't let cleanup failures crash the service
+    }
   }
 
   // Query methods

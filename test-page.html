@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LexOS API Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #1a1a1a; color: white; }
+        .test { margin: 10px 0; padding: 10px; background: #2a2a2a; border-radius: 5px; }
+        .success { border-left: 4px solid #4CAF50; }
+        .error { border-left: 4px solid #f44336; }
+        pre { background: #333; padding: 10px; overflow: auto; }
+        button { background: #4CAF50; color: white; border: none; padding: 10px 20px; cursor: pointer; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>LexOS Genesis - API Test Page</h1>
+    <div id="results"></div>
+    
+    <h2>Actions:</h2>
+    <button onclick="testAuth()">Test Login</button>
+    <button onclick="testChat()">Test Chat</button>
+    <button onclick="testAllEndpoints()">Test All Endpoints</button>
+    
+    <script>
+        const baseUrl = window.location.origin;
+        const results = document.getElementById('results');
+        
+        function log(message, data, isError = false) {
+            const div = document.createElement('div');
+            div.className = 'test ' + (isError ? 'error' : 'success');
+            div.innerHTML = `
+                <strong>${message}</strong>
+                ${data ? '<pre>' + JSON.stringify(data, null, 2) + '</pre>' : ''}
+            `;
+            results.appendChild(div);
+        }
+        
+        async function testEndpoint(path, options = {}) {
+            try {
+                const response = await fetch(baseUrl + path, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                const data = await response.json();
+                log(`${options.method || 'GET'} ${path} - ${response.status}`, data, !response.ok);
+                return data;
+            } catch (error) {
+                log(`${options.method || 'GET'} ${path} - ERROR`, { error: error.message }, true);
+            }
+        }
+        
+        async function testAuth() {
+            const loginData = await testEndpoint('/api/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({
+                    email: 'admin@localhost',
+                    password: 'admin123'
+                })
+            });
+            
+            if (loginData && loginData.token) {
+                localStorage.setItem('token', loginData.token);
+                log('Token saved to localStorage', { token: loginData.token });
+            }
+        }
+        
+        async function testChat() {
+            await testEndpoint('/api/chat', {
+                method: 'POST',
+                body: JSON.stringify({
+                    messages: [
+                        { role: 'user', content: 'Hello, how are you?' }
+                    ],
+                    model: 'llama3:latest'
+                })
+            });
+        }
+        
+        async function testAllEndpoints() {
+            results.innerHTML = '<h3>Testing all endpoints...</h3>';
+            
+            // Test all GET endpoints
+            const endpoints = [
+                '/health',
+                '/api/system/status',
+                '/api/chat/auto/stats',
+                '/api/agents',
+                '/api/configuration',
+                '/api/models',
+                '/api/users/profile',
+                '/api/auth/me',
+                '/api/knowledge/graph',
+                '/analytics/dashboard'
+            ];
+            
+            for (const endpoint of endpoints) {
+                await testEndpoint(endpoint);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+        
+        // Test on load
+        window.onload = () => {
+            log('Test page loaded', { baseUrl, timestamp: new Date().toISOString() });
+            testEndpoint('/api/system/status');
+        };
+    </script>
+</body>
+</html>

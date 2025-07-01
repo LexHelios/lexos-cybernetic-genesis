@@ -1,20 +1,19 @@
+
 class ApiClient {
   private baseURL: string;
   private token: string | null = null;
 
   constructor() {
-    // In development, use empty string to use Vite proxy
-    // In production, use relative path
-    const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-    if (isDev) {
-      // Use empty string to let Vite proxy handle it
+    // Production-ready URL configuration
+    if (import.meta.env.PROD) {
+      // Production: use same origin
       this.baseURL = '';
     } else {
-      // Production URLs
-      this.baseURL = '';
+      // Development: check if backend is running on localhost:9000
+      this.baseURL = 'http://localhost:9000';
     }
-    this.token = localStorage.getItem('auth_token');
     
+    this.token = localStorage.getItem('auth_token');
     console.log('ApiClient: Initialized with baseURL:', this.baseURL);
   }
 
@@ -33,10 +32,8 @@ class ApiClient {
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     console.log('ApiClient: Making request to:', url);
-    console.log('ApiClient: Request options:', options);
 
     try {
-      console.log('ApiClient: Sending fetch request...');
       const response = await fetch(url, {
         ...options,
         headers: {
@@ -46,7 +43,6 @@ class ApiClient {
       });
 
       console.log('ApiClient: Response status:', response.status);
-      console.log('ApiClient: Response ok:', response.ok);
 
       if (!response.ok) {
         const errorText = await response.text();
