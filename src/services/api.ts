@@ -1,12 +1,19 @@
+
 class ApiClient {
   private baseURL: string;
   private token: string | null = null;
 
   constructor() {
-    // Simplified URL configuration - always use localhost:9000 for development
-    this.baseURL = 'http://localhost:9000';
-    this.token = localStorage.getItem('auth_token');
+    // Production-ready URL configuration
+    if (import.meta.env.PROD) {
+      // Production: use same origin
+      this.baseURL = '';
+    } else {
+      // Development: check if backend is running on localhost:9000
+      this.baseURL = 'http://localhost:9000';
+    }
     
+    this.token = localStorage.getItem('auth_token');
     console.log('ApiClient: Initialized with baseURL:', this.baseURL);
   }
 
@@ -25,10 +32,8 @@ class ApiClient {
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     console.log('ApiClient: Making request to:', url);
-    console.log('ApiClient: Request options:', options);
 
     try {
-      console.log('ApiClient: Sending fetch request...');
       const response = await fetch(url, {
         ...options,
         headers: {
@@ -38,7 +43,6 @@ class ApiClient {
       });
 
       console.log('ApiClient: Response status:', response.status);
-      console.log('ApiClient: Response ok:', response.ok);
 
       if (!response.ok) {
         const errorText = await response.text();

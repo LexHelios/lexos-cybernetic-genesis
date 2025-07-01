@@ -1,15 +1,21 @@
+
 import { websocketService } from './websocket';
 
 class HealthMonitor {
   private intervalId: NodeJS.Timeout | null = null;
-  private readonly checkInterval = 30000; // 30 seconds
+  private readonly checkInterval = 30000;
   private readonly maxRetries = 3;
   private retryCount = 0;
   private isMonitoring = false;
 
   private getBackendUrl() {
-    // Always use localhost:9000 for development
-    return 'http://localhost:9000';
+    if (import.meta.env.PROD) {
+      // Production: use same origin
+      return '';
+    } else {
+      // Development: use localhost backend
+      return 'http://localhost:9000';
+    }
   }
 
   start() {
@@ -40,7 +46,6 @@ class HealthMonitor {
     try {
       console.log('🔍 Performing health check...');
       
-      // Check backend health
       const backendHealthy = await this.checkBackendHealth();
       
       if (backendHealthy) {
@@ -63,14 +68,13 @@ class HealthMonitor {
         headers: {
           'Content-Type': 'application/json'
         },
-        // Add timeout to prevent hanging
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(5000) // Reduced timeout
       });
 
       if (response.ok) {
         const health = await response.json();
         console.log('✅ Backend healthy:', health.status);
-        return health.status === 'operational';
+        return health.status === 'operational' || health.status === 'healthy';
       }
       
       console.warn('⚠️ Backend unhealthy - status:', response.status);

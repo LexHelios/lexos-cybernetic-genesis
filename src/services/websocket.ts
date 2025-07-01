@@ -1,3 +1,4 @@
+
 import { toast } from 'sonner';
 
 interface WebSocketMessage {
@@ -18,8 +19,14 @@ class WebSocketService {
   private isConnecting = false;
 
   private getWebSocketUrl(): string {
-    // Always use localhost:9000 for development
-    return 'ws://localhost:9000/ws/monitoring';
+    if (import.meta.env.PROD) {
+      // Production: use same origin with WebSocket protocol
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${protocol}//${window.location.host}/ws/monitoring`;
+    } else {
+      // Development: connect to localhost backend
+      return 'ws://localhost:9000/ws/monitoring';
+    }
   }
 
   constructor() {
@@ -32,9 +39,7 @@ class WebSocketService {
     }
 
     this.isConnecting = true;
-    
     const wsUrl = this.getWebSocketUrl();
-    
     console.log('WebSocket: Attempting to connect to:', wsUrl);
 
     try {
@@ -45,7 +50,6 @@ class WebSocketService {
         this.reconnectAttempts = 0;
         this.isConnecting = false;
         
-        // Send initial connection message
         this.send({
           type: 'connection',
           data: { client: 'nexus-frontend' }
@@ -84,7 +88,6 @@ class WebSocketService {
         this.isConnecting = false;
         this.ws = null;
         
-        // Attempt to reconnect if it wasn't a clean close
         if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
           this.scheduleReconnect();
         }
