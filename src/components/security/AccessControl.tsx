@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Check, X } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -31,7 +32,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { useToast } from '../ui/use-toast';
+import { useToast } from '../../hooks/use-toast';
 import { securityService, Role } from '../../services/security';
 
 const AccessControl: React.FC = () => {

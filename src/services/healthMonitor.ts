@@ -8,10 +8,9 @@ class HealthMonitor {
   private retryCount = 0;
   private isMonitoring = false;
 
-  private endpoints = {
-    backend: '/api/health',
-    frontend: window.location.origin
-  };
+  private getBackendUrl() {
+    return import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+  }
 
   start() {
     if (this.isMonitoring) return;
@@ -58,17 +57,20 @@ class HealthMonitor {
 
   private async checkBackendHealth(): Promise<boolean> {
     try {
-      const response = await fetch(this.endpoints.backend, {
+      const backendUrl = this.getBackendUrl();
+      const response = await fetch(`${backendUrl}/health`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        // Add timeout to prevent hanging
+        signal: AbortSignal.timeout(10000)
       });
 
       if (response.ok) {
         const health = await response.json();
         console.log('✅ Backend healthy:', health.status);
-        return health.status === 'healthy';
+        return health.status === 'operational';
       }
       
       console.warn('⚠️ Backend unhealthy - status:', response.status);
@@ -79,74 +81,21 @@ class HealthMonitor {
     }
   }
 
-  private async handleUnhealthySystem() {
+  private handleUnhealthySystem() {
     this.retryCount++;
     console.warn(`⚠️ System unhealthy - retry ${this.retryCount}/${this.maxRetries}`);
     
     this.updateConnectionStatus(false);
     
+    // Don't attempt automatic recovery - just notify
     if (this.retryCount >= this.maxRetries) {
       console.error('🚨 System recovery needed - max retries reached');
-      await this.attemptSystemRecovery();
-      this.retryCount = 0;
+      this.showRecoveryNotification();
+      this.retryCount = 0; // Reset for next cycle
     }
-  }
-
-  private async attemptSystemRecovery() {
-    console.log('🔄 Attempting system recovery...');
-    
-    try {
-      const response = await fetch('/api/system/restart', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          component: 'backend',
-          reason: 'health_check_failure'
-        })
-      });
-
-      if (response.ok) {
-        console.log('✅ Backend restart initiated');
-        await new Promise(resolve => setTimeout(resolve, 10000));
-      } else {
-        console.error('❌ Failed to restart backend via API');
-        this.fallbackRecovery();
-      }
-    } catch (error) {
-      console.error('❌ Recovery attempt failed:', error);
-      this.fallbackRecovery();
-    }
-  }
-
-  private fallbackRecovery() {
-    console.log('🔄 Attempting fallback recovery...');
-    
-    this.showRecoveryNotification();
-    
-    // Try to reconnect WebSocket
-    try {
-      if (websocketService && !websocketService.isConnected()) {
-        websocketService.connect();
-      }
-    } catch (error) {
-      console.error('❌ WebSocket reconnection failed:', error);
-    }
-    
-    setTimeout(() => {
-      console.log('🔄 Performing page reload for recovery...');
-      window.location.reload();
-    }, 15000);
   }
 
   private updateConnectionStatus(isHealthy: boolean) {
-    const statusElement = document.getElementById('connection-status');
-    if (statusElement) {
-      statusElement.className = isHealthy ? 'status-healthy' : 'status-unhealthy';
-      statusElement.textContent = isHealthy ? 'Online' : 'Recovering...';
-    }
-    
     window.dispatchEvent(new CustomEvent('connectionStatusChanged', {
       detail: { isHealthy, timestamp: Date.now() }
     }));
@@ -159,7 +108,7 @@ class HealthMonitor {
       <div class="bg-yellow-500 text-white p-4 rounded-lg shadow-lg fixed top-4 right-4 z-50">
         <div class="flex items-center gap-2">
           <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-          <span>System recovery in progress...</span>
+          <span>Backend connection issues detected. Check backend status.</span>
         </div>
       </div>
     `;

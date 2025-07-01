@@ -1,7 +1,8 @@
 import { WebSocketServer } from 'ws';
-// Note: whisperService and voiceCommandService imports removed - services not yet implemented
+import { whisperService } from './whisperService.js';
+import VoiceCommandService from './voiceCommandService.js';
 import chatService from './chatService.js';
-import { AuthService } from './authService.js';
+import AuthService from './authService.js';
 
 class VoiceWebSocketService {
   constructor() {
@@ -32,6 +33,7 @@ class VoiceWebSocketService {
 
     try {
       if (token) {
+        const authService = new AuthService();
         const decoded = authService.verifyToken(token);
         userId = decoded.userId;
       }
@@ -264,12 +266,11 @@ class VoiceWebSocketService {
     if (!client) return;
 
     try {
-      // Fallback command processing
-      const result = {
-        success: true,
-        message: `Voice command received: "${transcript}"`,
-        isChat: true // Default to chat mode since voice commands not implemented
-      };
+      const voiceCommandService = new VoiceCommandService();
+      const result = await voiceCommandService.processCommand(transcript, {
+        userId: client.userId,
+        clientId
+      });
 
       if (result.isChat) {
         // If not a command, process as chat message

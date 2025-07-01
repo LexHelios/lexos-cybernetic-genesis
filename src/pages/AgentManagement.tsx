@@ -9,7 +9,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
-import { useToast } from '../components/ui/use-toast';
+import { useToast } from '../hooks/use-toast';
 import { Agent, SystemStatus } from '../types/api';
 import { apiClient } from '../services/api';
 import { websocketService } from '../services/websocket';

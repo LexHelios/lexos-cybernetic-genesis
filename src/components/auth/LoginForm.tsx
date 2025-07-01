@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 const LoginForm = () => {
   const { login, isLoading } = useAuth();
@@ -19,7 +19,8 @@ const LoginForm = () => {
   React.useEffect(() => {
     const testConnection = async () => {
       try {
-        const response = await fetch('/api/health');
+        const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+        const response = await fetch(`${backendUrl}/health`);
         if (response.ok) {
           setConnectionStatus('connected');
           console.log('LoginForm: Backend connection successful');
@@ -115,7 +116,7 @@ const LoginForm = () => {
             Neural Enhanced eXecution & Understanding System
           </p>
           <p className="text-cyan-300/80 text-sm font-rajdhani tracking-wider">
-            Access the H100 neural command center
+            Access the neural command center
           </p>
         </CardHeader>
         
@@ -186,11 +187,16 @@ const LoginForm = () => {
                 }
               </p>
             </div>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground/60">
+                Default credentials: admin / NEXUS_ADMIN_CHANGE_IMMEDIATELY
+              </p>
+            </div>
           </div>
 
           <div className="mt-4 text-center">
             <p className="text-xs text-muted-foreground">
-              Powered by H100 GPU Cluster • Secure Neural Architecture
+              Powered by Neural Architecture • Secure Quantum Encryption
             </p>
           </div>
         </CardContent>

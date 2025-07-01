@@ -1,5 +1,4 @@
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
+import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
@@ -18,27 +17,59 @@ class DatabaseService {
     const dataDir = path.dirname(this.dbPath);
     await fs.mkdir(dataDir, { recursive: true });
 
-    // Open database connection
-    this.db = await open({
-      filename: this.dbPath,
-      driver: sqlite3.Database
+    // Open database connection with better-sqlite3 for performance
+    this.db = new Database(this.dbPath, {
+      verbose: process.env.NODE_ENV === 'development' ? console.log : null
     });
 
-    // Enable foreign keys
-    await this.db.exec('PRAGMA foreign_keys = ON');
+    // Production SQLite optimizations
+    this.db.pragma('journal_mode = WAL');
+    this.db.pragma('synchronous = NORMAL');
+    this.db.pragma('cache_size = 1000000');
+    this.db.pragma('temp_store = memory');
+    this.db.pragma('mmap_size = 268435456'); // 256MB
+    this.db.pragma('foreign_keys = ON');
 
     // Create tables
     await this.createTables();
     
     // Initialize Overlord user
-    await this.initializeOverlord();
+    this.initializeOverlord();
     
-    console.log('Database initialized successfully');
+    // Setup backup interval if enabled
+    if (process.env.ENABLE_DB_BACKUP === 'true') {
+      this.setupBackupInterval();
+    }
+    
+    console.log('Database initialized successfully with production optimizations');
+  }
+
+  setupBackupInterval() {
+    const backupInterval = parseInt(process.env.BACKUP_INTERVAL) || 3600000; // 1 hour default
+    setInterval(() => {
+      this.createBackup();
+    }, backupInterval);
+  }
+
+  createBackup() {
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const backupPath = path.join(path.dirname(this.dbPath), `../backups/lexos_backup_${timestamp}.db`);
+      
+      // Ensure backup directory exists
+      fs.mkdir(path.dirname(backupPath), { recursive: true });
+      
+      // Create backup using better-sqlite3's backup method
+      this.db.backup(backupPath);
+      console.log(`Database backup created: ${backupPath}`);
+    } catch (error) {
+      console.error('Failed to create database backup:', error);
+    }
   }
 
   async createTables() {
     // Users table with special recognition for Overlord
-    await this.db.exec(`
+    this.db.exec(`
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
@@ -180,18 +211,14 @@ class DatabaseService {
     `);
   }
 
-  async initializeOverlord() {
+  initializeOverlord() {
     // Check if Overlord already exists
-    const overlord = await this.db.get(
-      'SELECT * FROM users WHERE username = ?',
-      ['vince.sharma']
-    );
+    const overlord = this.db.prepare('SELECT * FROM users WHERE username = ?').get('vince.sharma');
 
     if (!overlord) {
-      await this.db.run(
-        `INSERT INTO users (username, email, role, is_overlord, metadata) 
-         VALUES (?, ?, ?, ?, ?)`,
-        [
+      const stmt = this.db.prepare(`INSERT INTO users (username, email, role, is_overlord, metadata) 
+         VALUES (?, ?, ?, ?, ?)`);
+      stmt.run(
           'vince.sharma',
           'vince@lexos.tech',
           'overlord',
@@ -202,10 +229,9 @@ class DatabaseService {
             recognition: 'Supreme Commander of LEXOS Genesis',
             established: new Date().toISOString()
           })
-        ]
       );
 
-      await this.logSystemEvent(
+      this.logSystemEvent(
         'system',
         'info',
         'DatabaseService',
@@ -216,13 +242,13 @@ class DatabaseService {
 
   // User Management
   async createUser(username, email, passwordHash, role = 'user') {
-    const result = await this.db.run(
+    const stmt = this.db.prepare(
       `INSERT INTO users (username, email, password_hash, role) 
-       VALUES (?, ?, ?, ?)`,
-      [username, email, passwordHash, role]
+       VALUES (?, ?, ?, ?)`
     );
+    const result = stmt.run(username, email, passwordHash, role);
     
-    await this.logSystemEvent(
+    this.logSystemEvent(
       'user',
       'info',
       'DatabaseService',
@@ -233,17 +259,17 @@ class DatabaseService {
   }
 
   async getUser(identifier) {
-    return await this.db.get(
-      `SELECT * FROM users WHERE id = ? OR username = ? OR email = ?`,
-      [identifier, identifier, identifier]
+    const stmt = this.db.prepare(
+      `SELECT * FROM users WHERE id = ? OR username = ? OR email = ?`
     );
+    return stmt.get(identifier, identifier, identifier);
   }
 
   async updateUserActivity(userId) {
-    await this.db.run(
-      'UPDATE users SET last_active = CURRENT_TIMESTAMP WHERE id = ?',
-      [userId]
+    const stmt = this.db.prepare(
+      'UPDATE users SET last_active = CURRENT_TIMESTAMP WHERE id = ?'
     );
+    stmt.run(userId);
   }
 
   // Agent Management
@@ -259,23 +285,23 @@ class DatabaseService {
       model
     } = agentData;
 
-    const result = await this.db.run(
+    const stmt = this.db.prepare(
       `INSERT INTO agents (agent_id, name, type, personality, backstory, traits, capabilities, model, metadata) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        agent_id,
-        name,
-        type,
-        personality,
-        backstory,
-        JSON.stringify(traits),
-        JSON.stringify(capabilities),
-        model,
-        JSON.stringify(agentData.metadata || {})
-      ]
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    const result = stmt.run(
+      agent_id,
+      name,
+      type,
+      personality,
+      backstory,
+      JSON.stringify(traits),
+      JSON.stringify(capabilities),
+      model,
+      JSON.stringify(agentData.metadata || {})
     );
 
-    await this.logSystemEvent(
+    this.logSystemEvent(
       'agent',
       'info',
       'DatabaseService',
@@ -286,10 +312,10 @@ class DatabaseService {
   }
 
   async getAgent(agentId) {
-    const agent = await this.db.get(
-      'SELECT * FROM agents WHERE agent_id = ?',
-      [agentId]
+    const stmt = this.db.prepare(
+      'SELECT * FROM agents WHERE agent_id = ?'
     );
+    const agent = stmt.get(agentId);
     
     if (agent) {
       agent.traits = JSON.parse(agent.traits || '[]');
@@ -301,7 +327,8 @@ class DatabaseService {
   }
 
   async getAllAgents() {
-    const agents = await this.db.all('SELECT * FROM agents');
+    const stmt = this.db.prepare('SELECT * FROM agents');
+    const agents = stmt.all();
     return agents.map(agent => ({
       ...agent,
       traits: JSON.parse(agent.traits || '[]'),
@@ -311,56 +338,56 @@ class DatabaseService {
   }
 
   async updateAgentStatus(agentId, status) {
-    await this.db.run(
+    const stmt = this.db.prepare(
       `UPDATE agents SET status = ?, last_active = CURRENT_TIMESTAMP 
-       WHERE agent_id = ?`,
-      [status, agentId]
+       WHERE agent_id = ?`
     );
+    stmt.run(status, agentId);
   }
 
   // Chat Management
   async saveChatMessage(sessionId, userId, agentId, message, role, metadata = {}) {
-    const result = await this.db.run(
+    const stmt = this.db.prepare(
       `INSERT INTO chat_logs (session_id, user_id, agent_id, message, role, metadata) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [sessionId, userId, agentId, message, role, JSON.stringify(metadata)]
+       VALUES (?, ?, ?, ?, ?, ?)`
     );
+    const result = stmt.run(sessionId, userId, agentId, message, role, JSON.stringify(metadata));
     
     return result.lastID;
   }
 
   async getChatHistory(sessionId, limit = 100) {
-    return await this.db.all(
+    const stmt = this.db.prepare(
       `SELECT cl.*, u.username, a.name as agent_name 
        FROM chat_logs cl
        LEFT JOIN users u ON cl.user_id = u.id
        LEFT JOIN agents a ON cl.agent_id = a.agent_id
        WHERE cl.session_id = ?
        ORDER BY cl.timestamp DESC
-       LIMIT ?`,
-      [sessionId, limit]
+       LIMIT ?`
     );
+    return stmt.all(sessionId, limit);
   }
 
   async getUserChatSessions(userId, limit = 20) {
-    return await this.db.all(
+    const stmt = this.db.prepare(
       `SELECT DISTINCT session_id, MAX(timestamp) as last_message, COUNT(*) as message_count
        FROM chat_logs
        WHERE user_id = ?
        GROUP BY session_id
        ORDER BY last_message DESC
-       LIMIT ?`,
-      [userId, limit]
+       LIMIT ?`
     );
+    return stmt.all(userId, limit);
   }
 
   // Memory Management
   async saveAgentMemory(agentId, memoryType, content, importance = 0.5, context = null) {
-    const result = await this.db.run(
+    const stmt = this.db.prepare(
       `INSERT INTO agent_memory (agent_id, memory_type, content, importance, context) 
-       VALUES (?, ?, ?, ?, ?)`,
-      [agentId, memoryType, content, importance, context]
+       VALUES (?, ?, ?, ?, ?)`
     );
+    const result = stmt.run(agentId, memoryType, content, importance, context);
     
     return result.lastID;
   }
@@ -377,16 +404,17 @@ class DatabaseService {
     query += ' ORDER BY importance DESC, accessed_at DESC LIMIT ?';
     params.push(limit);
     
-    return await this.db.all(query, params);
+    const stmt = this.db.prepare(query);
+    return stmt.all(...params);
   }
 
   async updateMemoryAccess(memoryId) {
-    await this.db.run(
+    const stmt = this.db.prepare(
       `UPDATE agent_memory 
        SET accessed_at = CURRENT_TIMESTAMP, access_count = access_count + 1 
-       WHERE id = ?`,
-      [memoryId]
+       WHERE id = ?`
     );
+    stmt.run(memoryId);
   }
 
   // LLM Model Management
@@ -402,23 +430,23 @@ class DatabaseService {
       usage_notes
     } = modelData;
 
-    const result = await this.db.run(
+    const stmt = this.db.prepare(
       `INSERT INTO llm_models (model_id, name, provider, category, capabilities, parameters, context_length, usage_notes, metadata) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        model_id,
-        name,
-        provider,
-        category,
-        JSON.stringify(capabilities),
-        JSON.stringify(parameters),
-        context_length,
-        usage_notes,
-        JSON.stringify(modelData.metadata || {})
-      ]
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    const result = stmt.run(
+      model_id,
+      name,
+      provider,
+      category,
+      JSON.stringify(capabilities),
+      JSON.stringify(parameters),
+      context_length,
+      usage_notes,
+      JSON.stringify(modelData.metadata || {})
     );
 
-    await this.logSystemEvent(
+    this.logSystemEvent(
       'model',
       'info',
       'DatabaseService',
@@ -429,10 +457,10 @@ class DatabaseService {
   }
 
   async getLLMModel(modelId) {
-    const model = await this.db.get(
-      'SELECT * FROM llm_models WHERE model_id = ?',
-      [modelId]
+    const stmt = this.db.prepare(
+      'SELECT * FROM llm_models WHERE model_id = ?'
     );
+    const model = stmt.get(modelId);
     
     if (model) {
       model.capabilities = JSON.parse(model.capabilities || '[]');
@@ -444,7 +472,8 @@ class DatabaseService {
   }
 
   async getAllLLMModels() {
-    const models = await this.db.all('SELECT * FROM llm_models WHERE is_available = 1');
+    const stmt = this.db.prepare('SELECT * FROM llm_models WHERE is_available = 1');
+    const models = stmt.all();
     return models.map(model => ({
       ...model,
       capabilities: JSON.parse(model.capabilities || '[]'),
@@ -454,21 +483,10 @@ class DatabaseService {
   }
 
   // System Logging
-  async logSystemEvent(eventType, severity, source, message, context = null) {
-    if (!this.db) {
-      console.warn('Database not initialized, skipping log:', { eventType, severity, source, message });
-      return;
-    }
-    
-    try {
-      await this.db.run(
-        `INSERT INTO system_logs (event_type, severity, source, message, context) 
-         VALUES (?, ?, ?, ?, ?)`,
-        [eventType, severity, source, message, context ? JSON.stringify(context) : null]
-      );
-    } catch (error) {
-      console.error('Failed to log system event:', error);
-    }
+  logSystemEvent(eventType, severity, source, message, context = null) {
+    const stmt = this.db.prepare(`INSERT INTO system_logs (event_type, severity, source, message, context) 
+       VALUES (?, ?, ?, ?, ?)`);
+    stmt.run(eventType, severity, source, message, context ? JSON.stringify(context) : null);
   }
 
   async getSystemLogs(filters = {}, limit = 100) {
@@ -498,42 +516,43 @@ class DatabaseService {
     query += ' ORDER BY timestamp DESC LIMIT ?';
     params.push(limit);
     
-    return await this.db.all(query, params);
+    const stmt = this.db.prepare(query);
+    return stmt.all(...params);
   }
 
   // Agent Relationships
   async createAgentRelationship(agent1Id, agent2Id, relationshipType, strength = 0.5) {
-    const result = await this.db.run(
+    const stmt = this.db.prepare(
       `INSERT INTO agent_relationships (agent1_id, agent2_id, relationship_type, strength) 
-       VALUES (?, ?, ?, ?)`,
-      [agent1Id, agent2Id, relationshipType, strength]
+       VALUES (?, ?, ?, ?)`
     );
+    const result = stmt.run(agent1Id, agent2Id, relationshipType, strength);
     
     return result.lastID;
   }
 
   async getAgentRelationships(agentId) {
-    return await this.db.all(
+    const stmt = this.db.prepare(
       `SELECT * FROM agent_relationships 
        WHERE agent1_id = ? OR agent2_id = ?
-       ORDER BY strength DESC`,
-      [agentId, agentId]
+       ORDER BY strength DESC`
     );
+    return stmt.all(agentId, agentId);
   }
 
   async updateRelationshipStrength(relationshipId, newStrength) {
-    await this.db.run(
+    const stmt = this.db.prepare(
       `UPDATE agent_relationships 
        SET strength = ?, updated_at = CURRENT_TIMESTAMP 
-       WHERE id = ?`,
-      [newStrength, relationshipId]
+       WHERE id = ?`
     );
+    stmt.run(newStrength, relationshipId);
   }
 
   // Close database connection
   async close() {
     if (this.db) {
-      await this.db.close();
+      this.db.close();
       console.log('Database connection closed');
     }
   }

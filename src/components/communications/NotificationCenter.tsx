@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Bell, Check, CheckCheck, X, AlertCircle, Info, AlertTriangle, Filter, Settings } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -23,7 +24,7 @@ import {
 } from '../ui/sheet';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
-import { useToast } from '../ui/use-toast';
+import { useToast } from '../../hooks/use-toast';
 import { format, formatDistanceToNow } from 'date-fns';
 
 interface Notification {

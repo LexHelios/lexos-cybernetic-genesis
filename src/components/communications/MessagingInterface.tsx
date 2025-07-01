@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Send, 
@@ -37,7 +38,7 @@ import {
   DialogFooter,
 } from '../ui/dialog';
 import { Label } from '../ui/label';
-import { useToast } from '../ui/use-toast';
+import { useToast } from '../../hooks/use-toast';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../../hooks/useAuth';
 import { useAgents } from '../../hooks/useAgents';

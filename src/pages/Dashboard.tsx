@@ -1,4 +1,3 @@
-
 import React from 'react';
 import SystemOverview from '../components/dashboard/SystemOverview';
 import { Bot } from 'lucide-react';
