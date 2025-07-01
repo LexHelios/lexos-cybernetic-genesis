@@ -7,8 +7,10 @@ import Dashboard from './pages/Dashboard';
 import Agents from './pages/Agents';
 import AgentManagement from './pages/AgentManagement';
 import Configuration from './pages/Configuration';
+import Chat from './pages/Chat';
 import Login from './pages/Login';
 import ConnectionStatus from './components/system/ConnectionStatus';
+import FloatingChat from './components/chat/FloatingChat';
 import { useAutoRecovery } from './hooks/useAutoRecovery';
 
 function App() {
@@ -21,6 +23,9 @@ function App() {
         {/* Connection Status - Always visible */}
         <ConnectionStatus className="fixed top-4 right-4 z-50" />
         
+        {/* Floating Chat - Always available */}
+        <FloatingChat />
+        
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Layout />}>
@@ -28,6 +33,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="agents" element={<Agents />} />
             <Route path="agent-management" element={<AgentManagement />} />
+            <Route path="chat" element={<Chat />} />
             <Route path="configuration" element={<Configuration />} />
           </Route>
         </Routes>

@@ -1,48 +1,24 @@
+
 {
-  "name": "lexos-genesis-backend",
-  "version": "2.0.0-nexus",
-  "description": "Backend agent executor for LexOS Genesis - Sovereign AI Intelligence System",
+  "name": "lexos-backend",
+  "version": "2.0.0",
+  "description": "LexOS Genesis Backend - AI Consciousness Development Platform",
   "main": "src/index.js",
-  "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
-    "init-db": "node src/scripts/initDatabase.js",
-    "prod": "NODE_ENV=production node src/index.js",
-    "test": "echo \"Tests not implemented yet\" && exit 0",
-    "lint": "echo \"Linting not configured\" && exit 0"
+    "dev": "nodemon src/index.js",
+    "init-db": "echo 'Database initialization placeholder'",
+    "test": "echo 'Tests placeholder'"
   },
-  "keywords": [
-    "lexos",
-    "agent",
-    "ai",
-    "ollama",
-    "executor",
-    "nexus",
-    "sharma"
-  ],
-  "author": "Sharma Legacy Systems",
-  "license": "PROPRIETARY",
   "dependencies": {
-    "@xenova/transformers": "^2.17.2",
-    "axios": "^1.7.9",
-    "bcrypt": "^5.1.1",
-    "better-sqlite3": "^9.6.0",
+    "express": "^4.18.2",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "express-rate-limit": "^7.5.1",
-    "express-validator": "^7.2.1",
-    "fluent-ffmpeg": "^2.1.3",
-    "helmet": "^8.1.0",
-    "jsonwebtoken": "^9.0.2",
-    "lru-cache": "^11.1.0",
-    "multer": "^1.4.5-lts.1",
-    "node-wav": "^0.0.2",
-    "pm2": "^6.0.8",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7",
-    "uuid": "^11.0.5",
-    "ws": "^8.18.3"
-  }
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["ai", "consciousness", "lexos", "backend"],
+  "author": "LexOS Development Team",
+  "license": "MIT"
 }

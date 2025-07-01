@@ -301,14 +301,89 @@ class DatabaseService {
       JSON.stringify(agentData.metadata || {})
     );
 
+<<<<<<< HEAD
     this.logSystemEvent(
+=======
+    // Initialize agent memory system
+    await this.initializeAgentMemory(agent_id, {
+      name,
+      personality,
+      backstory,
+      traits,
+      capabilities
+    });
+
+    await this.logSystemEvent(
+>>>>>>> 333f6a067224197b9ca7616f43408f16006b540e
       'agent',
       'info',
       'DatabaseService',
-      `New agent created: ${name} (${agent_id})`
+      `New agent created with memory system: ${name} (${agent_id})`
     );
 
     return result.lastID;
+  }
+
+  // Initialize agent memory system
+  async initializeAgentMemory(agentId, agentData) {
+    try {
+      // Store personality traits as semantic memories
+      if (agentData.traits) {
+        for (const [trait, value] of Object.entries(agentData.traits)) {
+          await this.db.run(`
+            INSERT INTO semantic_memory (
+              agent_id, concept, definition, category, confidence, importance, source
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          `, [
+            agentId,
+            `personality_trait_${trait}`,
+            `I have ${trait} with intensity ${value}`,
+            'personality',
+            0.9,
+            0.8,
+            'personality_initialization'
+          ]);
+        }
+      }
+
+      // Store capabilities as procedural memories
+      if (agentData.capabilities) {
+        for (const capability of agentData.capabilities) {
+          await this.db.run(`
+            INSERT INTO procedural_memory (
+              agent_id, skill_name, skill_type, procedure_steps, proficiency_level, metadata
+            ) VALUES (?, ?, ?, ?, ?, ?)
+          `, [
+            agentId,
+            capability,
+            'capability',
+            JSON.stringify([`Apply ${capability} to solve problems`]),
+            0.7,
+            JSON.stringify({source: 'personality_initialization'})
+          ]);
+        }
+      }
+
+      // Store backstory as episodic memory
+      if (agentData.backstory) {
+        await this.db.run(`
+          INSERT INTO episodic_memory (
+            agent_id, session_id, event_type, content, importance, metadata
+          ) VALUES (?, ?, ?, ?, ?, ?)
+        `, [
+          agentId,
+          'initialization',
+          'backstory',
+          agentData.backstory,
+          0.9,
+          JSON.stringify({source: 'personality_initialization'})
+        ]);
+      }
+
+      console.log(`Initialized memory system for agent ${agentId}`);
+    } catch (error) {
+      console.error(`Failed to initialize memory for agent ${agentId}:`, error);
+    }
   }
 
   async getAgent(agentId) {

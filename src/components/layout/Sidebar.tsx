@@ -1,138 +1,112 @@
-
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { useSystemMonitor } from '../../hooks/useSystemMonitor';
-import { useAuth } from '../../hooks/useAuth';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Bot, 
-  Network, 
-  ListTodo, 
-  Monitor, 
-  Cpu, 
-  MessageSquare, 
-  Shield, 
-  BarChart3, 
-  Settings 
+  Settings, 
+  Users,
+  MessageSquare,
+  ChevronRight,
+  Zap
 } from 'lucide-react';
 
-const navigationItems = [
-  { name: 'Command Center', path: '/', icon: LayoutDashboard },
-  { name: 'Neural Agents', path: '/agents', icon: Bot },
-  { name: 'Knowledge Graph', path: '/knowledge', icon: Network },
-  { name: 'Task Pipeline', path: '/tasks', icon: ListTodo },
-  { name: 'System Monitor', path: '/monitor', icon: Monitor },
-  { name: 'Model Arsenal', path: '/models', icon: Cpu },
-  { name: 'Communications', path: '/comms', icon: MessageSquare },
-  { name: 'Security Hub', path: '/security', icon: Shield },
-  { name: 'Analytics', path: '/analytics', icon: BarChart3 },
-  { name: 'Configuration', path: '/config', icon: Settings }
-];
-
 const Sidebar = () => {
-  const { systemStatus } = useSystemMonitor();
-  const { user, logout } = useAuth();
+  const location = useLocation();
+
+  const navigationItems = [
+    {
+      name: 'Dashboard',
+      href: '/dashboard',
+      icon: LayoutDashboard,
+      description: 'System Overview'
+    },
+    {
+      name: 'Chat',
+      href: '/chat',
+      icon: MessageSquare,
+      description: 'AI Communication'
+    },
+    {
+      name: 'Agents',
+      href: '/agents',
+      icon: Bot,
+      description: 'Agent Management'
+    },
+    {
+      name: 'Agent Management',
+      href: '/agent-management',
+      icon: Users,
+      description: 'Advanced Controls'
+    },
+    {
+      name: 'Configuration',
+      href: '/configuration',
+      icon: Settings,
+      description: 'System Settings'
+    }
+  ];
+
+  const isActive = (path: string) => location.pathname === path;
 
   return (
-    <aside className="w-64 border-r border-primary/20 bg-card/30 backdrop-blur-md flex flex-col relative overflow-hidden">
-      {/* Background with chat interface image */}
-      <div 
-        className="absolute inset-0 opacity-5"
-        style={{
-          backgroundImage: `url('/lovable-uploads/d5f83983-511a-48b6-af8e-060d6c092d79.png')`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        }}
-      />
-      
-      <div className="p-4 flex-1 relative z-10">
-        <div className="mb-4">
-          <h2 className="text-sm font-orbitron font-bold text-primary mb-2">NEXUS NAVIGATION</h2>
-          <div className="text-xs text-muted-foreground">
-            User: {user?.full_name} ({user?.role})
+    <div className="w-64 min-h-screen bg-gradient-to-b from-slate-900/95 to-purple-900/95 backdrop-blur-lg border-r border-primary/20">
+      <div className="p-6">
+        {/* Logo Section */}
+        <div className="flex items-center space-x-3 mb-8">
+          <div className="w-10 h-10 rounded-lg overflow-hidden border border-primary/50 bg-black/80">
+            <img 
+              src="/lovable-uploads/29134d57-1699-4fbb-8ef6-187f4c30655e.png" 
+              alt="LexOS"
+              className="w-full h-full object-cover opacity-90"
+            />
+          </div>
+          <div>
+            <h1 className="text-xl font-orbitron font-bold text-primary">LexOS</h1>
+            <p className="text-xs text-primary/60">Genesis Platform</p>
           </div>
         </div>
+
+        {/* Navigation */}
         <nav className="space-y-2">
-          {navigationItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) =>
-                `flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? 'bg-primary/20 border border-primary/30 text-primary glow-effect'
-                    : 'hover:bg-primary/10 border border-transparent text-muted-foreground hover:text-foreground'
-                }`
-              }
-            >
-              <div 
-                className="w-8 h-8 rounded-lg flex items-center justify-center border border-primary/30 bg-black/50 overflow-hidden"
-                style={{
-                  backgroundImage: `url('/lovable-uploads/117c006d-6418-44ac-8918-cf8e34bb18c8.png')`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center'
-                }}
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.href);
+            
+            return (
+              <NavLink
+                key={item.name}
+                to={item.href}
+                className={`flex items-center justify-between p-3 rounded-lg transition-all duration-200 group ${
+                  active
+                    ? 'bg-primary/20 border border-primary/30 text-primary shadow-lg glow-effect'
+                    : 'hover:bg-primary/10 hover:border hover:border-primary/20 text-muted-foreground hover:text-primary'
+                }`}
               >
-                {/* Remove icon to show background image clearly */}
-              </div>
-              <span className="font-medium">{item.name}</span>
-            </NavLink>
-          ))}
+                <div className="flex items-center space-x-3">
+                  <Icon className={`w-5 h-5 ${active ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
+                  <div>
+                    <span className="font-medium">{item.name}</span>
+                    <p className="text-xs opacity-70">{item.description}</p>
+                  </div>
+                </div>
+                <ChevronRight className={`w-4 h-4 transition-transform ${active ? 'rotate-90 text-primary' : 'group-hover:translate-x-1'}`} />
+              </NavLink>
+            );
+          })}
         </nav>
-      </div>
-      
-      <div className="p-4 space-y-4 relative z-10">
-        <div 
-          className="holographic-panel p-4 rounded-lg relative overflow-hidden"
-        >
-          <div 
-            className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage: `url('/lovable-uploads/009716e7-a32f-4488-a637-55942e697dc6.png')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
-          />
-          <div className="absolute inset-0 bg-black/70 rounded-lg" />
-          <div className="relative">
-            <div className="text-xs text-muted-foreground mb-2">SYSTEM STATUS</div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">GPU Utilization</span>
-                <span className="text-sm text-matrix-green">
-                  {systemStatus?.hardware?.gpu?.utilization?.toFixed(1) || '--'}%
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Active Agents</span>
-                <span className="text-sm text-cyber-pink">
-                  {systemStatus?.orchestrator?.active_agents || '--'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Active Tasks</span>
-                <span className="text-sm text-electric-blue">
-                  {systemStatus?.orchestrator?.active_tasks || '--'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Temperature</span>
-                <span className="text-sm text-warning-orange">
-                  {systemStatus?.hardware.gpu.temperature || '--'}°C
-                </span>
-              </div>
-            </div>
+
+        {/* System Status */}
+        <div className="mt-8 p-4 rounded-lg bg-black/30 border border-primary/20">
+          <div className="flex items-center space-x-2 mb-2">
+            <Zap className="w-4 h-4 text-green-400" />
+            <span className="text-sm font-medium text-green-400">System Active</span>
           </div>
+          <p className="text-xs text-muted-foreground">
+            All agents operational
+          </p>
         </div>
-        
-        <button
-          onClick={logout}
-          className="w-full px-3 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-sm font-medium text-red-400 transition-colors"
-        >
-          Logout
-        </button>
       </div>
-    </aside>
+    </div>
   );
 };
 
