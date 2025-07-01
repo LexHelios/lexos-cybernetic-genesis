@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,8 +10,11 @@ import {
   Brain, 
   User, 
   Paperclip,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
+import { useAgentService } from '@/hooks/useAgentService';
+import { useToast } from '@/hooks/use-toast';
 
 interface Message {
   id: string;
@@ -32,10 +35,24 @@ const SimpleChatInterface = () => {
   ]);
   const [input, setInput] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [sessionId] = useState(`session_${Date.now()}`);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  
+  const { chat, orchestrate, systemStatus } = useAgentService();
+  const { toast } = useToast();
+
+  // Auto-scroll to bottom when new messages
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const handleSendMessage = async () => {
     if (!input.trim() && selectedFiles.length === 0) return;
+    if (isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -49,37 +66,60 @@ const SimpleChatInterface = () => {
     const userInput = input;
     setInput('');
     setSelectedFiles([]);
+    setIsLoading(true);
 
-    // Call backend API
     try {
-      const response = await fetch('/api/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message: userInput }),
-      });
+      // Check if the message requires orchestration
+      const needsOrchestration = userInput.toLowerCase().includes('help me') || 
+                                userInput.toLowerCase().includes('create') ||
+                                userInput.toLowerCase().includes('build') ||
+                                userInput.toLowerCase().includes('analyze') ||
+                                userInput.toLowerCase().includes('generate');
 
-      if (response.ok) {
-        const data = await response.json();
-        const aiMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          type: 'assistant',
-          content: data.response,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, aiMessage]);
+      let response;
+      
+      if (needsOrchestration) {
+        // Use orchestration for complex tasks
+        const orchestrationResult = await orchestrate(
+          'Complex Task',
+          userInput,
+          []
+        );
+        
+        response = orchestrationResult.orchestration.analysis || 
+                  'I\'ll help you with that task. Let me coordinate the appropriate agents...';
+        
+        // Show which agents are being used
+        if (orchestrationResult.orchestration.suggestedAgents?.length > 0) {
+          toast({
+            title: 'Agent Orchestration',
+            description: `Engaging agents: ${orchestrationResult.orchestration.suggestedAgents.join(', ')}`,
+          });
+        }
       } else {
-        throw new Error('Failed to get response');
+        // Use chat for general conversation
+        const chatResult = await chat(userInput, sessionId);
+        response = chatResult.response || chatResult.result;
       }
-    } catch (error) {
+
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: response,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (error: any) {
+      console.error('Chat error:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: `I encountered an error: ${error.message || 'Please try again.'}`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -118,7 +158,7 @@ const SimpleChatInterface = () => {
 
       {/* Messages */}
       <Card className="holographic-panel flex-1 flex flex-col">
-        <ScrollArea className="flex-1 p-4">
+        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
           <div className="space-y-4">
             {messages.map((message) => (
               <div
@@ -219,10 +259,14 @@ const SimpleChatInterface = () => {
             />
             <Button
               onClick={handleSendMessage}
-              disabled={!input.trim() && selectedFiles.length === 0}
+              disabled={(!input.trim() && selectedFiles.length === 0) || isLoading}
               className="neural-button flex-shrink-0"
             >
-              <Send className="w-4 h-4" />
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
             </Button>
           </div>
         </div>

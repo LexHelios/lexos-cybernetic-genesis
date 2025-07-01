@@ -216,38 +216,14 @@ app.use((req, res) => {
 // Create HTTP server
 const server = createServer(app);
 
+// Import WebSocket manager
+import websocketManager from './services/websocketManager.js';
+
 // WebSocket server for real-time updates
 const wss = new WebSocketServer({ server });
 
-wss.on('connection', (ws) => {
-  console.log('New WebSocket connection');
-  
-  ws.on('message', (message) => {
-    try {
-      const data = JSON.parse(message);
-      console.log('WebSocket message received:', data);
-      
-      // Echo back for now
-      ws.send(JSON.stringify({
-        type: 'ack',
-        message: 'Message received',
-        timestamp: Date.now()
-      }));
-    } catch (error) {
-      console.error('WebSocket message error:', error);
-    }
-  });
-  
-  ws.on('close', () => {
-    console.log('WebSocket connection closed');
-  });
-  
-  // Send initial connection message
-  ws.send(JSON.stringify({
-    type: 'connected',
-    message: 'Connected to LexOS backend',
-    timestamp: Date.now()
-  }));
+wss.on('connection', (ws, req) => {
+  websocketManager.handleConnection(ws, req);
 });
 
 // Graceful shutdown

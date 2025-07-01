@@ -262,4 +262,118 @@ router.get('/:agentId/metrics', async (req, res) => {
   }
 });
 
+// Pause/resume agent
+router.post('/:agentId/control', async (req, res) => {
+  try {
+    const { agentId } = req.params;
+    const { action } = req.body;
+    
+    if (!['pause', 'resume', 'restart'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid action. Must be pause, resume, or restart'
+      });
+    }
+    
+    const agent = enhancedAgentManager.getAgent(agentId);
+    if (!agent) {
+      return res.status(404).json({
+        success: false,
+        error: 'Agent not found'
+      });
+    }
+    
+    let result;
+    switch (action) {
+      case 'pause':
+        agent.status = 'paused';
+        result = { status: 'paused', message: 'Agent paused successfully' };
+        break;
+      case 'resume':
+        agent.status = 'ready';
+        result = { status: 'ready', message: 'Agent resumed successfully' };
+        break;
+      case 'restart':
+        agent.status = 'initializing';
+        setTimeout(() => { agent.status = 'ready'; }, 2000);
+        result = { status: 'restarting', message: 'Agent restarting...' };
+        break;
+    }
+    
+    res.json({
+      success: true,
+      ...result,
+      agentId
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get all agents for display
+router.get('/list/all', async (req, res) => {
+  try {
+    const agents = enhancedAgentManager.getAllAgents();
+    const agentList = agents.map(agent => ({
+      id: agent.id,
+      name: agent.name,
+      status: agent.status,
+      currentModel: agent.currentModel,
+      purpose: agent.purpose,
+      capabilities: agent.capabilities,
+      metrics: agent.getMetrics ? agent.getMetrics() : agent.metrics
+    }));
+    
+    res.json({
+      success: true,
+      agents: agentList
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Orchestrate complex task across multiple agents
+router.post('/orchestrate', async (req, res) => {
+  try {
+    const { task, description, requirements = [] } = req.body;
+    
+    if (!task || !description) {
+      return res.status(400).json({
+        success: false,
+        error: 'Task and description are required'
+      });
+    }
+    
+    // Analyze task and determine which agents to involve
+    const analysis = await enhancedAgentManager.executeOnAgent('orchestrator', {
+      type: 'analyze_task',
+      task,
+      description,
+      requirements
+    });
+    
+    res.json({
+      success: true,
+      orchestration: {
+        task,
+        analysis: analysis.response,
+        suggestedAgents: analysis.suggestedAgents || ['reasoning', 'code'],
+        estimatedTime: '2-5 minutes'
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 export default router;
