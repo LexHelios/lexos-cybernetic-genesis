@@ -15,9 +15,6 @@ jobs:
   frontend-ci:
     name: Frontend CI
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./lexos-genesis
     
     steps:
     - uses: actions/checkout@v3
@@ -27,7 +24,7 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
-        cache-dependency-path: ./lexos-genesis/package-lock.json
+        cache-dependency-path: ./package-lock.json
     
     - name: Install dependencies
       run: npm ci
@@ -45,7 +42,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: frontend-build
-        path: ./lexos-genesis/dist
+        path: ./dist
 
   # Backend CI
   backend-ci:

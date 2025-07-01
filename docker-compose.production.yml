@@ -64,15 +64,12 @@ services:
           memory: 512M
           cpus: '0.25'
 
-  # LexOS Backend API
+  # LexOS Backend API (3 replicas for load balancing)
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      args:
-        NODE_ENV: production
     image: lexos-backend:latest
-    container_name: lexos-backend
     restart: unless-stopped
     depends_on:
       postgres:
@@ -83,16 +80,21 @@ services:
       NODE_ENV: production
       PORT: 3001
       DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${DATABASE_NAME:-lexos_genesis}
+      DATABASE_USER: ${DATABASE_USER:-lexos_user}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      SESSION_SECRET: ${SESSION_SECRET}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://147.185.40.39:20062}
     env_file:
       - .env.production
     volumes:
-      - ./backend:/app:ro
-      - /app/node_modules
       - uploads_data:/app/uploads
       - logs_data:/app/logs
-    ports:
-      - "3001:3001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
@@ -118,6 +120,25 @@ services:
         reservations:
           memory: 2G
           cpus: '1.0'
+
+  # Individual backend replicas for load balancing
+  backend-1:
+    extends: backend
+    container_name: lexos-backend-1
+    ports:
+      - "3001:3001"
+
+  backend-2:
+    extends: backend
+    container_name: lexos-backend-2
+    ports:
+      - "3002:3001"
+
+  backend-3:
+    extends: backend
+    container_name: lexos-backend-3
+    ports:
+      - "3003:3001"
 
   # LexOS Frontend
   frontend:
