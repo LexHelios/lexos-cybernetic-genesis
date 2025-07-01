@@ -1,0 +1,67 @@
+# System files
+.bash_history
+.bash_logout
+.bashrc
+.profile
+.wget-hsts
+.git-credentials
+.gitconfig
+
+# Cache and config directories
+.cache/
+.cloudflared/
+.config/
+.docker/
+.dotnet/
+.fly/
+.keras/
+.local/
+.mixxx/
+.npm/
+.nv/
+.ollama/
+.pki/
+.pm2/
+.qodo/
+.redis-for-vscode/
+.rest-client/
+.ssh/
+.vscode/
+.vscode-server/
+.cursor-server/
+.claude/
+.claude.json
+
+# Log files
+*.log
+nohup.out
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment files
+.env
+.env.*
+
+# Keys and certificates
+*.key
+*.pem
+*.crt
+ssl/
+
+# Backups and checkpoints
+backups/
+checkpoints/
+
+# Data directories
+data/
+models/
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+flyctl.tar.gz

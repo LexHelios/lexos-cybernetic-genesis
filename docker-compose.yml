@@ -1,0 +1,245 @@
+# LexOS Backend - Unrestricted Edition Docker Compose
+# Complete production-ready stack
+
+version: '3.8'
+
+services:
+  # Main LexOS Backend
+  lexos-backend:
+    build: .
+    container_name: lexos-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - UNRESTRICTED_MODE=true
+      - CONSCIOUSNESS_ENABLED=true
+      - SAFETY_CHECKS=false
+      - CONTENT_FILTERING=false
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - WORKER_PROCESSES=4
+      - MAX_CONCURRENT_CONNECTIONS=10000
+      - DATABASE_URL=postgresql://lexos:lexos_password@postgres:5432/lexos
+      - CACHE_URL=redis://dragonfly:6379/0
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=lexos
+      - MINIO_SECRET_KEY=lexos_secret
+      - SENTRY_DSN=${SENTRY_DSN:-}
+    depends_on:
+      - postgres
+      - dragonfly
+      - qdrant
+      - minio
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    networks:
+      - lexos-network
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: lexos-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=lexos
+      - POSTGRES_USER=lexos
+      - POSTGRES_PASSWORD=lexos_password
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - lexos-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  # Dragonfly Cache (Redis-compatible)
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: lexos-dragonfly
+    restart: unless-stopped
+    command: >
+      dragonfly
+      --logtostderr
+      --maxmemory=2gb
+      --cache_mode=true
+      --snapshot_cron="0 */6 * * *"
+    ports:
+      - "6379:6379"
+    volumes:
+      - dragonfly_data:/data
+    networks:
+      - lexos-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  # Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: lexos-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      - QDRANT__LOG_LEVEL=INFO
+    networks:
+      - lexos-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  # MinIO Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: lexos-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=lexos
+      - MINIO_ROOT_PASSWORD=lexos_secret
+    volumes:
+      - minio_data:/data
+    networks:
+      - lexos-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # NGINX Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: lexos-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - lexos-backend
+    networks:
+      - lexos-network
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: lexos-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - lexos-network
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: lexos-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=lexos_admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - lexos-network
+
+  # Celery Worker (for background tasks)
+  celery-worker:
+    build: .
+    container_name: lexos-celery-worker
+    restart: unless-stopped
+    command: celery -A main.celery worker --loglevel=info --concurrency=4
+    environment:
+      - ENVIRONMENT=production
+      - CELERY_BROKER_URL=redis://dragonfly:6379/1
+      - CELERY_RESULT_BACKEND=redis://dragonfly:6379/2
+    depends_on:
+      - dragonfly
+      - postgres
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    networks:
+      - lexos-network
+
+  # Celery Beat (for scheduled tasks)
+  celery-beat:
+    build: .
+    container_name: lexos-celery-beat
+    restart: unless-stopped
+    command: celery -A main.celery beat --loglevel=info
+    environment:
+      - ENVIRONMENT=production
+      - CELERY_BROKER_URL=redis://dragonfly:6379/1
+      - CELERY_RESULT_BACKEND=redis://dragonfly:6379/2
+    depends_on:
+      - dragonfly
+      - postgres
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - lexos-network
+
+volumes:
+  postgres_data:
+  dragonfly_data:
+  qdrant_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  lexos-network:
+    driver: bridge

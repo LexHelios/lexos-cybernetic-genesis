@@ -1,0 +1,15 @@
+[Unit]
+Description=LexOS Backend API Server
+After=network.target
+
+[Service]
+Type=simple
+User=user
+WorkingDirectory=/home/user
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/bin/python3 /home/user/api_server.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,86 @@
+# LexOS Backend Stack - UNRESTRICTED EDITION v2.0
+# Core Framework - Maximum Performance
+fastapi[standard]==0.104.1
+uvicorn[standard]==0.24.0
+gunicorn==21.2.0
+
+# Database & ORM - Async Native
+tortoise-orm==0.20.0
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+
+# Vector Database
+qdrant-client==1.7.0
+
+# Cache/Memory - Dragonfly Compatible
+redis==5.0.1
+cachetools==5.3.2
+
+# Web Scraping - No Limits
+playwright==1.40.0
+scrapy==2.11.0
+httpx==0.25.2
+requests==2.31.0
+
+# Message Queue
+celery==5.3.4
+kombu==5.3.4
+
+# GPU Management - Full Control
+pynvml==11.5.0
+cupy-cuda12x==12.3.0
+nvitop==1.3.2
+ray==2.8.1
+
+# Real-time Communication
+websockets==12.0
+python-socketio==5.10.0
+
+# File Storage
+minio==7.2.0
+boto3==1.34.0
+
+# Monitoring - Full Visibility
+prometheus-client==0.19.0
+psutil==5.9.6
+loguru==0.7.2
+sentry-sdk==1.38.0
+opentelemetry-api==1.21.0
+opentelemetry-sdk==1.21.0
+opentelemetry-exporter-otlp==1.21.0
+
+# Security - Minimal Restrictions
+pyjwt==2.8.0
+passlib[bcrypt]==1.7.4
+slowapi==0.1.9
+cryptography==41.0.8
+
+# Configuration
+python-dotenv==1.0.0
+pydantic-settings==2.1.0
+
+# Performance Optimizations
+orjson==3.9.10
+ujson==5.8.0
+
+# Testing & Quality
+pytest==7.4.3
+pytest-asyncio==0.21.1
+locust==2.17.0
+ruff==0.1.6
+mypy==1.7.1
+
+# Documentation
+mkdocs==1.5.3
+mkdocs-material==9.4.8
+
+# Development Tools
+poetry==1.7.1
+pre-commit==3.6.0
+
+# Additional Power Tools
+aiofiles==23.2.1
+aiodns==3.1.1
+cchardet==2.1.7
+uvloop==0.19.0
+httptools==0.6.1
