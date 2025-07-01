@@ -30,23 +30,34 @@ const upload = multer({
   }
 });
 
-// Middleware to verify authentication - will be injected by main app
+// Middleware to verify authentication
 const authenticate = (req, res, next) => {
-  // This will be replaced by authService.authMiddleware() in the main app
-  next();
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+    
+    const decoded = authService.verifyToken(token);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
 };
 
 // Initialize Whisper service on startup
 router.get('/initialize', authenticate, async (req, res) => {
   try {
+    await whisperService.initialize();
     res.json({ 
       success: true, 
-      message: 'Voice service initialized - Whisper integration pending' 
+      message: 'Whisper service initialized successfully' 
     });
   } catch (error) {
-    console.error('Failed to initialize voice service:', error);
+    console.error('Failed to initialize Whisper:', error);
     res.status(500).json({ 
-      error: 'Failed to initialize voice service',
+      error: 'Failed to initialize voice transcription service',
       details: error.message 
     });
   }
@@ -67,18 +78,11 @@ router.post('/transcribe', authenticate, upload.single('audio'), async (req, res
       stride_length_s: parseInt(req.body.stride_length) || 5
     };
 
-    // Fallback transcription response - replace with actual whisper service later
-    const result = {
-      text: "Transcription service not yet implemented - audio received successfully",
-      language: options.language,
-      duration: 0,
-      segments: []
-    };
+    const result = await whisperService.transcribeAudio(req.file.buffer, options);
 
     res.json({
       success: true,
-      transcription: result,
-      note: "Whisper service integration pending"
+      transcription: result
     });
   } catch (error) {
     console.error('Transcription error:', error);
@@ -98,19 +102,14 @@ router.post('/command', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'No transcript provided' });
     }
 
-    // Fallback command processing - replace with actual voice command service later
-    const result = {
-      success: true,
-      message: `Voice command received: "${transcript}"`,
-      transcript,
-      action: 'acknowledged',
-      isChat: true
-    };
+    const result = await voiceCommandService.processCommand(transcript, {
+      ...context,
+      userId: req.user.userId
+    });
 
     res.json({
       success: true,
-      result,
-      note: "Voice command service integration pending"
+      result
     });
   } catch (error) {
     console.error('Command processing error:', error);
@@ -128,23 +127,24 @@ router.post('/transcribe-command', authenticate, upload.single('audio'), async (
       return res.status(400).json({ error: 'No audio file provided' });
     }
 
-    // Fallback implementation
-    const transcriptionResult = {
-      text: "Audio received - transcription service pending",
+    // First transcribe the audio
+    const transcriptionResult = await whisperService.transcribeAudio(req.file.buffer, {
       language: req.body.language || 'en'
-    };
+    });
 
-    const commandResult = {
-      success: true,
-      message: "Voice command processing pending",
-      action: 'acknowledged'
-    };
+    // Then process the command
+    const commandResult = await voiceCommandService.processCommand(
+      transcriptionResult.text,
+      {
+        userId: req.user.userId,
+        ...req.body.context
+      }
+    );
 
     res.json({
       success: true,
       transcription: transcriptionResult,
-      command: commandResult,
-      note: "Full voice processing integration pending"
+      command: commandResult
     });
   } catch (error) {
     console.error('Transcribe and command error:', error);
@@ -162,13 +162,11 @@ router.post('/detect-language', authenticate, upload.single('audio'), async (req
       return res.status(400).json({ error: 'No audio file provided' });
     }
 
-    // Fallback language detection
-    const language = 'en'; // Default to English
+    const language = await whisperService.detectLanguage(req.file.buffer);
 
     res.json({
       success: true,
-      language,
-      note: "Language detection service integration pending"
+      language
     });
   } catch (error) {
     console.error('Language detection error:', error);
@@ -182,25 +180,12 @@ router.post('/detect-language', authenticate, upload.single('audio'), async (req
 // Get available voice commands
 router.get('/commands', authenticate, async (req, res) => {
   try {
-    const commands = [
-      'start agent',
-      'stop agent',
-      'list agents',
-      'system status',
-      'help',
-      'navigate to dashboard',
-      'go back'
-    ];
+    const helpResult = await voiceCommandService.getHelp('', { userId: req.user.userId });
     
     res.json({
       success: true,
-      commands,
-      examples: [
-        "Say 'start agent' to activate an agent",
-        "Say 'system status' to check system health",
-        "Say 'navigate to dashboard' to go to main page"
-      ],
-      note: "Voice command service integration pending"
+      commands: helpResult.commands,
+      examples: helpResult.examples
     });
   } catch (error) {
     console.error('Error getting commands:', error);
@@ -217,17 +202,15 @@ router.get('/status', authenticate, async (req, res) => {
     res.json({
       success: true,
       status: {
-        whisperInitialized: false,
-        modelName: 'Pending Integration',
-        voiceCommandsAvailable: false,
+        whisperInitialized: whisperService.isInitialized,
+        modelName: whisperService.modelName,
         supportedLanguages: [
           'en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'ko'
         ],
         maxAudioSize: '50MB',
         supportedFormats: [
           'webm', 'wav', 'mp3', 'ogg', 'flac', 'm4a'
-        ],
-        note: "Voice services integration pending"
+        ]
       }
     });
   } catch (error) {

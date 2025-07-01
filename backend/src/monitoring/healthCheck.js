@@ -13,8 +13,14 @@ class HealthCheckService {
     // Database health check
     this.registerCheck('database', async () => {
       try {
-        await database.db.get('SELECT 1');
-        return { status: 'healthy', message: 'Database connection OK' };
+        // better-sqlite3 uses synchronous methods
+        if (database.db) {
+          const result = database.db.prepare('SELECT 1 as test').get();
+          if (result && result.test === 1) {
+            return { status: 'healthy', message: 'Database connection OK' };
+          }
+        }
+        return { status: 'unhealthy', message: 'Database not initialized' };
       } catch (error) {
         return { status: 'unhealthy', message: `Database error: ${error.message}` };
       }

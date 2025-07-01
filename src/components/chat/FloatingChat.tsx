@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Minimize2, Maximize2, X, MessageCircle, Mic, MicOff, Volume2, VolumeX, Brain } from 'lucide-react';
+import { Send, Paperclip, Minimize2, Maximize2, X, MessageCircle, Mic, MicOff, Volume2, VolumeX, Brain, Zap } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
 import { useConversation } from '@11labs/react';
 import {
   Select,
@@ -21,6 +23,7 @@ interface ChatMessage {
   files?: File[];
   modelUsed?: string;
   routingReason?: string;
+  isDeepThinking?: boolean;
 }
 
 const FloatingChat = () => {
@@ -47,14 +50,70 @@ const FloatingChat = () => {
   const [selectedModel, setSelectedModel] = useState('auto');
   const [lastUsedModel, setLastUsedModel] = useState<string | null>(null);
   const [performanceMode, setPerformanceMode] = useState<'fast' | 'balanced' | 'quality'>('balanced');
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isDeepThinking, setIsDeepThinking] = useState(false);
+  const [wsConnected, setWsConnected] = useState(false);
   
   const chatRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resizeRef = useRef<HTMLDivElement>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+
+  // Initialize WebSocket connection
+  useEffect(() => {
+    const connectWebSocket = () => {
+      try {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/voice`;
+        
+        wsRef.current = new WebSocket(wsUrl);
+        
+        wsRef.current.onopen = () => {
+          console.log('WebSocket connected successfully');
+          setWsConnected(true);
+        };
+        
+        wsRef.current.onclose = () => {
+          console.log('WebSocket disconnected');
+          setWsConnected(false);
+          // Attempt to reconnect after 5 seconds
+          setTimeout(connectWebSocket, 5000);
+        };
+        
+        wsRef.current.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          setWsConnected(false);
+        };
+        
+        wsRef.current.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('WebSocket message received:', data);
+            
+            if (data.type === 'transcription_complete') {
+              setInputValue(prev => prev + (prev ? ' ' : '') + data.result.text);
+            }
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+          }
+        };
+      } catch (error) {
+        console.error('Failed to connect WebSocket:', error);
+        setWsConnected(false);
+      }
+    };
+
+    if (isOpen) {
+      connectWebSocket();
+    }
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [isOpen]);
 
   // Initialize ElevenLabs conversation
   const conversation = useConversation({
@@ -139,39 +198,14 @@ const FloatingChat = () => {
   const handleSendMessage = async () => {
     if (!inputValue.trim() && selectedFiles.length === 0) return;
 
-    let uploadedFileInfos: { filename: string; path: string }[] = [];
-    if (selectedFiles.length > 0) {
-      setUploading(true);
-      setUploadError(null);
-      try {
-        for (const file of selectedFiles) {
-          const formData = new FormData();
-          formData.append('file', file);
-          const res = await fetch('/api/chat/upload', {
-            method: 'POST',
-            body: formData,
-          });
-          const data = await res.json();
-          if (!data.success) throw new Error(data.error || 'Upload failed');
-          uploadedFileInfos.push({ filename: data.filename, path: data.path });
-        }
-      } catch (err: any) {
-        setUploadError(err.message || 'File upload failed');
-        setUploading(false);
-        return;
-      }
-      setUploading(false);
-    }
-
     const newMessage: ChatMessage = {
       id: Date.now().toString(),
       content: inputValue,
       sender: 'user',
       timestamp: new Date(),
-      files: selectedFiles.length > 0 ? [...selectedFiles] : undefined
+      files: selectedFiles.length > 0 ? [...selectedFiles] : undefined,
+      isDeepThinking
     };
-    // Optionally, you can add uploadedFileInfos to the message for display
-    // newMessage.uploadedFiles = uploadedFileInfos;
 
     setMessages(prev => [...prev, newMessage]);
     const userInput = inputValue;
@@ -188,11 +222,15 @@ const FloatingChat = () => {
                      selectedModel.includes('mixtral') ? 'Mixtral' :
                      selectedModel.includes('gemma') ? 'Gemma 2' :
                      selectedModel;
+    
     const thinkingMessage: ChatMessage = {
       id: (Date.now() + 1).toString(),
-      content: selectedModel === 'auto' ? 'Lex is analyzing your request...' : `Processing with ${modelName} model...`,
+      content: isDeepThinking 
+        ? `🧠 Deep thinking mode activated... ${modelName} is analyzing your request thoroughly...`
+        : selectedModel === 'auto' ? 'Lex is analyzing your request...' : `Processing with ${modelName} model...`,
       sender: 'system',
-      timestamp: new Date()
+      timestamp: new Date(),
+      isDeepThinking
     };
     setMessages(prev => [...prev, thinkingMessage]);
 
@@ -208,9 +246,10 @@ const FloatingChat = () => {
           content: m.content
         })),
         performance_mode: performanceMode,
+        deep_thinking: isDeepThinking,
         options: {
-          temperature: 0.8,
-          max_tokens: 2048
+          temperature: isDeepThinking ? 0.3 : 0.8,
+          max_tokens: isDeepThinking ? 4096 : 2048
         }
       } : {
         model: selectedModel,
@@ -221,8 +260,8 @@ const FloatingChat = () => {
           })),
           { role: 'user', content: userInput }
         ],
-        temperature: 0.8,
-        max_tokens: 2048
+        temperature: isDeepThinking ? 0.3 : 0.8,
+        max_tokens: isDeepThinking ? 4096 : 2048
       };
       
       const response = await fetch(endpoint, {
@@ -244,7 +283,6 @@ const FloatingChat = () => {
       let responseContent = data.message?.content || data.response || 'No response received';
       
       // Remove thinking tags and content between them
-      // Common patterns: <think>...</think>, <thinking>...</thinking>, or similar
       responseContent = responseContent
         .replace(/<think[^>]*>[\s\S]*?<\/think>/gi, '')
         .replace(/<thinking[^>]*>[\s\S]*?<\/thinking>/gi, '')
@@ -271,7 +309,8 @@ const FloatingChat = () => {
           sender: 'system',
           timestamp: new Date(),
           modelUsed: data.model_used,
-          routingReason: data.routing_reason
+          routingReason: data.routing_reason,
+          isDeepThinking
         }];
       });
     } catch (error) {
@@ -373,12 +412,15 @@ const FloatingChat = () => {
           </div>
           <div>
             <h3 className="text-sm font-orbitron font-bold text-primary">Neural Interface</h3>
-            <p className="text-xs text-muted-foreground">
-              {selectedModel === 'auto' ? 'Lex AI' : 'Manual Mode'}
-              {lastUsedModel && selectedModel === 'auto' && (
-                <span className="text-primary/60"> • {lastUsedModel}</span>
-              )}
-            </p>
+            <div className="flex items-center space-x-2">
+              <p className="text-xs text-muted-foreground">
+                {selectedModel === 'auto' ? 'Lex AI' : 'Manual Mode'}
+                {lastUsedModel && selectedModel === 'auto' && (
+                  <span className="text-primary/60"> • {lastUsedModel}</span>
+                )}
+              </p>
+              <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
+            </div>
           </div>
         </div>
         
@@ -537,7 +579,7 @@ const FloatingChat = () => {
             </div>
           )}
 
-          <div className="flex-1 p-4 space-y-4 overflow-y-auto bg-background/50 backdrop-blur-md" style={{ height: size.height - 140 }}>
+          <div className="flex-1 p-4 space-y-4 overflow-y-auto bg-background/50 backdrop-blur-md" style={{ height: size.height - 180 }}>
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -548,8 +590,14 @@ const FloatingChat = () => {
                     message.sender === 'user'
                       ? 'bg-primary/20 border border-primary/30 text-primary'
                       : 'bg-card/80 border border-primary/20 text-foreground'
-                  }`}
+                  } ${message.isDeepThinking ? 'border-purple-500/50 bg-purple-500/10' : ''}`}
                 >
+                  {message.isDeepThinking && message.sender === 'user' && (
+                    <div className="flex items-center gap-1 mb-1">
+                      <Zap className="w-3 h-3 text-purple-400" />
+                      <span className="text-xs text-purple-400">Deep Thinking</span>
+                    </div>
+                  )}
                   <p className="text-sm">{message.content}</p>
                   {message.files && message.files.length > 0 && (
                     <div className="mt-2 space-y-1">
@@ -601,13 +649,23 @@ const FloatingChat = () => {
             </div>
           )}
 
-          {/* File upload error/progress */}
-          {uploading && (
-            <div className="p-2 text-xs text-blue-500">Uploading file(s)...</div>
-          )}
-          {uploadError && (
-            <div className="p-2 text-xs text-red-500">{uploadError}</div>
-          )}
+          {/* Deep Thinking Toggle */}
+          <div className="px-4 py-2 bg-card/50 border-t border-primary/20">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="deep-thinking"
+                checked={isDeepThinking}
+                onCheckedChange={setIsDeepThinking}
+              />
+              <Label htmlFor="deep-thinking" className="text-xs flex items-center gap-1">
+                <Zap className="w-3 h-3 text-purple-400" />
+                Deep Thinking Mode
+              </Label>
+              <span className="text-xs text-muted-foreground">
+                (Slower but more detailed responses)
+              </span>
+            </div>
+          </div>
 
           {/* Input Area */}
           <div className="p-4 bg-card/80 backdrop-blur-md border-t border-primary/20 rounded-b-lg">

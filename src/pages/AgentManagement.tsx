@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bot, Plus, Brain, Activity, Cpu, Database, Zap, Users, Clock } from 'lucide-react';
 import MetricCard from '../components/dashboard/MetricCard';
 import AgentCard from '../components/agents/AgentCard';
@@ -19,6 +20,7 @@ const AgentManagement = () => {
   console.log('AgentManagement: Component rendering...');
   
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedAgent, setSelectedAgent] = useState<Agent | undefined>();
@@ -97,6 +99,16 @@ const AgentManagement = () => {
       });
     } catch (error) {
       console.error('AgentManagement: Error in handleAgentConfigure:', error);
+    }
+  };
+
+  const handleChatClick = (agentId: string) => {
+    console.log('AgentManagement: Chat with agent:', agentId);
+    try {
+      // Navigate to chat page with agent ID
+      navigate(`/chat?agent=${agentId}`);
+    } catch (error) {
+      console.error('AgentManagement: Error in handleChatClick:', error);
     }
   };
 
@@ -301,6 +313,7 @@ const AgentManagement = () => {
                   agent={agent}
                   onTaskSubmit={handleTaskSubmit}
                   onConfigure={handleAgentConfigure}
+                  onChatClick={handleChatClick}
                 />
               ))}
               

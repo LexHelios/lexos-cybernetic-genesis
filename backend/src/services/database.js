@@ -31,7 +31,7 @@ class DatabaseService {
     this.db.pragma('foreign_keys = ON');
 
     // Create tables
-    await this.createTables();
+    this.createTables();
     
     // Initialize Overlord user
     this.initializeOverlord();
@@ -67,7 +67,7 @@ class DatabaseService {
     }
   }
 
-  async createTables() {
+  createTables() {
     // Users table with special recognition for Overlord
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS users (
@@ -84,7 +84,7 @@ class DatabaseService {
     `);
 
     // Agent profiles with unique personalities
-    await this.db.exec(`
+    this.db.exec(`
       CREATE TABLE IF NOT EXISTS agents (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         agent_id TEXT UNIQUE NOT NULL,
@@ -103,7 +103,7 @@ class DatabaseService {
     `);
 
     // Chat logs
-    await this.db.exec(`
+    this.db.exec(`
       CREATE TABLE IF NOT EXISTS chat_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         session_id TEXT NOT NULL,
@@ -119,7 +119,7 @@ class DatabaseService {
     `);
 
     // Agent memory system
-    await this.db.exec(`
+    this.db.exec(`
       CREATE TABLE IF NOT EXISTS agent_memory (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         agent_id TEXT NOT NULL,
@@ -137,7 +137,7 @@ class DatabaseService {
     `);
 
     // User profiles and preferences
-    await this.db.exec(`
+    this.db.exec(`
       CREATE TABLE IF NOT EXISTS user_profiles (
         user_id INTEGER PRIMARY KEY,
         display_name TEXT,
@@ -152,7 +152,7 @@ class DatabaseService {
     `);
 
     // LLM models catalog
-    await this.db.exec(`
+    this.db.exec(`
       CREATE TABLE IF NOT EXISTS llm_models (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         model_id TEXT UNIQUE NOT NULL,
@@ -171,7 +171,7 @@ class DatabaseService {
     `);
 
     // System events and logs
-    await this.db.exec(`
+    this.db.exec(`
       CREATE TABLE IF NOT EXISTS system_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         event_type TEXT NOT NULL,
@@ -185,7 +185,7 @@ class DatabaseService {
     `);
 
     // Agent relationships and interactions
-    await this.db.exec(`
+    this.db.exec(`
       CREATE TABLE IF NOT EXISTS agent_relationships (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         agent1_id TEXT NOT NULL,
@@ -201,7 +201,7 @@ class DatabaseService {
     `);
 
     // Create indexes for performance
-    await this.db.exec(`
+    this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_chat_logs_session ON chat_logs(session_id);
       CREATE INDEX IF NOT EXISTS idx_chat_logs_user ON chat_logs(user_id);
       CREATE INDEX IF NOT EXISTS idx_chat_logs_agent ON chat_logs(agent_id);

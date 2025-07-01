@@ -1,11 +1,18 @@
-
 class ApiClient {
   private baseURL: string;
   private token: string | null = null;
 
   constructor() {
-    // Use the actual backend URL from environment or fallback to localhost:9000
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+    // In development, use empty string to use Vite proxy
+    // In production, use relative path
+    const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+    if (isDev) {
+      // Use empty string to let Vite proxy handle it
+      this.baseURL = '';
+    } else {
+      // Production URLs
+      this.baseURL = '';
+    }
     this.token = localStorage.getItem('auth_token');
     
     console.log('ApiClient: Initialized with baseURL:', this.baseURL);

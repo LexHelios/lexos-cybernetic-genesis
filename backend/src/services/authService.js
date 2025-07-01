@@ -380,6 +380,17 @@ export class AuthService {
   authMiddleware() {
     return async (req, res, next) => {
       try {
+        // Development bypass - REMOVE IN PRODUCTION!
+        if (process.env.NODE_ENV !== 'production' && process.env.DISABLE_AUTH === 'true') {
+          req.user = {
+            user_id: 'dev-user',
+            username: 'developer',
+            role: 'admin',
+            permissions: ['all']
+          };
+          return next();
+        }
+        
         const authHeader = req.headers.authorization;
         
         if (!authHeader || !authHeader.startsWith('Bearer ')) {

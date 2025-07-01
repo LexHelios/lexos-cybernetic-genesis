@@ -205,13 +205,10 @@ class VoiceWebSocketService {
         type: 'transcription_started'
       });
 
-      // Fallback transcription - replace with actual whisper service later
-      const result = {
-        text: "Transcription service not yet implemented - audio received",
+      const result = await whisperService.transcribeAudio(audioBuffer, {
         language: client.recordingOptions?.language || 'en',
-        duration: 0,
-        timestamps: []
-      };
+        return_timestamps: client.recordingOptions?.timestamps || false
+      });
 
       this.sendToClient(clientId, {
         type: 'transcription_complete',
@@ -242,11 +239,10 @@ class VoiceWebSocketService {
     if (!client) return;
 
     try {
-      // Fallback transcription for chunks
-      const result = {
-        text: "Partial transcription not yet implemented",
-        language: client.recordingOptions?.language || 'en'
-      };
+      const result = await whisperService.transcribeAudio(audioBuffer, {
+        language: client.recordingOptions?.language || 'en',
+        return_timestamps: false
+      });
 
       this.sendToClient(clientId, {
         type: isPartial ? 'partial_transcription' : 'transcription_complete',
