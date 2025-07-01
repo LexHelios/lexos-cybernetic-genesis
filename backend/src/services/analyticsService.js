@@ -42,9 +42,7 @@ export class AnalyticsService extends EventEmitter {
         category TEXT NOT NULL,
         metric_name TEXT NOT NULL,
         value REAL NOT NULL,
-        metadata TEXT,
-        INDEX idx_timestamp (timestamp),
-        INDEX idx_category_metric (category, metric_name)
+        metadata TEXT
       );
 
       -- Aggregated metrics table
@@ -71,9 +69,9 @@ export class AnalyticsService extends EventEmitter {
         user_id TEXT,
         session_id TEXT,
         properties TEXT,
-        INDEX idx_timestamp (timestamp),
-        INDEX idx_event_type (event_type),
-        INDEX idx_user_id (user_id)
+        
+        
+        
       );
 
       -- Agent performance table
@@ -87,8 +85,8 @@ export class AnalyticsService extends EventEmitter {
         success BOOLEAN,
         error_message TEXT,
         resource_usage TEXT,
-        INDEX idx_timestamp (timestamp),
-        INDEX idx_agent_id (agent_id)
+        
+        
       );
 
       -- Task analytics table
@@ -104,8 +102,8 @@ export class AnalyticsService extends EventEmitter {
         retry_count INTEGER DEFAULT 0,
         error_count INTEGER DEFAULT 0,
         metadata TEXT,
-        INDEX idx_timestamp (timestamp),
-        INDEX idx_task_id (task_id)
+        
+        
       );
 
       -- System health snapshots
@@ -120,7 +118,7 @@ export class AnalyticsService extends EventEmitter {
         active_connections INTEGER,
         error_rate REAL,
         response_time_avg REAL,
-        INDEX idx_timestamp (timestamp)
+        
       );
     `);
   }

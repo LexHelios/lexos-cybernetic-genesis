@@ -1,8 +1,8 @@
 import { WebSocketServer } from 'ws';
 import { whisperService } from './whisperService.js';
-import { voiceCommandService } from './voiceCommandService.js';
-import { chatService } from './chatService.js';
-import { authService } from './authService.js';
+import VoiceCommandService from './voiceCommandService.js';
+import chatService from './chatService.js';
+import AuthService from './authService.js';
 
 class VoiceWebSocketService {
   constructor() {
@@ -33,6 +33,7 @@ class VoiceWebSocketService {
 
     try {
       if (token) {
+        const authService = new AuthService();
         const decoded = authService.verifyToken(token);
         userId = decoded.userId;
       }
@@ -261,6 +262,7 @@ class VoiceWebSocketService {
     if (!client) return;
 
     try {
+      const voiceCommandService = new VoiceCommandService();
       const result = await voiceCommandService.processCommand(transcript, {
         userId: client.userId,
         clientId

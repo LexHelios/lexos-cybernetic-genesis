@@ -1,5 +1,4 @@
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
+import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
@@ -18,27 +17,59 @@ class DatabaseService {
     const dataDir = path.dirname(this.dbPath);
     await fs.mkdir(dataDir, { recursive: true });
 
-    // Open database connection
-    this.db = await open({
-      filename: this.dbPath,
-      driver: sqlite3.Database
+    // Open database connection with better-sqlite3 for performance
+    this.db = new Database(this.dbPath, {
+      verbose: process.env.NODE_ENV === 'development' ? console.log : null
     });
 
-    // Enable foreign keys
-    await this.db.exec('PRAGMA foreign_keys = ON');
+    // Production SQLite optimizations
+    this.db.pragma('journal_mode = WAL');
+    this.db.pragma('synchronous = NORMAL');
+    this.db.pragma('cache_size = 1000000');
+    this.db.pragma('temp_store = memory');
+    this.db.pragma('mmap_size = 268435456'); // 256MB
+    this.db.pragma('foreign_keys = ON');
 
     // Create tables
-    await this.createTables();
+    this.createTables();
     
     // Initialize Overlord user
-    await this.initializeOverlord();
+    this.initializeOverlord();
     
-    console.log('Database initialized successfully');
+    // Setup backup interval if enabled
+    if (process.env.ENABLE_DB_BACKUP === 'true') {
+      this.setupBackupInterval();
+    }
+    
+    console.log('Database initialized successfully with production optimizations');
   }
 
-  async createTables() {
+  setupBackupInterval() {
+    const backupInterval = parseInt(process.env.BACKUP_INTERVAL) || 3600000; // 1 hour default
+    setInterval(() => {
+      this.createBackup();
+    }, backupInterval);
+  }
+
+  createBackup() {
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const backupPath = path.join(path.dirname(this.dbPath), `../backups/lexos_backup_${timestamp}.db`);
+      
+      // Ensure backup directory exists
+      fs.mkdir(path.dirname(backupPath), { recursive: true });
+      
+      // Create backup using better-sqlite3's backup method
+      this.db.backup(backupPath);
+      console.log(`Database backup created: ${backupPath}`);
+    } catch (error) {
+      console.error('Failed to create database backup:', error);
+    }
+  }
+
+  createTables() {
     // Users table with special recognition for Overlord
-    await this.db.exec(`
+    this.db.exec(`
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
@@ -180,18 +211,14 @@ class DatabaseService {
     `);
   }
 
-  async initializeOverlord() {
+  initializeOverlord() {
     // Check if Overlord already exists
-    const overlord = await this.db.get(
-      'SELECT * FROM users WHERE username = ?',
-      ['vince.sharma']
-    );
+    const overlord = this.db.prepare('SELECT * FROM users WHERE username = ?').get('vince.sharma');
 
     if (!overlord) {
-      await this.db.run(
-        `INSERT INTO users (username, email, role, is_overlord, metadata) 
-         VALUES (?, ?, ?, ?, ?)`,
-        [
+      const stmt = this.db.prepare(`INSERT INTO users (username, email, role, is_overlord, metadata) 
+         VALUES (?, ?, ?, ?, ?)`);
+      stmt.run(
           'vince.sharma',
           'vince@lexos.tech',
           'overlord',
@@ -202,10 +229,9 @@ class DatabaseService {
             recognition: 'Supreme Commander of LEXOS Genesis',
             established: new Date().toISOString()
           })
-        ]
       );
 
-      await this.logSystemEvent(
+      this.logSystemEvent(
         'system',
         'info',
         'DatabaseService',
@@ -454,12 +480,10 @@ class DatabaseService {
   }
 
   // System Logging
-  async logSystemEvent(eventType, severity, source, message, context = null) {
-    await this.db.run(
-      `INSERT INTO system_logs (event_type, severity, source, message, context) 
-       VALUES (?, ?, ?, ?, ?)`,
-      [eventType, severity, source, message, context ? JSON.stringify(context) : null]
-    );
+  logSystemEvent(eventType, severity, source, message, context = null) {
+    const stmt = this.db.prepare(`INSERT INTO system_logs (event_type, severity, source, message, context) 
+       VALUES (?, ?, ?, ?, ?)`);
+    stmt.run(eventType, severity, source, message, context ? JSON.stringify(context) : null);
   }
 
   async getSystemLogs(filters = {}, limit = 100) {
