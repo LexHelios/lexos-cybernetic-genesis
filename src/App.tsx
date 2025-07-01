@@ -10,6 +10,7 @@ import Configuration from './pages/Configuration';
 import Chat from './pages/Chat';
 import Login from './pages/Login';
 import ConnectionStatus from './components/system/ConnectionStatus';
+import FloatingChat from './components/chat/FloatingChat';
 import { useAutoRecovery } from './hooks/useAutoRecovery';
 
 function App() {
@@ -21,6 +22,9 @@ function App() {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         {/* Connection Status - Always visible */}
         <ConnectionStatus className="fixed top-4 right-4 z-50" />
+        
+        {/* Floating Chat - Always available */}
+        <FloatingChat />
         
         <Routes>
           <Route path="/login" element={<Login />} />
