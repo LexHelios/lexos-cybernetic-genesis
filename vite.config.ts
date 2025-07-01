@@ -37,9 +37,8 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    // Temporarily disable componentTagger to avoid CSP issues
-    // mode === 'development' &&
-    // componentTagger(),
+    mode === 'development' &&
+    componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
