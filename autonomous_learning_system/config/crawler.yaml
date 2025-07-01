@@ -1,0 +1,43 @@
+
+# Web Crawler Configuration
+
+# Crawling targets
+targets:
+  - "https://arxiv.org/list/cs.AI/recent"
+  - "https://arxiv.org/list/cs.LG/recent"
+  - "https://news.ycombinator.com/"
+  - "https://www.reddit.com/r/MachineLearning/"
+  - "https://ai.googleblog.com/"
+  - "https://openai.com/blog/"
+  - "https://www.anthropic.com/news"
+  - "https://blog.research.google/"
+  - "https://ai.meta.com/blog/"
+  - "https://deepmind.google/discover/blog/"
+
+# Crawling behavior
+behavior:
+  max_pages_per_session: 20
+  max_depth: 2
+  respect_robots_txt: true
+  default_delay_seconds: 2
+  max_concurrent_requests: 5
+  
+# Content filtering
+content_filter:
+  min_content_length: 100
+  max_content_length: 50000
+  relevance_threshold: 0.3
+  
+# User agents
+user_agents:
+  - "AutonomousLearner/1.0 (AI Learning System; contact@learningsystem.ai)"
+  - "Mozilla/5.0 (compatible; LearningBot/1.0; +http://learningsystem.ai/bot)"
+
+# Domains to prioritize
+priority_domains:
+  - "arxiv.org"
+  - "ai.googleblog.com"
+  - "openai.com"
+  - "anthropic.com"
+  - "deepmind.google"
+  - "research.google"

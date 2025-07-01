@@ -1,0 +1,80 @@
+
+# RSS Feed Configuration
+
+feeds:
+  # Research Feeds
+  - url: "http://export.arxiv.org/rss/cs.AI"
+    name: "ArXiv AI"
+    category: "research"
+    priority: 1.0
+    check_interval: 300
+    
+  - url: "http://export.arxiv.org/rss/cs.LG"
+    name: "ArXiv Machine Learning"
+    category: "research"
+    priority: 1.0
+    check_interval: 300
+    
+  - url: "http://export.arxiv.org/rss/cs.CL"
+    name: "ArXiv Computational Linguistics"
+    category: "research"
+    priority: 0.9
+    check_interval: 600
+    
+  # Industry Feeds
+  - url: "https://ai.googleblog.com/feeds/posts/default"
+    name: "Google AI Blog"
+    category: "industry"
+    priority: 0.9
+    check_interval: 600
+    
+  - url: "https://openai.com/blog/rss.xml"
+    name: "OpenAI Blog"
+    category: "industry"
+    priority: 0.9
+    check_interval: 600
+    
+  - url: "https://www.anthropic.com/news/rss.xml"
+    name: "Anthropic News"
+    category: "industry"
+    priority: 0.9
+    check_interval: 600
+    
+  - url: "https://blog.research.google/feeds/posts/default"
+    name: "Google Research Blog"
+    category: "research"
+    priority: 0.8
+    check_interval: 900
+    
+  - url: "https://ai.meta.com/blog/rss/"
+    name: "Meta AI Blog"
+    category: "industry"
+    priority: 0.8
+    check_interval: 900
+    
+  # Community Feeds
+  - url: "https://www.reddit.com/r/MachineLearning/.rss"
+    name: "Reddit ML"
+    category: "community"
+    priority: 0.7
+    check_interval: 1800
+    
+  - url: "https://www.reddit.com/r/artificial/.rss"
+    name: "Reddit AI"
+    category: "community"
+    priority: 0.6
+    check_interval: 1800
+
+# Feed processing settings
+processing:
+  max_entries_per_feed: 10
+  content_extraction_timeout: 30
+  full_content_fetch: true
+  relevance_threshold: 0.4
+  
+# Content analysis
+analysis:
+  extract_keywords: true
+  sentiment_analysis: false
+  topic_classification: true
+  duplicate_detection: true

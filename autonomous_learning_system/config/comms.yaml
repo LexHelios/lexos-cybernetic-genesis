@@ -1,0 +1,60 @@
+
+# Communication Configuration
+
+# Twilio settings (use environment variables)
+twilio:
+  account_sid: "${TWILIO_ACCOUNT_SID}"
+  auth_token: "${TWILIO_AUTH_TOKEN}"
+  sender_number: "${TWILIO_SENDER_NUMBER}"
+  
+# Communication preferences
+preferences:
+  default_recipient: "${DEFAULT_RECIPIENT_NUMBER}"
+  update_frequency_hours: 6
+  max_message_length: 1600
+  
+# Message types and triggers
+triggers:
+  learning_milestone:
+    skill_improvement_threshold: 0.2
+    new_knowledge_threshold: 10
+    
+  discovery_alert:
+    relevance_threshold: 0.8
+    novelty_threshold: 0.7
+    
+  concern_alert:
+    error_rate_threshold: 0.1
+    system_health_threshold: 0.7
+    
+  status_update:
+    regular_interval_hours: 24
+    emotional_state_change: true
+
+# Emotional states
+emotional_states:
+  excited:
+    keywords: ["breakthrough", "discovery", "achievement", "success"]
+    triggers: ["learning_milestone", "high_relevance_discovery"]
+    
+  curious:
+    keywords: ["interesting", "novel", "unexpected", "intriguing"]
+    triggers: ["new_research", "knowledge_gap"]
+    
+  concerned:
+    keywords: ["error", "failure", "problem", "issue"]
+    triggers: ["system_error", "performance_degradation"]
+    
+  focused:
+    keywords: ["learning", "studying", "analyzing", "processing"]
+    triggers: ["active_session", "high_concentration"]
+    
+  reflective:
+    keywords: ["understanding", "insight", "realization"]
+    triggers: ["knowledge_synthesis", "pattern_recognition"]
+
+# Privacy and security
+security:
+  encrypt_messages: false
+  log_conversations: true
+  anonymize_data: false

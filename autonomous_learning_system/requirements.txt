@@ -1,0 +1,94 @@
+# Core Dependencies
+aiohttp==3.9.1
+asyncio-throttle==1.0.2
+requests==2.31.0
+beautifulsoup4==4.12.2
+lxml==4.9.3
+feedparser==6.0.10
+playwright==1.40.0
+selenium==4.15.2
+
+# Scheduling and Task Management
+APScheduler==3.10.4
+celery==5.3.4
+redis==5.0.1
+
+# AI/ML Libraries
+openai==1.3.7
+whisper==1.1.10
+opencv-python==4.8.1.78
+pytesseract==0.3.10
+numpy==1.24.3
+scikit-learn==1.3.2
+transformers==4.35.2
+torch==2.1.1
+torchvision==0.16.1
+sentence-transformers==2.2.2
+
+# Data Processing
+pandas==2.1.3
+PyPDF2==3.0.1
+python-docx==1.1.0
+ebooklib==0.18
+markdown==3.5.1
+
+# Communication
+twilio==8.10.3
+python-telegram-bot==20.7
+discord.py==2.3.2
+slack-sdk==3.23.0
+
+# Storage and Caching
+sqlalchemy==2.0.23
+pymongo==4.6.0
+
+# Monitoring and Logging
+prometheus-client==0.19.0
+structlog==23.2.0
+psutil==5.9.6
+watchdog==3.0.0
+
+# Web Scraping and Automation
+scrapy==2.11.0
+scrapy-playwright==0.0.25
+fake-useragent==1.4.0
+urllib3==2.1.0
+
+# Configuration and Environment
+python-dotenv==1.0.0
+pyyaml==6.0.1
+configparser==6.0.0
+
+# Security and Encryption
+cryptography==41.0.7
+keyring==24.3.0
+python-jose==3.3.0
+
+# Image and Media Processing
+Pillow==10.1.0
+imageio==2.31.6
+moviepy==1.0.3
+librosa==0.10.1
+
+# Natural Language Processing
+nltk==3.8.1
+spacy==3.7.2
+textblob==0.17.1
+
+# HTTP and API Tools
+httpx==0.25.2
+fastapi==0.104.1
+uvicorn==0.24.0
+
+# Development and Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+black==23.11.0
+flake8==6.1.0
+mypy==1.7.1
+
+# Utilities
+python-dateutil==2.8.2
+tqdm==4.66.1
+click==8.1.7
+rich==13.7.0

@@ -1,0 +1,83 @@
+
+# Learning Engine Configuration
+
+# Learning parameters
+parameters:
+  curiosity_factor: 0.3
+  knowledge_retention_threshold: 0.8
+  skill_development_rate: 0.1
+  learning_intensity: "medium"  # low, medium, high
+  
+# Learning domains and priorities
+domains:
+  - name: "Machine Learning"
+    priority: 1.0
+    target_skill_level: 0.9
+    subtopics:
+      - "supervised learning"
+      - "unsupervised learning"
+      - "reinforcement learning"
+      - "deep learning"
+      - "neural networks"
+      - "transformers"
+      - "computer vision"
+      - "natural language processing"
+      - "generative models"
+      
+  - name: "Artificial Intelligence"
+    priority: 0.9
+    target_skill_level: 0.8
+    subtopics:
+      - "ai ethics"
+      - "ai safety"
+      - "autonomous systems"
+      - "robotics"
+      - "knowledge representation"
+      - "reasoning"
+      - "planning"
+      - "search algorithms"
+      
+  - name: "Programming"
+    priority: 0.8
+    target_skill_level: 0.8
+    subtopics:
+      - "python"
+      - "algorithms"
+      - "data structures"
+      - "software engineering"
+      - "distributed systems"
+      - "databases"
+      - "web development"
+      - "apis"
+      
+  - name: "Mathematics"
+    priority: 0.7
+    target_skill_level: 0.7
+    subtopics:
+      - "linear algebra"
+      - "calculus"
+      - "statistics"
+      - "probability"
+      - "optimization"
+      - "information theory"
+      - "graph theory"
+
+# Curriculum planning
+curriculum:
+  planning_horizon_days: 30
+  goal_reassessment_frequency_days: 7
+  max_concurrent_goals: 5
+  
+# Knowledge assessment
+assessment:
+  self_assessment_frequency_hours: 24
+  knowledge_gap_threshold: 0.3
+  skill_improvement_threshold: 0.1
+  
+# Learning strategies
+strategies:
+  active_learning: true
+  spaced_repetition: true
+  interleaving: true
+  elaborative_interrogation: true
+  self_explanation: true

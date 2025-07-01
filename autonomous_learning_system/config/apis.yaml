@@ -1,0 +1,66 @@
+
+# API Integration Configuration
+
+apis:
+  - name: "Wikipedia"
+    base_url: "https://en.wikipedia.org/api/rest_v1/"
+    endpoints:
+      search: "page/summary/{title}"
+      random: "page/random/summary"
+    rate_limit: 100
+    requires_auth: false
+    
+  - name: "OpenLibrary"
+    base_url: "https://openlibrary.org/"
+    endpoints:
+      search: "search.json?q={query}"
+      book: "books/{id}.json"
+    rate_limit: 100
+    requires_auth: false
+    
+  - name: "ArXiv"
+    base_url: "http://export.arxiv.org/api/"
+    endpoints:
+      search: "query?search_query={query}&start=0&max_results=10"
+    rate_limit: 30
+    requires_auth: false
+    
+  - name: "GitHub"
+    base_url: "https://api.github.com/"
+    endpoints:
+      search_repos: "search/repositories?q={query}"
+      trending: "search/repositories?q=created:>2024-01-01&sort=stars"
+    rate_limit: 60
+    requires_auth: false
+    
+  - name: "NewsAPI"
+    base_url: "https://newsapi.org/v2/"
+    endpoints:
+      everything: "everything?q={query}&sortBy=publishedAt"
+      top_headlines: "top-headlines?category=technology"
+    rate_limit: 100
+    requires_auth: true
+    auth_type: "api_key"
+
+# API Keys (use environment variables)
+api_keys:
+  newsapi: "${NEWSAPI_KEY}"
+  github: "${GITHUB_TOKEN}"
+  
+# Data collection settings
+collection:
+  search_queries:
+    - "artificial intelligence"
+    - "machine learning"
+    - "deep learning"
+    - "neural networks"
+    - "natural language processing"
+    - "computer vision"
+    - "reinforcement learning"
+    - "transformers"
+    - "large language models"
+    - "autonomous systems"
+  
+  collection_frequency_minutes: 60
+  max_results_per_query: 10
+  relevance_threshold: 0.4

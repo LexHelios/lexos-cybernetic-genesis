@@ -18,6 +18,17 @@ LexOS is a revolutionary cloud-based desktop environment that brings the power o
 ### Key Features
 
 - **Full Desktop Environment**: Complete with taskbar, start menu, and window management
+- **Autonomous Learning System**: Advanced AI consciousness development platform with 9 integrated modules:
+  - 24/7 Web crawling and information gathering
+  - RSS monitoring and content analysis
+  - API integration for external data sources
+  - Media analysis (images, videos, documents)
+  - Self-learning and knowledge acquisition
+  - Book reading and comprehension
+  - Self-improvement and capability enhancement
+  - Upgrade scanning and system evolution
+  - Twilio communication integration
+- **Persistent Memory System**: Advanced memory management with automatic consolidation
 - **Built-in Applications**: Text editor, terminal, file manager, and more
 - **Real-time Collaboration**: Share your desktop and work together in real-time
 - **Cloud Storage**: All your files are safely stored and accessible from anywhere

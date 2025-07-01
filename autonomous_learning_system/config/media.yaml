@@ -1,0 +1,52 @@
+
+# Media Analysis Configuration
+
+# Model settings
+models:
+  whisper_model: "base"  # tiny, base, small, medium, large
+  enable_gpu: false
+  
+# Processing limits
+limits:
+  max_file_size_mb: 100
+  max_video_duration_minutes: 30
+  max_audio_duration_minutes: 60
+  processing_timeout_seconds: 300
+  
+# Supported formats
+formats:
+  image:
+    - ".jpg"
+    - ".jpeg"
+    - ".png"
+    - ".bmp"
+    - ".tiff"
+    - ".webp"
+  video:
+    - ".mp4"
+    - ".avi"
+    - ".mov"
+    - ".mkv"
+    - ".webm"
+  audio:
+    - ".mp3"
+    - ".wav"
+    - ".m4a"
+    - ".ogg"
+    - ".flac"
+
+# Analysis settings
+analysis:
+  extract_text_from_images: true
+  transcribe_audio: true
+  analyze_video_frames: true
+  detect_faces: true
+  analyze_colors: true
+  relevance_threshold: 0.3
+  
+# Quality thresholds
+quality:
+  min_image_resolution: "100x100"
+  max_blur_threshold: 100
+  min_audio_quality: 16000  # Sample rate
+  min_video_fps: 10
