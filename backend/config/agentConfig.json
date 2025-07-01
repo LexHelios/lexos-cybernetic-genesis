@@ -2,14 +2,15 @@
   "agents": {
     "orchestrator": {
       "id": "orchestrator",
-      "name": "Orchestrator Agent",
-      "purpose": "Task classification & routing",
+      "name": "Unified Orchestrator Agent",
+      "purpose": "Task routing, scheduling, monitoring & self-healing",
       "primary_model": "mistral:7b-instruct",
       "secondary_model": "llama3:latest",
       "fallback_api": null,
-      "framework": "LangChain + Ray Serve",
-      "capabilities": ["task_routing", "classification", "delegation"],
-      "priority": 100
+      "framework": "LangChain + Ray Serve + Kubernetes",
+      "capabilities": ["task_routing", "classification", "delegation", "scheduling", "monitoring", "self_healing", "retry_logic"],
+      "priority": 100,
+      "confidence_threshold": 0.80
     },
     "reasoning": {
       "id": "reasoning",
@@ -20,29 +21,32 @@
       "fallback_api": "claude-opus-4",
       "framework": "FastAPI/Triton",
       "capabilities": ["deep_reasoning", "multi_step_logic", "complex_analysis", "chain_of_thought"],
-      "priority": 95
+      "priority": 95,
+      "confidence_threshold": 0.92
     },
     "code": {
       "id": "code",
       "name": "Code Agent",
       "purpose": "Code generation, debugging, refactoring",
-      "primary_model": "qwen2.5-coder:7b",
-      "secondary_model": "deepseek-r1:latest",
+      "primary_model": "qwen2.5-coder:32b",
+      "secondary_model": "starcoder2:15b",
       "fallback_api": "gpt-4.1",
       "framework": "VSCode Copilot + Triton API",
       "capabilities": ["code_generation", "debugging", "refactoring", "code_review", "optimization"],
-      "priority": 90
+      "priority": 90,
+      "confidence_threshold": 0.90
     },
     "chat": {
       "id": "chat",
       "name": "Chat Agent",
       "purpose": "Natural two-way conversation",
-      "primary_model": "mistral:7b",
-      "secondary_model": "llama3:latest",
+      "primary_model": "llama3.1:8b-instruct",
+      "secondary_model": "vicuna:13b",
       "fallback_api": "gpt-4o",
       "framework": "LangChain Chat",
       "capabilities": ["conversation", "dialogue", "context_management", "personality"],
-      "priority": 85
+      "priority": 85,
+      "confidence_threshold": 0.85
     },
     "creative_writing": {
       "id": "creative_writing",
@@ -159,17 +163,6 @@
       "capabilities": ["agent_generation", "pipeline_creation", "dynamic_configuration"],
       "priority": 35
     },
-    "orchestration": {
-      "id": "orchestration",
-      "name": "Orchestration Agent",
-      "purpose": "Schedules, monitors & self-heals services",
-      "primary_model": "phi3:mini",
-      "secondary_model": "mistral:7b",
-      "fallback_api": null,
-      "framework": "Kubernetes + Ray + Triton",
-      "capabilities": ["scheduling", "monitoring", "self_healing", "service_management"],
-      "priority": 30
-    },
     "full_stack_builder": {
       "id": "full_stack_builder",
       "name": "Full-Stack Builder Agent",
@@ -228,6 +221,26 @@
         "capabilities": ["general", "chat", "balanced"],
         "context_length": 8192,
         "speed": "fast"
+      },
+      "llama3.1:8b-instruct": {
+        "capabilities": ["chat", "instruction", "dialogue"],
+        "context_length": 32768,
+        "speed": "fast"
+      },
+      "vicuna:13b": {
+        "capabilities": ["conversation", "multi_turn", "coherent"],
+        "context_length": 16384,
+        "speed": "medium"
+      },
+      "qwen2.5-coder:32b": {
+        "capabilities": ["code", "technical", "advanced_programming"],
+        "context_length": 32768,
+        "speed": "medium"
+      },
+      "starcoder2:15b": {
+        "capabilities": ["code", "programming", "debugging"],
+        "context_length": 16384,
+        "speed": "medium"
       }
     }
   },

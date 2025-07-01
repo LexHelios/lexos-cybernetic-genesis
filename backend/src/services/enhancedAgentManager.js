@@ -2,6 +2,9 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import database from './database.js';
+import confidenceGate from './confidenceGate.js';
+import healthMonitor from './healthMonitor.js';
+import vectorMemory from './vectorMemory.js';
 
 // Import all agent types
 import { OrchestratorAgent } from '../agents/OrchestratorAgent.js';
@@ -44,6 +47,9 @@ class EnhancedAgentManager {
         'EnhancedAgentManager',
         `Initialized with ${this.agents.size} agents`
       );
+      
+      // Initialize vector memory for RAG capabilities
+      await vectorMemory.initialize();
       
       console.log(`Enhanced Agent Manager initialized. ${this.agents.size} agents active.`);
     } catch (error) {
@@ -153,16 +159,114 @@ class EnhancedAgentManager {
   }
   
   async executeOnAgent(agentId, task) {
-    const agent = this.agents.get(agentId);
-    if (!agent) {
-      throw new Error(`Agent ${agentId} not found`);
-    }
+    const startTime = Date.now();
+    let success = false;
+    let error = null;
     
-    if (agent.status !== 'ready') {
-      throw new Error(`Agent ${agentId} is not ready`);
+    try {
+      const agent = this.agents.get(agentId);
+      if (!agent) {
+        throw new Error(`Agent ${agentId} not found`);
+      }
+      
+      if (agent.status !== 'ready') {
+        throw new Error(`Agent ${agentId} is not ready`);
+      }
+      
+      // Retrieve contextual memories to enhance the task
+      let enhancedTask = task;
+      if (task.message || task.query) {
+        const query = task.message || task.query;
+        const relevantMemories = await vectorMemory.getContextualMemories(agentId, query, task.context);
+        
+        if (relevantMemories.length > 0) {
+          const memoryContext = relevantMemories.map(m => 
+            `Previous context: ${m.content} (relevance: ${m.similarity.toFixed(2)})`
+          ).join('\n');
+          
+          enhancedTask = {
+            ...task,
+            contextualMemory: memoryContext,
+            memoryCount: relevantMemories.length
+          };
+          
+          console.log(`📚 Enhanced ${agentId} with ${relevantMemories.length} contextual memories`);
+        }
+      }
+      
+      // Execute task with agent (with enhanced context)
+      const response = await agent.executeTask(enhancedTask);
+      success = true;
+      
+      // Store successful interactions in memory for future context
+      if (response.response && (task.message || task.query)) {
+        await vectorMemory.storeMemory(
+          agentId,
+          `Query: ${task.message || task.query}\nResponse: ${response.response}`,
+          task.context,
+          {
+            model: response.model,
+            executionTime: response.executionTime,
+            type: task.type || 'general'
+          }
+        );
+      }
+      
+      // Get agent configuration for confidence evaluation
+      const agentConfig = this.config.agents[agentId];
+      
+      // Evaluate confidence and determine if escalation is needed
+      if (agentConfig && agentConfig.confidence_threshold) {
+        const evaluation = confidenceGate.evaluateConfidence(response, agentConfig);
+        
+        if (evaluation.shouldEscalate && agentConfig.fallback_api) {
+          console.log(`🚨 Low confidence detected for ${agentId}: ${evaluation.confidence.toFixed(3)} < ${evaluation.threshold}`);
+          
+          try {
+            // Execute escalation to fallback API
+            const escalatedResponse = await confidenceGate.executeEscalation(task, agentConfig, evaluation);
+            
+            // Record successful execution with escalation
+            const executionTime = Date.now() - startTime;
+            healthMonitor.recordAgentExecution(agentId, executionTime, true);
+            
+            return escalatedResponse;
+          } catch (escalationError) {
+            console.error(`Escalation failed for ${agentId}:`, escalationError);
+            // Return original response with escalation failure note
+            const finalResponse = {
+              ...response,
+              escalation_attempted: true,
+              escalation_failed: true,
+              escalation_error: escalationError.message,
+              original_confidence: evaluation.confidence
+            };
+            
+            // Record execution with escalation failure
+            const executionTime = Date.now() - startTime;
+            healthMonitor.recordAgentExecution(agentId, executionTime, true);
+            
+            return finalResponse;
+          }
+        }
+      }
+      
+      // Record successful execution
+      const executionTime = Date.now() - startTime;
+      healthMonitor.recordAgentExecution(agentId, executionTime, true);
+      
+      return response;
+      
+    } catch (err) {
+      error = err;
+      success = false;
+      
+      // Record failed execution
+      const executionTime = Date.now() - startTime;
+      healthMonitor.recordAgentExecution(agentId, executionTime, false, err);
+      
+      throw err;
     }
-    
-    return agent.executeTask(task);
   }
   
   getAgent(agentId) {

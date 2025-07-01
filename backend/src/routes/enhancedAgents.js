@@ -1,5 +1,8 @@
 import express from 'express';
 import enhancedAgentManager from '../services/enhancedAgentManager.js';
+import healthMonitor from '../services/healthMonitor.js';
+import confidenceGate from '../services/confidenceGate.js';
+import vectorMemory from '../services/vectorMemory.js';
 
 const router = express.Router();
 
@@ -367,6 +370,122 @@ router.post('/orchestrate', async (req, res) => {
         suggestedAgents: analysis.suggestedAgents || ['reasoning', 'code'],
         estimatedTime: '2-5 minutes'
       }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Health monitoring endpoints
+router.get('/health', async (req, res) => {
+  try {
+    const healthReport = healthMonitor.getHealthReport();
+    res.json({
+      success: true,
+      ...healthReport
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Confidence metrics endpoint
+router.get('/confidence/metrics', async (req, res) => {
+  try {
+    const confidenceMetrics = confidenceGate.getMetrics();
+    res.json({
+      success: true,
+      ...confidenceMetrics
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Reset monitoring metrics (useful for testing)
+router.post('/monitoring/reset', async (req, res) => {
+  try {
+    confidenceGate.resetMetrics();
+    res.json({
+      success: true,
+      message: 'Monitoring metrics reset successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Vector memory endpoints
+router.get('/memory/stats', async (req, res) => {
+  try {
+    const stats = vectorMemory.getStats();
+    res.json({
+      success: true,
+      ...stats
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/memory/store', async (req, res) => {
+  try {
+    const { agentId, content, context, metadata } = req.body;
+    
+    if (!agentId || !content) {
+      return res.status(400).json({
+        success: false,
+        error: 'agentId and content are required'
+      });
+    }
+    
+    const memoryId = await vectorMemory.storeMemory(agentId, content, context, metadata);
+    
+    res.json({
+      success: true,
+      memoryId,
+      message: 'Memory stored successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.post('/memory/retrieve', async (req, res) => {
+  try {
+    const { agentId, query, limit = 5 } = req.body;
+    
+    if (!agentId || !query) {
+      return res.status(400).json({
+        success: false,
+        error: 'agentId and query are required'
+      });
+    }
+    
+    const memories = await vectorMemory.retrieveMemories(agentId, query, limit);
+    
+    res.json({
+      success: true,
+      memories,
+      count: memories.length
     });
   } catch (error) {
     res.status(500).json({
