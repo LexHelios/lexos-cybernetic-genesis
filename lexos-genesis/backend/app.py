@@ -357,7 +357,7 @@ if __name__ == '__main__':
     ║                                       ║
     ║  Version: 1.0.0                       ║
     ║  Mode: {'Production' if is_production else 'Development'}                   ║
-    ║  Port: {port}                          ║
+    ║  Port: 5000                           ║
     ╚═══════════════════════════════════════╝
     """)
     

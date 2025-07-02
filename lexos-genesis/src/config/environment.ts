@@ -1,8 +1,8 @@
 // Environment configuration for LexOS Genesis
 
 export const config = {
-  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001',
-  WS_BASE_URL: import.meta.env.VITE_WS_BASE_URL || 'ws://localhost:3001',
+  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || '/api',
+  WS_BASE_URL: import.meta.env.VITE_WS_BASE_URL || '/ws',
   FRONTEND_URL: import.meta.env.VITE_FRONTEND_URL || 'http://localhost:8080',
   
   // Feature flags
