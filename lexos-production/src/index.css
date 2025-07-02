@@ -1,0 +1,266 @@
+
+/* LexOS Cyberpunk Design System */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* LexOS Cyberpunk Color Palette */
+    --background: 210 100% 2%;
+    --foreground: 180 100% 90%;
+
+    --card: 210 50% 5%;
+    --card-foreground: 180 100% 90%;
+
+    --popover: 210 50% 3%;
+    --popover-foreground: 180 100% 90%;
+
+    --primary: 180 100% 50%;
+    --primary-foreground: 210 100% 2%;
+
+    --secondary: 280 100% 50%;
+    --secondary-foreground: 210 100% 2%;
+
+    --muted: 210 20% 15%;
+    --muted-foreground: 180 30% 60%;
+
+    --accent: 220 100% 60%;
+    --accent-foreground: 210 100% 2%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 180 30% 20%;
+    --input: 210 30% 8%;
+    --ring: 180 100% 50%;
+
+    --radius: 0.75rem;
+
+    /* Custom LexOS Colors */
+    --matrix-green: 120 100% 50%;
+    --cyber-pink: 320 100% 50%;
+    --electric-blue: 200 100% 60%;
+    --neural-purple: 260 100% 70%;
+    --warning-orange: 30 100% 60%;
+  }
+
+  .dark {
+    --background: 210 100% 2%;
+    --foreground: 180 100% 90%;
+
+    --card: 210 50% 5%;
+    --card-foreground: 180 100% 90%;
+
+    --popover: 210 50% 3%;
+    --popover-foreground: 180 100% 90%;
+
+    --primary: 180 100% 50%;
+    --primary-foreground: 210 100% 2%;
+
+    --secondary: 280 100% 50%;
+    --secondary-foreground: 210 100% 2%;
+
+    --muted: 210 20% 15%;
+    --muted-foreground: 180 30% 60%;
+
+    --accent: 220 100% 60%;
+    --accent-foreground: 210 100% 2%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 180 30% 20%;
+    --input: 210 30% 8%;
+    --ring: 180 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Rajdhani', system-ui, -apple-system, sans-serif;
+    background-image: 
+      radial-gradient(circle at 25% 25%, hsl(180 100% 50% / 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, hsl(280 100% 50% / 0.1) 0%, transparent 50%),
+      linear-gradient(45deg, transparent 30%, hsl(180 100% 50% / 0.02) 50%, transparent 70%);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-orbitron font-bold;
+  }
+
+  /* Ensure buttons are always clickable */
+  button {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+  }
+
+  /* Fix any overlay issues */
+  .fixed, .absolute {
+    pointer-events: auto;
+  }
+  
+  /* Ensure interactive elements are clickable */
+  [role="button"], .cursor-pointer {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+  }
+}
+
+/* Custom Animations */
+@keyframes matrix-rain {
+  0% { transform: translateY(-100vh); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+@keyframes neural-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes data-flow {
+  0% { transform: translateX(-100%); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
+@keyframes hologram-flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 5px hsl(var(--primary)), 0 0 10px hsl(var(--primary)), 0 0 15px hsl(var(--primary)); }
+  50% { box-shadow: 0 0 10px hsl(var(--primary)), 0 0 20px hsl(var(--primary)), 0 0 30px hsl(var(--primary)); }
+}
+
+@keyframes slide-right {
+  from { 
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to { 
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes float-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Utility Classes */
+.neural-pulse {
+  animation: neural-pulse 2s ease-in-out infinite;
+}
+
+.data-flow {
+  animation: data-flow 3s linear infinite;
+}
+
+.hologram-flicker {
+  animation: hologram-flicker 4s ease-in-out infinite;
+}
+
+.glow-effect {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.slide-right {
+  animation: slide-right 0.5s ease-out;
+}
+
+.float-up {
+  animation: float-up 0.6s ease-out;
+}
+
+.matrix-text {
+  color: hsl(var(--matrix-green));
+  text-shadow: 0 0 10px hsl(var(--matrix-green));
+}
+
+.cyber-text {
+  color: hsl(var(--cyber-pink));
+  text-shadow: 0 0 10px hsl(var(--cyber-pink));
+}
+
+.neural-border {
+  border: 1px solid hsl(var(--primary) / 0.3);
+  box-shadow: 0 0 20px hsl(var(--primary) / 0.1);
+}
+
+.holographic-panel {
+  background: linear-gradient(135deg, 
+    hsl(var(--card) / 0.8) 0%, 
+    hsl(var(--card) / 0.6) 50%, 
+    hsl(var(--card) / 0.8) 100%);
+  border: 1px solid hsl(var(--primary) / 0.2);
+  backdrop-filter: blur(10px);
+  box-shadow: 
+    0 8px 32px hsl(var(--primary) / 0.1),
+    inset 0 1px 0 hsl(var(--primary) / 0.2);
+  pointer-events: auto;
+}
+
+.glass-panel {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  pointer-events: auto;
+}
+
+/* Consistent button styles */
+.neural-button {
+  @apply bg-primary/20 hover:bg-primary/30 border border-primary/30 backdrop-blur-md transition-all duration-200;
+  box-shadow: 0 4px 16px hsl(var(--primary) / 0.1);
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.neural-button:hover {
+  box-shadow: 0 6px 24px hsl(var(--primary) / 0.2);
+}
+
+/* Consistent input styles */
+.neural-input {
+  @apply bg-background/50 border-primary/20 focus:border-primary/50 backdrop-blur-md;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+}

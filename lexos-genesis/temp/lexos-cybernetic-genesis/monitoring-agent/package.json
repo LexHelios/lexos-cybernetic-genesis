@@ -1,0 +1,43 @@
+{
+  "name": "lexos-monitoring-agent",
+  "version": "1.0.0",
+  "description": "Comprehensive monitoring and self-healing agent for LexOS Genesis",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.13.0",
+    "axios": "^1.4.0",
+    "node-schedule": "^2.1.1",
+    "systeminformation": "^5.18.7",
+    "winston": "^3.9.0",
+    "winston-daily-rotate-file": "^4.7.1",
+    "dotenv": "^16.3.1",
+    "chokidar": "^3.5.3",
+    "nodemailer": "^6.9.3",
+    "pg": "^8.11.1",
+    "redis": "^4.6.7",
+    "helmet": "^7.0.0",
+    "cors": "^2.8.5",
+    "compression": "^1.7.4",
+    "socket.io": "^4.7.1",
+    "child_process": "^1.0.2",
+    "fs-extra": "^11.1.1",
+    "yaml": "^2.3.1",
+    "joi": "^17.9.2",
+    "nvidia-smi": "^1.0.0",
+    "express-basic-auth": "^1.2.1",
+    "tail": "^2.2.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "jest": "^29.5.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

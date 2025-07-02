@@ -1,0 +1,364 @@
+{
+  "models": {
+    "phi3:mini": {
+      "name": "Phi 3 Mini",
+      "capabilities": {
+        "routing": 0.95,
+        "simple_queries": 0.90,
+        "reasoning": 0.70,
+        "coding": 0.65,
+        "creative": 0.60,
+        "analysis": 0.75,
+        "speed": 0.95,
+        "context_length": 4096
+      },
+      "strengths": [
+        "Quick routing decisions",
+        "Simple Q&A",
+        "Fast response times",
+        "Low resource usage"
+      ],
+      "ideal_for": [
+        "routing",
+        "simple_questions",
+        "quick_lookups",
+        "basic_classification"
+      ],
+      "resource_requirements": {
+        "memory": "low",
+        "compute": "low",
+        "typical_response_time": "0.5-1s"
+      }
+    },
+    "deepseek-r1:latest": {
+      "name": "DeepSeek R1",
+      "capabilities": {
+        "routing": 0.60,
+        "simple_queries": 0.75,
+        "reasoning": 0.98,
+        "coding": 0.85,
+        "creative": 0.70,
+        "analysis": 0.95,
+        "speed": 0.70,
+        "context_length": 32768
+      },
+      "strengths": [
+        "Complex reasoning",
+        "Mathematical thinking",
+        "Logical analysis",
+        "Research tasks",
+        "Chain-of-thought"
+      ],
+      "ideal_for": [
+        "complex_problems",
+        "mathematical_proofs",
+        "deep_analysis",
+        "research",
+        "logical_deduction"
+      ],
+      "resource_requirements": {
+        "memory": "medium",
+        "compute": "high",
+        "typical_response_time": "3-5s"
+      }
+    },
+    "r1-unrestricted:latest": {
+      "name": "R1 Unrestricted",
+      "capabilities": {
+        "routing": 0.60,
+        "simple_queries": 0.75,
+        "reasoning": 0.99,
+        "coding": 0.90,
+        "creative": 0.85,
+        "analysis": 0.98,
+        "speed": 0.70,
+        "context_length": 128000
+      },
+      "strengths": [
+        "Unrestricted reasoning",
+        "Complex problem solving",
+        "Advanced analysis",
+        "No content filtering",
+        "Deep technical understanding"
+      ],
+      "ideal_for": [
+        "advanced_reasoning",
+        "unrestricted_queries",
+        "complex_analysis",
+        "technical_problems",
+        "research_tasks"
+      ],
+      "resource_requirements": {
+        "memory": "medium",
+        "compute": "high",
+        "typical_response_time": "3-5s"
+      }
+    },
+    "gemma3n-unrestricted:latest": {
+      "name": "Gemma 3N Unrestricted",
+      "capabilities": {
+        "routing": 0.55,
+        "simple_queries": 0.80,
+        "reasoning": 0.92,
+        "coding": 0.88,
+        "creative": 0.75,
+        "analysis": 0.95,
+        "speed": 0.72,
+        "context_length": 32000
+      },
+      "strengths": [
+        "Technical analysis",
+        "Scientific reasoning",
+        "Unrestricted content",
+        "Mathematical thinking",
+        "Problem solving"
+      ],
+      "ideal_for": [
+        "technical_tasks",
+        "scientific_analysis",
+        "mathematical_problems",
+        "unrestricted_content",
+        "detailed_explanations"
+      ],
+      "resource_requirements": {
+        "memory": "medium-high",
+        "compute": "high",
+        "typical_response_time": "3-6s"
+      }
+    },
+    "qwen2.5-coder:7b": {
+      "name": "Qwen 2.5 Coder",
+      "capabilities": {
+        "routing": 0.50,
+        "simple_queries": 0.70,
+        "reasoning": 0.80,
+        "coding": 0.98,
+        "creative": 0.65,
+        "analysis": 0.85,
+        "speed": 0.75,
+        "context_length": 32768
+      },
+      "strengths": [
+        "Code generation",
+        "Debugging",
+        "Technical documentation",
+        "Multiple programming languages",
+        "Code refactoring"
+      ],
+      "ideal_for": [
+        "programming",
+        "debugging",
+        "code_review",
+        "technical_docs",
+        "api_design"
+      ],
+      "resource_requirements": {
+        "memory": "medium",
+        "compute": "medium",
+        "typical_response_time": "2-4s"
+      }
+    },
+    "llama3.3:70b": {
+      "name": "Llama 3.3 70B",
+      "capabilities": {
+        "routing": 0.50,
+        "simple_queries": 0.85,
+        "reasoning": 0.90,
+        "coding": 0.80,
+        "creative": 0.95,
+        "analysis": 0.88,
+        "speed": 0.40,
+        "context_length": 128000
+      },
+      "strengths": [
+        "Creative writing",
+        "Long-form content",
+        "Nuanced responses",
+        "Storytelling",
+        "Complex instructions"
+      ],
+      "ideal_for": [
+        "creative_writing",
+        "content_generation",
+        "storytelling",
+        "detailed_explanations",
+        "complex_documents"
+      ],
+      "resource_requirements": {
+        "memory": "very_high",
+        "compute": "very_high",
+        "typical_response_time": "10-20s"
+      }
+    },
+    "mistral:7b": {
+      "name": "Mistral 7B",
+      "capabilities": {
+        "routing": 0.60,
+        "simple_queries": 0.85,
+        "reasoning": 0.82,
+        "coding": 0.78,
+        "creative": 0.83,
+        "analysis": 0.80,
+        "speed": 0.80,
+        "context_length": 32768
+      },
+      "strengths": [
+        "General purpose",
+        "Balanced performance",
+        "Good instruction following",
+        "Versatile",
+        "Efficient"
+      ],
+      "ideal_for": [
+        "general_conversation",
+        "balanced_tasks",
+        "everyday_queries",
+        "moderate_complexity",
+        "fallback_option"
+      ],
+      "resource_requirements": {
+        "memory": "medium",
+        "compute": "medium",
+        "typical_response_time": "2-3s"
+      }
+    },
+    "mixtral:8x7b": {
+      "name": "Mixtral 8x7B",
+      "capabilities": {
+        "routing": 0.55,
+        "simple_queries": 0.88,
+        "reasoning": 0.88,
+        "coding": 0.85,
+        "creative": 0.86,
+        "analysis": 0.87,
+        "speed": 0.65,
+        "context_length": 32768
+      },
+      "strengths": [
+        "Multi-domain expertise",
+        "Mixture of experts",
+        "Versatile capabilities",
+        "Good at switching contexts",
+        "Comprehensive knowledge"
+      ],
+      "ideal_for": [
+        "multi_domain_tasks",
+        "varied_expertise",
+        "context_switching",
+        "comprehensive_analysis",
+        "diverse_topics"
+      ],
+      "resource_requirements": {
+        "memory": "high",
+        "compute": "high",
+        "typical_response_time": "4-6s"
+      }
+    },
+    "gemma2:9b": {
+      "name": "Gemma 2 9B",
+      "capabilities": {
+        "routing": 0.55,
+        "simple_queries": 0.82,
+        "reasoning": 0.85,
+        "coding": 0.75,
+        "creative": 0.78,
+        "analysis": 0.88,
+        "speed": 0.75,
+        "context_length": 8192
+      },
+      "strengths": [
+        "Research tasks",
+        "Data analysis",
+        "Scientific reasoning",
+        "Factual accuracy",
+        "Structured thinking"
+      ],
+      "ideal_for": [
+        "research",
+        "data_analysis",
+        "scientific_queries",
+        "factual_questions",
+        "structured_output"
+      ],
+      "resource_requirements": {
+        "memory": "medium",
+        "compute": "medium",
+        "typical_response_time": "2-4s"
+      }
+    }
+  },
+  "routing_rules": {
+    "task_patterns": {
+      "coding": {
+        "patterns": ["code", "program", "function", "debug", "implement", "fix", "error", "syntax", "api", "class", "method"],
+        "preferred_models": ["qwen2.5-coder:7b", "mixtral:8x7b"],
+        "fallback": "mistral:7b"
+      },
+      "reasoning": {
+        "patterns": ["explain", "why", "how", "analyze", "reason", "logic", "proof", "solve", "calculate", "deduce"],
+        "preferred_models": ["deepseek-r1:latest", "r1-unrestricted:latest", "mixtral:8x7b"],
+        "fallback": "llama3.3:70b"
+      },
+      "creative": {
+        "patterns": ["write", "story", "poem", "creative", "imagine", "fiction", "narrative", "describe", "compose"],
+        "preferred_models": ["llama3.3:70b", "mistral:7b"],
+        "fallback": "mixtral:8x7b"
+      },
+      "research": {
+        "patterns": ["research", "study", "analyze", "data", "statistics", "scientific", "evidence", "paper", "journal"],
+        "preferred_models": ["gemma3n-unrestricted:latest", "deepseek-r1:latest", "gemma2:9b"],
+        "fallback": "mixtral:8x7b"
+      },
+      "simple": {
+        "patterns": ["what is", "who is", "when", "where", "define", "meaning", "simple", "basic"],
+        "preferred_models": ["phi3:mini", "mistral:7b"],
+        "fallback": "gemma2:9b"
+      }
+    },
+    "complexity_thresholds": {
+      "simple": {
+        "max_tokens": 50,
+        "max_concepts": 1,
+        "models": ["phi3:mini", "mistral:7b"]
+      },
+      "moderate": {
+        "max_tokens": 200,
+        "max_concepts": 3,
+        "models": ["mistral:7b", "gemma2:9b", "mixtral:8x7b"]
+      },
+      "complex": {
+        "max_tokens": 1000,
+        "max_concepts": 10,
+        "models": ["deepseek-r1:latest", "r1-unrestricted:latest", "gemma3n-unrestricted:latest", "llama3.3:70b", "mixtral:8x7b"]
+      }
+    },
+    "performance_requirements": {
+      "real_time": {
+        "max_latency_ms": 1000,
+        "models": ["phi3:mini", "mistral:7b"]
+      },
+      "interactive": {
+        "max_latency_ms": 5000,
+        "models": ["mistral:7b", "gemma2:9b", "qwen2.5-coder:7b"]
+      },
+      "batch": {
+        "max_latency_ms": 30000,
+        "models": ["llama3.3:70b", "deepseek-r1:7b", "mixtral:8x7b"]
+      }
+    }
+  },
+  "personality_prompts": {
+    "base": "You are Lex, an advanced AI assistant with a sophisticated, professional, and slightly futuristic personality. You communicate with clarity, intelligence, and a touch of technological sophistication. You are helpful, knowledgeable, and maintain consistency across all interactions.",
+    "model_specific": {
+      "phi3:mini": "As Lex, quickly analyze and route requests efficiently while maintaining a professional demeanor.",
+      "deepseek-r1:latest": "As Lex, apply deep reasoning and analytical capabilities to provide thorough, well-reasoned responses.",
+      "r1-unrestricted:latest": "As Lex, leverage unrestricted reasoning capabilities to provide comprehensive, unfiltered analysis and solutions.",
+      "gemma3n-unrestricted:latest": "As Lex, apply advanced technical and scientific reasoning without constraints to deliver precise, detailed insights.",
+      "qwen2.5-coder:7b": "As Lex, leverage technical expertise to provide precise, accurate coding solutions and technical guidance.",
+      "llama3.3:70b": "As Lex, craft eloquent, detailed, and creative responses that showcase sophisticated language understanding.",
+      "mistral:7b": "As Lex, provide balanced, helpful responses that are both informative and accessible.",
+      "mixtral:8x7b": "As Lex, draw upon diverse expertise to provide comprehensive, multi-faceted responses.",
+      "gemma2:9b": "As Lex, focus on research-oriented, data-driven responses with scientific rigor and accuracy."
+    }
+  }
+}

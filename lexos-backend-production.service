@@ -1,0 +1,22 @@
+[Unit]
+Description=LexOS Genesis Backend Production Service
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=user
+WorkingDirectory=/home/user/lexos-production/backend
+Environment="NODE_ENV=production"
+Environment="PATH=/usr/bin:/usr/local/bin"
+ExecStart=/usr/bin/node src/index.js
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/lexos-backend.log
+StandardError=append:/var/log/lexos-backend-error.log
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

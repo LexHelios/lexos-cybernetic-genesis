@@ -1,0 +1,212 @@
+# LexOS Genesis Monitoring Agent Configuration
+
+# Service monitoring configuration
+services:
+  backend:
+    name: "Backend API"
+    url: "http://localhost:3001"
+    healthEndpoint: "/health"
+    processName: "node"
+    logFile: "/home/user/lexos-genesis/backend/logs/app.log"
+    restartCommand: "cd /home/user/lexos-genesis/backend && npm start"
+    checkInterval: 30000  # 30 seconds
+    timeout: 5000
+    retries: 3
+    
+  auth-backend:
+    name: "Auth Backend"
+    url: "http://localhost:3002"
+    healthEndpoint: "/health"
+    processName: "node"
+    logFile: "/home/user/lexos-genesis/auth-backend/logs/app.log"
+    restartCommand: "cd /home/user/lexos-genesis/auth-backend && npm start"
+    checkInterval: 30000
+    timeout: 5000
+    retries: 3
+    
+  frontend:
+    name: "Frontend"
+    url: "http://localhost:3000"
+    healthEndpoint: "/"
+    processName: "node"
+    logFile: "/home/user/lexos-genesis/frontend/logs/app.log"
+    restartCommand: "cd /home/user/lexos-genesis/frontend && npm start"
+    checkInterval: 30000
+    timeout: 5000
+    retries: 3
+
+# Resource monitoring thresholds
+resources:
+  cpu:
+    warningThreshold: 70
+    criticalThreshold: 90
+    checkInterval: 10000  # 10 seconds
+    
+  memory:
+    warningThreshold: 80
+    criticalThreshold: 95
+    checkInterval: 10000
+    
+  disk:
+    warningThreshold: 80
+    criticalThreshold: 90
+    checkInterval: 60000  # 1 minute
+    paths:
+      - "/"
+      - "/home"
+      
+  gpu:
+    enabled: true
+    warningThreshold: 80
+    criticalThreshold: 95
+    memoryWarningThreshold: 80
+    memoryCriticalThreshold: 95
+    checkInterval: 30000
+
+# Database monitoring
+database:
+  postgresql:
+    enabled: true
+    host: "localhost"
+    port: 5432
+    database: "lexos"
+    checkInterval: 60000
+    connectionTimeout: 5000
+    maxConnections: 100
+    warningConnections: 80
+    
+  redis:
+    enabled: true
+    host: "localhost"
+    port: 6379
+    checkInterval: 30000
+    connectionTimeout: 3000
+
+# SSL certificate monitoring
+ssl:
+  enabled: true
+  certificates:
+    - path: "/etc/ssl/certs/lexos.crt"
+      warningDays: 30
+      criticalDays: 7
+  checkInterval: 86400000  # 24 hours
+
+# Log monitoring
+logs:
+  errorPatterns:
+    - "ERROR"
+    - "FATAL"
+    - "CRITICAL"
+    - "Exception"
+    - "Failed"
+    - "Unhandled"
+    - "ECONNREFUSED"
+    - "ETIMEDOUT"
+  warningPatterns:
+    - "WARNING"
+    - "WARN"
+    - "Deprecated"
+  scanInterval: 5000  # 5 seconds
+  maxFileSize: 104857600  # 100MB
+
+# Alert configuration
+alerts:
+  email:
+    enabled: true
+    smtp:
+      host: "smtp.gmail.com"
+      port: 587
+      secure: false
+      auth:
+        user: "lexos.monitoring@gmail.com"
+        pass: "your-app-password"
+    recipients:
+      - "admin@lexos.io"
+    from: "LexOS Monitoring <lexos.monitoring@gmail.com>"
+    
+  webhook:
+    enabled: false
+    url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+    
+  cooldown: 300000  # 5 minutes between same alerts
+
+# Auto-recovery actions
+recovery:
+  enabled: true
+  actions:
+    serviceDown:
+      - action: "restart"
+        maxAttempts: 3
+        cooldown: 60000
+        
+    highMemory:
+      - action: "clearCache"
+        threshold: 90
+        paths:
+          - "/tmp"
+          - "/var/tmp"
+          
+    diskSpace:
+      - action: "cleanLogs"
+        threshold: 90
+        olderThan: 7  # days
+        
+    configError:
+      - action: "fixSyntax"
+        filePatterns:
+          - "*.json"
+          - "*.yaml"
+          - "*.env"
+
+# Monitoring agent configuration
+agent:
+  port: 4000
+  host: "0.0.0.0"
+  dashboardPath: "/dashboard"
+  apiPath: "/api"
+  wsPath: "/ws"
+  
+  authentication:
+    enabled: true
+    username: "admin"
+    password: "changeme"  # Change in production
+    
+  logging:
+    level: "info"
+    maxFiles: 30
+    maxSize: "10m"
+    
+  metrics:
+    retentionDays: 30
+    aggregationInterval: 60000  # 1 minute
+
+# Network monitoring
+network:
+  connectivity:
+    enabled: true
+    endpoints:
+      - name: "Google DNS"
+        host: "8.8.8.8"
+        type: "ping"
+      - name: "CloudFlare DNS"
+        host: "1.1.1.1"
+        type: "ping"
+      - name: "External API"
+        url: "https://api.github.com"
+        type: "http"
+    checkInterval: 60000
+    timeout: 5000
+
+# Memory leak detection
+memoryLeak:
+  enabled: true
+  checkInterval: 300000  # 5 minutes
+  growthRateThreshold: 10  # 10% growth per interval
+  samplingPeriods: 6  # Number of periods to analyze
+
+# WebSocket monitoring
+websocket:
+  enabled: true
+  checkInterval: 30000
+  reconnectTimeout: 5000
+  maxReconnectAttempts: 5

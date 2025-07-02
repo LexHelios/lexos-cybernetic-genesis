@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LexOS Monitoring Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/public/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1><i class="fas fa-shield-alt"></i> LexOS Monitoring Dashboard</h1>
+            <div class="header-info">
+                <span id="connectionStatus" class="connection-status">
+                    <i class="fas fa-circle"></i> Connecting...
+                </span>
+                <span id="lastUpdate" class="last-update">Last update: Never</span>
+            </div>
+        </header>
+
+        <!-- System Overview -->
+        <section class="system-overview">
+            <h2>System Overview</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3>CPU Usage</h3>
+                    <div class="metric-value" id="cpuUsage">--</div>
+                    <div class="metric-chart" id="cpuChart"></div>
+                </div>
+                <div class="metric-card">
+                    <h3>Memory Usage</h3>
+                    <div class="metric-value" id="memoryUsage">--</div>
+                    <div class="metric-chart" id="memoryChart"></div>
+                </div>
+                <div class="metric-card">
+                    <h3>Disk Usage</h3>
+                    <div class="metric-value" id="diskUsage">--</div>
+                    <div class="metric-chart" id="diskChart"></div>
+                </div>
+                <div class="metric-card">
+                    <h3>GPU Usage</h3>
+                    <div class="metric-value" id="gpuUsage">--</div>
+                    <div class="metric-chart" id="gpuChart"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Status -->
+        <section class="services-section">
+            <h2>Services Status</h2>
+            <div class="services-grid" id="servicesGrid">
+                <!-- Service cards will be dynamically added here -->
+            </div>
+        </section>
+
+        <!-- Alerts -->
+        <section class="alerts-section">
+            <h2>Recent Alerts</h2>
+            <div class="alerts-container" id="alertsContainer">
+                <!-- Alerts will be dynamically added here -->
+            </div>
+        </section>
+
+        <!-- Incidents -->
+        <section class="incidents-section">
+            <h2>Recent Incidents</h2>
+            <div class="incidents-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Action</th>
+                            <th>Service</th>
+                            <th>Status</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="incidentsTableBody">
+                        <!-- Incidents will be dynamically added here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Actions -->
+        <section class="actions-section">
+            <h2>Quick Actions</h2>
+            <div class="actions-grid">
+                <button class="action-button" onclick="restartAllServices()">
+                    <i class="fas fa-sync-alt"></i> Restart All Services
+                </button>
+                <button class="action-button" onclick="clearCache()">
+                    <i class="fas fa-broom"></i> Clear Cache
+                </button>
+                <button class="action-button" onclick="cleanupSystem()">
+                    <i class="fas fa-trash-alt"></i> System Cleanup
+                </button>
+                <button class="action-button" onclick="exportReport()">
+                    <i class="fas fa-file-export"></i> Export Report
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Action Modal -->
+    <div class="modal" id="actionModal" style="display: none;">
+        <div class="modal-content">
+            <h3 id="modalTitle">Action</h3>
+            <p id="modalMessage">Processing...</p>
+            <div class="modal-buttons">
+                <button onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/public/dashboard.js"></script>
+</body>
+</html>

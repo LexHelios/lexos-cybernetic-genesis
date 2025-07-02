@@ -1,0 +1,138 @@
+name: Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: LexOS ${{ github.ref }}
+        body: |
+          ## LexOS Release ${{ github.ref }}
+          
+          ### Features
+          - R1 Unrestricted Model Support
+          - Gemma3n Consciousness Model
+          - Advanced Agent Orchestration
+          - Real-time WebSocket Monitoring
+          
+          ### Installation
+          See [README.md](https://github.com/${{ github.repository }}/blob/main/README.md) for installation instructions.
+          
+          ### Docker
+          ```bash
+          docker pull ${{ secrets.DOCKER_USERNAME }}/lexos:${{ github.ref_name }}
+          ```
+        draft: false
+        prerelease: false
+
+  build-and-upload:
+    name: Build and Upload Assets
+    runs-on: ubuntu-latest
+    needs: create-release
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset_name: lexos-linux-amd64
+          
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Build Frontend
+      run: |
+        cd lexos-genesis
+        npm ci
+        npm run build
+        cd ..
+    
+    - name: Create Release Archive
+      run: |
+        mkdir -p release/lexos
+        cp -r api_server.py main.py requirements.txt release/lexos/
+        cp -r agents data security release/lexos/
+        cp -r lexos-genesis/dist release/lexos/frontend
+        cp deploy.sh deploy_production.sh release/lexos/
+        cp docker-compose.yml Dockerfile release/lexos/
+        cd release
+        tar -czf lexos-${{ github.ref_name }}.tar.gz lexos/
+        cd ..
+    
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./release/lexos-${{ github.ref_name }}.tar.gz
+        asset_name: lexos-${{ github.ref_name }}.tar.gz
+        asset_content_type: application/gzip
+
+  docker-release:
+    name: Docker Release
+    runs-on: ubuntu-latest
+    needs: create-release
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Login to DockerHub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_TOKEN }}
+    
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Build and push
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/lexos:${{ github.ref_name }}
+          ${{ secrets.DOCKER_USERNAME }}/lexos:latest
+          ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          ghcr.io/${{ github.repository }}:latest
