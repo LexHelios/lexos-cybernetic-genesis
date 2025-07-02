@@ -1,0 +1,244 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  role      Role     @default(USER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions      Session[]
+  agents        Agent[]
+  conversations Conversation[]
+  tasks         Task[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Agent {
+  id           String      @id @default(uuid())
+  name         String
+  description  String?
+  type         AgentType
+  status       AgentStatus @default(INACTIVE)
+  capabilities Json        @default("[]")
+  config       Json        @default("{}")
+  memory       Json        @default("{}")
+  version      String      @default("1.0.0")
+  userId       String?
+  isSystem     Boolean     @default(false)
+  lastHeartbeat DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  messages      Message[]
+  tasks         Task[]
+  agentMemories AgentMemory[]
+  agentTools    AgentTool[]
+  conversations ConversationAgent[]
+}
+
+model AgentMemory {
+  id        String   @id @default(uuid())
+  agentId   String
+  type      String
+  key       String
+  value     Json
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, key])
+}
+
+model AgentTool {
+  id          String   @id @default(uuid())
+  agentId     String
+  name        String
+  description String?
+  schema      Json
+  handler     String
+  isEnabled   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, name])
+}
+
+model Conversation {
+  id        String             @id @default(uuid())
+  title     String?
+  userId    String
+  status    ConversationStatus @default(ACTIVE)
+  metadata  Json?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+  agents   ConversationAgent[]
+}
+
+model ConversationAgent {
+  id             String   @id
+  conversationId String
+  agentId        String
+  joinedAt       DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  agent        Agent        @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, agentId])
+}
+
+model Message {
+  id             String      @id @default(uuid())
+  conversationId String
+  agentId        String?
+  role           MessageRole
+  content        String
+  metadata       Json?
+  createdAt      DateTime    @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  agent        Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+}
+
+model Task {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  type        String
+  status      TaskStatus @default(PENDING)
+  priority    Int        @default(0)
+  payload     Json
+  result      Json?
+  error       String?
+  userId      String?
+  agentId     String?
+  parentId    String?
+  retryCount  Int        @default(0)
+  maxRetries  Int        @default(3)
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  user     User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  agent    Agent? @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  parent   Task?  @relation("TaskSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
+  subtasks Task[] @relation("TaskSubtasks")
+}
+
+model Model {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  provider    String
+  type        ModelType
+  config      Json
+  isActive    Boolean     @default(true)
+  isDefault   Boolean     @default(false)
+  metadata    Json?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model File {
+  id          String      @id @default(uuid())
+  filename    String
+  originalName String
+  mimetype    String
+  size        Int
+  path        String
+  url         String?
+  metadata    Json?
+  uploadedBy  String?
+  createdAt   DateTime    @default(now())
+}
+
+model SystemLog {
+  id        String   @id @default(uuid())
+  level     String
+  message   String
+  context   String?
+  metadata  Json?
+  timestamp DateTime @default(now())
+
+  @@index([level])
+  @@index([timestamp])
+}
+
+enum Role {
+  USER
+  ADMIN
+  SYSTEM
+}
+
+enum AgentType {
+  SYSTEM
+  ASSISTANT
+  SPECIALIST
+  COORDINATOR
+  CUSTOM
+}
+
+enum AgentStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  ERROR
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+  ERROR
+}
+
+enum TaskStatus {
+  PENDING
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum ModelType {
+  CHAT
+  COMPLETION
+  EMBEDDING
+  IMAGE
+  AUDIO
+}

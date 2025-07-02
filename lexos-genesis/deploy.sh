@@ -1,225 +1,134 @@
-#!/bin/bash
+#\!/bin/bash
 
-# LexOS Genesis Production Deployment Script
-# Nexus v2.0.0
+# LexOS Quick Deploy Script
+# This script sets up and deploys LexOS in production mode
 
 set -e
 
-echo "🚀 LexOS Genesis Production Deployment"
-echo "======================================="
+echo "
+╔═══════════════════════════════════════╗
+║     LexOS Production Deployment       ║
+╚═══════════════════════════════════════╝
+"
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
 NC='\033[0m' # No Color
+
+# Function to print colored output
+print_status() {
+    echo -e "${GREEN}[✓]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[✗]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[\!]${NC} $1"
+}
 
 # Check if running as root
 if [[ $EUID -eq 0 ]]; then
-   echo -e "${RED}❌ This script should not be run as root${NC}"
+   print_error "This script should not be run as root\!"
    exit 1
 fi
 
-# Check Node.js version
-NODE_VERSION=$(node --version | cut -d'v' -f2)
-REQUIRED_VERSION="18.0.0"
+# Check system requirements
+print_status "Checking system requirements..."
 
-if ! command -v node &> /dev/null; then
-    echo -e "${RED}❌ Node.js is not installed${NC}"
+# Check Node.js
+if \! command -v node &> /dev/null; then
+    print_error "Node.js is not installed. Please install Node.js 18+"
     exit 1
 fi
 
-echo -e "${BLUE}📋 Pre-deployment Checks${NC}"
-echo "Node.js version: $NODE_VERSION"
-
-# Check if .env exists
-if [ ! -f "backend/.env" ]; then
-    echo -e "${YELLOW}⚠️  Creating .env from template${NC}"
-    cp backend/.env.example backend/.env
-    echo -e "${RED}❌ Please configure backend/.env before continuing${NC}"
+NODE_VERSION=$(node -v  < /dev/null |  cut -d'v' -f2 | cut -d'.' -f1)
+if [ "$NODE_VERSION" -lt 18 ]; then
+    print_error "Node.js version 18+ required. Current version: $(node -v)"
     exit 1
 fi
+print_status "Node.js $(node -v) found"
 
-# Check for critical environment variables
-echo -e "${BLUE}🔐 Checking security configuration${NC}"
-if grep -q "NEXUS_ADMIN_CHANGE_IMMEDIATELY" backend/.env; then
-    echo -e "${RED}❌ Default admin password detected! Please change ADMIN_PASSWORD in backend/.env${NC}"
+# Check npm
+if \! command -v npm &> /dev/null; then
+    print_error "npm is not installed"
     exit 1
 fi
+print_status "npm $(npm -v) found"
 
-if grep -q "NEXUS_GENESIS_SECURE_KEY_CHANGE_IMMEDIATELY" backend/.env; then
-    echo -e "${RED}❌ Default JWT secret detected! Please change JWT_SECRET in backend/.env${NC}"
-    exit 1
-fi
-
-echo -e "${GREEN}✅ Security configuration looks good${NC}"
+# Create necessary directories
+print_status "Creating directories..."
+mkdir -p logs
+mkdir -p /tmp/lexos
+sudo mkdir -p /var/log/lexos
+sudo chown $USER:$USER /var/log/lexos
 
 # Install dependencies
-echo -e "${BLUE}📦 Installing dependencies${NC}"
-npm ci --production
-
-echo -e "${BLUE}📦 Installing backend dependencies${NC}"
-cd backend
-npm ci --production
+print_status "Installing backend dependencies..."
+cd backend-production
+npm install --production
 cd ..
+
+print_status "Installing frontend dependencies..."
+npm install
 
 # Build frontend
-echo -e "${BLUE}🏗️  Building frontend for production${NC}"
-npm run build:prod
+print_status "Building frontend..."
+npm run build
 
-# Initialize database
-echo -e "${BLUE}🗄️  Initializing database${NC}"
-cd backend
-npm run init-db
-cd ..
-
-# Create systemd service files
-echo -e "${BLUE}⚙️  Creating systemd service files${NC}"
-
-# Backend service
-sudo tee /etc/systemd/system/lexos-backend.service > /dev/null <<EOF
-[Unit]
-Description=LexOS Genesis Backend
-After=network.target
-
-[Service]
-Type=simple
-User=$USER
-WorkingDirectory=$(pwd)/backend
-Environment=NODE_ENV=production
-ExecStart=/usr/bin/node src/index.js
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Frontend service (using serve)
-sudo tee /etc/systemd/system/lexos-frontend.service > /dev/null <<EOF
-[Unit]
-Description=LexOS Genesis Frontend
-After=network.target
-
-[Service]
-Type=simple
-User=$USER
-WorkingDirectory=$(pwd)
-ExecStart=/usr/bin/npx serve -s dist -l 3000
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Install serve globally if not present
-if ! command -v serve &> /dev/null; then
-    echo -e "${BLUE}📦 Installing serve globally${NC}"
-    sudo npm install -g serve
-fi
-
-# Reload systemd and enable services
+# Setup systemd services
+print_status "Setting up systemd services..."
+sudo cp lexos-backend.service /etc/systemd/system/
+sudo cp lexos-frontend.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable lexos-backend
-sudo systemctl enable lexos-frontend
 
 # Start services
-echo -e "${BLUE}🚀 Starting services${NC}"
-sudo systemctl start lexos-backend
-sudo systemctl start lexos-frontend
+print_status "Starting services..."
+sudo systemctl enable lexos-backend lexos-frontend
+sudo systemctl restart lexos-backend lexos-frontend
+
+# Wait for services to start
+sleep 5
 
 # Check service status
-sleep 3
 if systemctl is-active --quiet lexos-backend; then
-    echo -e "${GREEN}✅ Backend service is running${NC}"
+    print_status "Backend service is running"
 else
-    echo -e "${RED}❌ Backend service failed to start${NC}"
-    sudo systemctl status lexos-backend
-    exit 1
+    print_error "Backend service failed to start"
+    sudo journalctl -u lexos-backend -n 50
 fi
 
 if systemctl is-active --quiet lexos-frontend; then
-    echo -e "${GREEN}✅ Frontend service is running${NC}"
+    print_status "Frontend service is running"
 else
-    echo -e "${RED}❌ Frontend service failed to start${NC}"
-    sudo systemctl status lexos-frontend
-    exit 1
+    print_error "Frontend service failed to start"
+    sudo journalctl -u lexos-frontend -n 50
 fi
 
-# Create nginx configuration
-echo -e "${BLUE}🌐 Creating nginx configuration${NC}"
-sudo tee /etc/nginx/sites-available/lexos-genesis > /dev/null <<EOF
-server {
-    listen 80;
-    server_name localhost;
+# Display status
+echo "
+╔═══════════════════════════════════════╗
+║        Deployment Complete\! 🎉        ║
+╚═══════════════════════════════════════╝
 
-    # Frontend
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_cache_bypass \$http_upgrade;
-    }
+Your LexOS instance is now running\!
 
-    # Backend API
-    location /api {
-        proxy_pass http://localhost:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_cache_bypass \$http_upgrade;
-    }
+🌐 Access Points:
+   - Web Interface: http://lexcommand.ai
+   - API Endpoint: http://lexcommand.ai/api
+   - Health Check: http://lexcommand.ai/health
 
-    # WebSocket
-    location /ws {
-        proxy_pass http://localhost:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-}
-EOF
+📊 Monitor Services:
+   - Backend logs: sudo journalctl -u lexos-backend -f
+   - Frontend logs: sudo journalctl -u lexos-frontend -f
 
-# Enable nginx site
-if [ -f /etc/nginx/sites-available/lexos-genesis ]; then
-    sudo ln -sf /etc/nginx/sites-available/lexos-genesis /etc/nginx/sites-enabled/
-    sudo nginx -t && sudo systemctl reload nginx
-    echo -e "${GREEN}✅ Nginx configuration updated${NC}"
-fi
+🔧 Useful Commands:
+   - Restart: sudo systemctl restart lexos-backend lexos-frontend
+   - Stop: sudo systemctl stop lexos-backend lexos-frontend
 
-echo ""
-echo -e "${GREEN}🎉 LexOS Genesis deployed successfully!${NC}"
-echo ""
-echo -e "${BLUE}📊 Service Status:${NC}"
-echo "Frontend: http://localhost:3000"
-echo "Backend:  http://localhost:3001"
-echo "Nginx:    http://localhost"
-echo ""
-echo -e "${BLUE}🔧 Management Commands:${NC}"
-echo "sudo systemctl status lexos-backend"
-echo "sudo systemctl status lexos-frontend"
-echo "sudo systemctl restart lexos-backend"
-echo "sudo systemctl restart lexos-frontend"
-echo ""
-echo -e "${YELLOW}⚠️  Remember to:${NC}"
-echo "1. Configure firewall rules"
-echo "2. Set up SSL certificates"
-echo "3. Configure monitoring"
-echo "4. Set up backups"
-echo ""
-echo -e "${GREEN}🚀 LexOS Genesis is now live!${NC}"
+"
+
+print_status "Deployment completed successfully\!"
