@@ -75,6 +75,10 @@ class WebSocketManager {
           this.sendToClient(clientId, { type: 'pong', timestamp: Date.now() });
           break;
         
+        case 'orchestrate':
+          this.handleOrchestration(clientId, data);
+          break;
+        
         default:
           this.sendToClient(clientId, {
             type: 'error',
@@ -274,6 +278,71 @@ class WebSocketManager {
     // Remove client
     this.clients.delete(clientId);
     console.log(`WebSocket client disconnected: ${clientId}`);
+  }
+
+  async handleOrchestration(clientId, data) {
+    const { message, context = {} } = data;
+    
+    if (!message) {
+      this.sendToClient(clientId, {
+        type: 'error',
+        error: 'Message is required'
+      });
+      return;
+    }
+
+    try {
+      // Send initial acknowledgment
+      this.sendToClient(clientId, {
+        type: 'orchestration_started',
+        timestamp: Date.now()
+      });
+
+      // Create a streaming callback
+      let buffer = '';
+      const streamCallback = (chunk) => {
+        buffer += chunk;
+        // Send chunks as they come
+        this.sendToClient(clientId, {
+          type: 'chunk',
+          text: chunk
+        });
+      };
+
+      // Execute chat through the chat agent
+      const result = await enhancedAgentManager.executeOnAgent('chat', {
+        type: 'chat',
+        message: message,
+        sessionId: context.sessionId || `ws-${clientId}`,
+        context: context
+      });
+
+      // If result came all at once (no streaming), simulate streaming
+      if (result.response && buffer.length === 0) {
+        const words = result.response.split(' ');
+        for (let i = 0; i < words.length; i++) {
+          this.sendToClient(clientId, {
+            type: 'chunk',
+            text: words[i] + (i < words.length - 1 ? ' ' : '')
+          });
+          // Small delay for streaming effect
+          await new Promise(resolve => setTimeout(resolve, 30));
+        }
+      }
+
+      // Send completion
+      this.sendToClient(clientId, {
+        type: 'complete',
+        timestamp: Date.now()
+      });
+
+    } catch (error) {
+      console.error('Orchestration error:', error);
+      this.sendToClient(clientId, {
+        type: 'error',
+        error: error.message || 'Failed to process request'
+      });
+    }
   }
 
   generateClientId() {

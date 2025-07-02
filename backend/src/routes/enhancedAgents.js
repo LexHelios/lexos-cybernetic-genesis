@@ -130,6 +130,7 @@ router.post('/chat', async (req, res) => {
       ...result
     });
   } catch (error) {
+    console.error('Chat endpoint error:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -494,5 +495,7 @@ router.post('/memory/retrieve', async (req, res) => {
     });
   }
 });
+
+// WebSocket endpoint removed - now handled through websocketManager.js
 
 export default router;

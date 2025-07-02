@@ -27,7 +27,20 @@ class EnhancedAgentManager {
   }
   
   async initialize() {
-    if (this.initialized) return;
+    if (this.initialized) {
+      console.log('Enhanced Agent Manager already initialized');
+      return;
+    }
+    
+    if (this.initializing) {
+      // Wait for ongoing initialization
+      while (this.initializing) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return;
+    }
+    
+    this.initializing = true;
     
     try {
       // Load agent configuration
@@ -40,13 +53,15 @@ class EnhancedAgentManager {
       this.registerAgentsWithOrchestrator();
       
       this.initialized = true;
+      this.initializing = false;
       
-      await database.logSystemEvent(
-        'agent_manager',
-        'info',
-        'EnhancedAgentManager',
-        `Initialized with ${this.agents.size} agents`
-      );
+      // Temporarily disable database logging
+      // await database.logSystemEvent(
+      //   'agent_manager',
+      //   'info',
+      //   'EnhancedAgentManager',
+      //   `Initialized with ${this.agents.size} agents`
+      // );
       
       // Initialize vector memory for RAG capabilities
       await vectorMemory.initialize();
@@ -54,6 +69,7 @@ class EnhancedAgentManager {
       console.log(`Enhanced Agent Manager initialized. ${this.agents.size} agents active.`);
     } catch (error) {
       console.error('Failed to initialize Enhanced Agent Manager:', error);
+      this.initializing = false;
       throw error;
     }
   }
@@ -86,6 +102,10 @@ class EnhancedAgentManager {
     };
     
     // Create each agent
+    if (!this.agentConfig || !this.agentConfig.agents) {
+      throw new Error('Agent configuration not loaded properly');
+    }
+    
     for (const [agentId, config] of Object.entries(this.agentConfig.agents)) {
       try {
         const AgentClass = agentClasses[agentId] || EnhancedBaseAgent;
@@ -119,6 +139,10 @@ class EnhancedAgentManager {
   }
   
   async routeTask(task) {
+    // Ensure manager is initialized
+    if (!this.initialized) {
+      await this.initialize();
+    }
     if (!this.orchestrator) {
       throw new Error('Orchestrator not available');
     }
@@ -159,6 +183,14 @@ class EnhancedAgentManager {
   }
   
   async executeOnAgent(agentId, task) {
+    console.log(`executeOnAgent called for ${agentId}`, { initialized: this.initialized, agentsSize: this.agents?.size });
+    
+    // Ensure manager is initialized
+    if (!this.initialized) {
+      console.log('Manager not initialized, initializing now...');
+      await this.initialize();
+    }
+    
     const startTime = Date.now();
     let success = false;
     let error = null;
@@ -213,7 +245,7 @@ class EnhancedAgentManager {
       }
       
       // Get agent configuration for confidence evaluation
-      const agentConfig = this.config.agents[agentId];
+      const agentConfig = this.agentConfig.agents[agentId];
       
       // Evaluate confidence and determine if escalation is needed
       if (agentConfig && agentConfig.confidence_threshold) {

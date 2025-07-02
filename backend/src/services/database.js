@@ -200,6 +200,55 @@ class DatabaseService {
       )
     `);
 
+    // Semantic memory for facts and knowledge
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS semantic_memory (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        agent_id TEXT NOT NULL,
+        concept TEXT NOT NULL,
+        definition TEXT NOT NULL,
+        category TEXT,
+        confidence REAL DEFAULT 0.5,
+        importance REAL DEFAULT 0.5,
+        source TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (agent_id) REFERENCES agents(agent_id)
+      )
+    `);
+
+    // Procedural memory for skills and procedures
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS procedural_memory (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        agent_id TEXT NOT NULL,
+        skill_name TEXT NOT NULL,
+        skill_type TEXT,
+        procedure_steps TEXT,
+        proficiency_level REAL DEFAULT 0.5,
+        metadata TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (agent_id) REFERENCES agents(agent_id)
+      )
+    `);
+
+    // Episodic memory for events and experiences
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS episodic_memory (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        agent_id TEXT NOT NULL,
+        session_id TEXT,
+        event_type TEXT,
+        content TEXT NOT NULL,
+        importance REAL DEFAULT 0.5,
+        metadata TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (agent_id) REFERENCES agents(agent_id)
+      )
+    `);
+
     // Create indexes for performance
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_chat_logs_session ON chat_logs(session_id);
@@ -208,6 +257,11 @@ class DatabaseService {
       CREATE INDEX IF NOT EXISTS idx_agent_memory_agent ON agent_memory(agent_id);
       CREATE INDEX IF NOT EXISTS idx_agent_memory_type ON agent_memory(memory_type);
       CREATE INDEX IF NOT EXISTS idx_system_logs_timestamp ON system_logs(timestamp);
+      CREATE INDEX IF NOT EXISTS idx_semantic_memory_agent ON semantic_memory(agent_id);
+      CREATE INDEX IF NOT EXISTS idx_semantic_memory_concept ON semantic_memory(concept);
+      CREATE INDEX IF NOT EXISTS idx_procedural_memory_agent ON procedural_memory(agent_id);
+      CREATE INDEX IF NOT EXISTS idx_episodic_memory_agent ON episodic_memory(agent_id);
+      CREATE INDEX IF NOT EXISTS idx_episodic_memory_session ON episodic_memory(session_id);
     `);
   }
 
@@ -327,7 +381,7 @@ class DatabaseService {
       // Store personality traits as semantic memories
       if (agentData.traits) {
         for (const [trait, value] of Object.entries(agentData.traits)) {
-          await this.db.run(`
+          this.run(`
             INSERT INTO semantic_memory (
               agent_id, concept, definition, category, confidence, importance, source
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -346,7 +400,7 @@ class DatabaseService {
       // Store capabilities as procedural memories
       if (agentData.capabilities) {
         for (const capability of agentData.capabilities) {
-          await this.db.run(`
+          this.run(`
             INSERT INTO procedural_memory (
               agent_id, skill_name, skill_type, procedure_steps, proficiency_level, metadata
             ) VALUES (?, ?, ?, ?, ?, ?)
@@ -363,7 +417,7 @@ class DatabaseService {
 
       // Store backstory as episodic memory
       if (agentData.backstory) {
-        await this.db.run(`
+        this.run(`
           INSERT INTO episodic_memory (
             agent_id, session_id, event_type, content, importance, metadata
           ) VALUES (?, ?, ?, ?, ?, ?)
@@ -619,6 +673,42 @@ class DatabaseService {
        WHERE id = ?`
     );
     stmt.run(newStrength, relationshipId);
+  }
+
+  // Raw database access methods for compatibility
+  run(sql, params = []) {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+    return this.db.prepare(sql).run(params);
+  }
+
+  get(sql, params = []) {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+    return this.db.prepare(sql).get(params);
+  }
+
+  all(sql, params = []) {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+    return this.db.prepare(sql).all(params);
+  }
+
+  exec(sql) {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+    return this.db.exec(sql);
+  }
+
+  prepare(sql) {
+    if (!this.db) {
+      throw new Error('Database not initialized');
+    }
+    return this.db.prepare(sql);
   }
 
   // Close database connection

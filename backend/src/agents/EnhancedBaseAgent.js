@@ -45,12 +45,13 @@ export class EnhancedBaseAgent {
       
       this.status = 'ready';
       
-      await database.logSystemEvent(
-        'agent',
-        'info',
-        this.name,
-        `Agent initialized successfully with model: ${this.currentModel}`
-      );
+      // Temporarily disable database logging
+      // await database.logSystemEvent(
+      //   'agent',
+      //   'info',
+      //   this.name,
+      //   `Agent initialized successfully with model: ${this.currentModel}`
+      // );
       
       // Memory creation disabled for now - foreign key constraint issue
       // TODO: Fix memory manager integration

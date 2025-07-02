@@ -1,11 +1,11 @@
 
 import React from 'react';
-import SimpleChatInterface from '@/components/chat/SimpleChatInterface';
+import { ChatWindow } from '@/components/ChatWindow';
 
 const Chat = () => {
   return (
-    <div className="p-6 h-full">
-      <SimpleChatInterface />
+    <div className="p-6 h-full flex items-center justify-center">
+      <ChatWindow />
     </div>
   );
 };

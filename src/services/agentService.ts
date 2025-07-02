@@ -76,6 +76,54 @@ class AgentService {
     }
   }
 
+  // Connect to orchestration WebSocket for streaming
+  connectOrchestrationWebSocket(onChunk: (chunk: string) => void): () => void {
+    const wsUrl = window.location.protocol === 'https:' 
+      ? `wss://${window.location.host}/api/enhanced-agents/orchestrate/ws`
+      : `ws://${window.location.hostname}:3001/api/enhanced-agents/orchestrate/ws`;
+
+    const orchestrationWs = new WebSocket(wsUrl);
+    
+    orchestrationWs.onopen = () => {
+      console.log('Connected to orchestration WebSocket');
+      orchestrationWs.send(JSON.stringify({ 
+        type: 'connection', 
+        data: { client: 'chat-interface' } 
+      }));
+    };
+
+    orchestrationWs.onmessage = (event) => {
+      const data = event.data;
+      if (typeof data === 'string') {
+        try {
+          const json = JSON.parse(data);
+          if (json.type === 'chunk') {
+            onChunk(json.text);
+          } else if (json.type === 'complete') {
+            console.log('Message complete');
+          } else if (json.type === 'error') {
+            console.error('Orchestrator error:', json.error);
+            onChunk(`\n\n[Error: ${json.error}]`);
+          }
+        } catch {
+          // Plain text message - treat as chunk
+          onChunk(data);
+        }
+      }
+    };
+
+    orchestrationWs.onerror = (error) => {
+      console.error('Orchestration WebSocket error:', error);
+    };
+
+    // Return disconnect function
+    return () => {
+      if (orchestrationWs.readyState === WebSocket.OPEN) {
+        orchestrationWs.close();
+      }
+    };
+  }
+
   private scheduleReconnect() {
     if (this.reconnectTimer) return;
     
@@ -158,6 +206,57 @@ class AgentService {
       requirements
     });
     return response.data;
+  }
+
+  // Orchestrate with streaming response
+  orchestrateStream(message: string, context?: any, onChunk?: (chunk: string) => void): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const wsUrl = window.location.protocol === 'https:' 
+        ? `wss://${window.location.host}/api/enhanced-agents/orchestrate/ws`
+        : `ws://${window.location.hostname}:3001/api/enhanced-agents/orchestrate/ws`;
+
+      const ws = new WebSocket(wsUrl);
+      
+      ws.onopen = () => {
+        console.log('Connected to orchestration stream');
+        ws.send(JSON.stringify({ 
+          type: 'orchestrate',
+          message,
+          context: context || {},
+          timestamp: new Date().toISOString()
+        }));
+      };
+
+      ws.onmessage = (event) => {
+        const data = event.data;
+        if (typeof data === 'string') {
+          try {
+            const json = JSON.parse(data);
+            if (json.type === 'chunk' && onChunk) {
+              onChunk(json.text);
+            } else if (json.type === 'complete') {
+              ws.close();
+              resolve();
+            } else if (json.type === 'error') {
+              ws.close();
+              reject(new Error(json.error));
+            }
+          } catch {
+            // Plain text message - treat as chunk
+            if (onChunk) onChunk(data);
+          }
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('Orchestration stream error:', error);
+        reject(error);
+      };
+
+      ws.onclose = () => {
+        resolve();
+      };
+    });
   }
 
   // Control agent (pause/resume/restart)

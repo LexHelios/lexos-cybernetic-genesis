@@ -56,10 +56,10 @@ class VectorMemory extends EventEmitter {
       )
     `;
 
-    await database.run(createTableSQL);
+    database.run(createTableSQL);
     
     // Create index for faster retrieval
-    await database.run(`
+    database.run(`
       CREATE INDEX IF NOT EXISTS idx_vector_memories_agent 
       ON vector_memories(agent_id)
     `);
@@ -70,7 +70,7 @@ class VectorMemory extends EventEmitter {
    */
   async loadMemoriesFromDatabase() {
     try {
-      const memories = await database.all(`
+      const memories = database.all(`
         SELECT * FROM vector_memories 
         ORDER BY relevance_score DESC, last_accessed DESC 
         LIMIT ?
@@ -117,7 +117,7 @@ class VectorMemory extends EventEmitter {
       }
 
       // Store in database
-      const result = await database.run(`
+      const result = database.run(`
         INSERT INTO vector_memories (agent_id, content, context, embedding, metadata)
         VALUES (?, ?, ?, ?, ?)
       `, [
@@ -292,7 +292,7 @@ class VectorMemory extends EventEmitter {
    */
   async updateMemoryAccess(memoryId) {
     try {
-      await database.run(`
+      database.run(`
         UPDATE vector_memories 
         SET access_count = access_count + 1, 
             last_accessed = CURRENT_TIMESTAMP,
@@ -317,7 +317,7 @@ class VectorMemory extends EventEmitter {
    */
   async updateMemoryRelevance(memoryId, score = 0.05) {
     try {
-      await database.run(`
+      database.run(`
         UPDATE vector_memories 
         SET relevance_score = relevance_score + ?,
             last_accessed = CURRENT_TIMESTAMP
@@ -352,7 +352,7 @@ class VectorMemory extends EventEmitter {
         .slice(0, Math.floor(this.maxMemories * 0.1)); // Remove 10% of memories
 
       for (const memory of memoriesToRemove) {
-        await database.run('DELETE FROM vector_memories WHERE id = ?', [memory.id]);
+        database.run('DELETE FROM vector_memories WHERE id = ?', [memory.id]);
         this.memories.delete(memory.id);
       }
 

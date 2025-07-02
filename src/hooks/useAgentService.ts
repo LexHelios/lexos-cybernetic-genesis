@@ -6,6 +6,7 @@ export function useAgentService() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [systemStatus, setSystemStatus] = useState<any>(null);
+  const [subscribers, setSubscribers] = useState<((chunk: string) => void)[]>([]);
   const { toast } = useToast();
 
   // Initialize WebSocket connection
@@ -158,6 +159,28 @@ export function useAgentService() {
     }
   }, [toast, loadAgents]);
 
+  // Streaming orchestrate for chat interface
+  const orchestrate = useCallback(async (options: { message: string, context?: any }) => {
+    await agentService.orchestrateStream(
+      options.message,
+      options.context,
+      (chunk: string) => {
+        // Notify all subscribers
+        subscribers.forEach(sub => sub(chunk));
+      }
+    );
+  }, [subscribers]);
+
+  // Subscribe to message chunks
+  const subscribe = useCallback((callback: (chunk: string) => void) => {
+    setSubscribers(prev => [...prev, callback]);
+    
+    // Return unsubscribe function
+    return () => {
+      setSubscribers(prev => prev.filter(sub => sub !== callback));
+    };
+  }, []);
+
   return {
     agents,
     loading,
@@ -167,7 +190,8 @@ export function useAgentService() {
     controlAgent,
     switchModel,
     chat: agentService.chat.bind(agentService),
-    orchestrate: agentService.orchestrate.bind(agentService),
+    orchestrate,
+    subscribe,
     generateCode: agentService.generateCode.bind(agentService),
     reason: agentService.reason.bind(agentService),
     creativeWrite: agentService.creativeWrite.bind(agentService),

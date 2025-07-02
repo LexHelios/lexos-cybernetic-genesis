@@ -20,6 +20,16 @@ const Dashboard = () => {
       />
       
       <div className="relative z-10" style={{ pointerEvents: 'auto' }}>
+        {/* Big Yellow Smiley Face - Verification Marker */}
+        <div className="absolute top-4 right-4 text-8xl animate-bounce z-50">
+          😊
+        </div>
+        
+        {/* Additional Verification Banner */}
+        <div className="bg-yellow-500 text-black p-4 rounded-lg mb-4 text-center font-bold text-2xl animate-pulse">
+          🎉 CLAUDE'S UPDATE IS LIVE! - {new Date().toLocaleString()} 🎉
+        </div>
+        
         <div className="mb-8">
           <div className="flex items-center space-x-4 mb-4">
             <div 
